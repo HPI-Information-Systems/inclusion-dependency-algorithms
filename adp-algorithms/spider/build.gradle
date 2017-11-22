@@ -1,0 +1,6 @@
+
+jar {
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.spider.SpiderDatabase'
+    }
+}

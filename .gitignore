@@ -16,3 +16,6 @@ temp/
 input/
 data/
 datasets/
+.DS_Store
+adp-algorithms/build
+adp-algorithms/**/build

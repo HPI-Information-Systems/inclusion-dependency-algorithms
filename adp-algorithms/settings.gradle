@@ -1,0 +1,3 @@
+rootProject.name = "adp-seminar"
+
+include 'spider'
