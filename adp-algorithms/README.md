@@ -23,7 +23,7 @@ Do not forget to add those to the list of known submodules inside the [`settings
 Building metanome-cli:
 
 1. Start by installing [Metanome](https://github.com/HPI-Information-Systems/Metanome) to your local Maven repository.
-2. Then build [Metacrate](https://github.com/stratosphere/metadata-ms]). At the time of
+2. Then build [Metacrate](https://github.com/stratosphere/metadata-ms). At the time of
   you will be requiring the changes from [this PR](https://github.com/stratosphere/metadata-ms/pull/61)
   in order to build against the latest version of Metanome (master).
 3. Finally follow the build instructions of [metanome-cli](https://github.com/sekruse/metanome-cli).
