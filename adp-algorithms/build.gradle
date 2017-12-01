@@ -8,9 +8,11 @@ buildscript {
     }
 }
 
-group 'de.metanome'
-version '0.1-SNAPSHOT'
-apply plugin: 'java'
+allprojects {
+    group 'de.metanome'
+    version '0.1.0-SNAPSHOT'
+    apply plugin: 'java'
+}
 
 subprojects {
     apply plugin: 'java'
@@ -27,7 +29,10 @@ subprojects {
     dependencies {
         compile 'de.metanome:algorithm_integration:1.1-SNAPSHOT'
         compile 'org.projectlombok:lombok:1.16.16'
+        compile 'it.unimi.dsi:fastutil:8.1.1'
 
+        testCompile 'org.mockito:mockito-core:2.12.0'
+        testCompile 'org.assertj:assertj-core:3.8.0'
         testCompile 'org.apiguardian:apiguardian-api:1.0.0'
         testCompile 'org.junit.jupiter:junit-jupiter-api:5.0.2'
         testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.0.2'

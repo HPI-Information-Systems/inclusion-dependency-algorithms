@@ -1,6 +1,17 @@
 
 jar {
     manifest {
-        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.spider.SpiderDatabase'
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.spider.SpiderFileAlgorithm'
     }
+    classifier 'file'
 }
+
+task spiderDatabase(type: Jar) {
+    from sourceSets.main.output
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.spider.SpiderDatabaseAlgorithm'
+    }
+    classifier 'database'
+}
+
+assemble.dependsOn spiderDatabase
