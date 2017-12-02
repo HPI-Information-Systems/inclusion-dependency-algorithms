@@ -58,6 +58,8 @@ public class BellBrockhausenAlgorithm implements InclusionDependencyAlgorithm,
     @Override
     public void execute() throws AlgorithmExecutionException {
         BellBrockhausenConfiguration configuration = configurationBuilder.build();
+        BellBrockhausen algorithm = new BellBrockhausen(configuration);
+        algorithm.execute();
     }
 
     @Override
