@@ -1,11 +1,12 @@
 package de.metanome.algorithms.bellbrockhausen.models;
 
+import com.google.common.collect.Range;
+import de.metanome.algorithm_integration.ColumnIdentifier;
 import lombok.Data;
 
 @Data
 public class Attribute {
 
-    private final String name;
-    private final int minValue;
-    private final int maxValue;
+    private final ColumnIdentifier columnIdentifier;
+    private final Range<Integer> valueRange;
 }
