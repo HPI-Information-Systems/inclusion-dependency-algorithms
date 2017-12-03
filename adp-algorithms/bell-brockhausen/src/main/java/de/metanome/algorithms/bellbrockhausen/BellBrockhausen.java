@@ -8,8 +8,8 @@ import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration;
 import de.metanome.algorithms.bellbrockhausen.models.Attribute;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class BellBrockhausen {
 
@@ -23,7 +23,7 @@ public class BellBrockhausen {
 
     public void execute() throws AlgorithmExecutionException {
         TableInfo tableInfo = dataAccessObject.getTableInfo(configuration.getTableName());
-        List<InclusionDependency> candidates = generateCandidates(tableInfo);
+        Set<InclusionDependency> candidates = generateCandidates(tableInfo);
 
         for(InclusionDependency candidate: candidates) {
             if(dataAccessObject.isValidUIND(candidate)) {
@@ -32,8 +32,8 @@ public class BellBrockhausen {
         }
     }
 
-    private List<InclusionDependency> generateCandidates(TableInfo tableInfo) {
-        List<InclusionDependency> candidates = new ArrayList<>();
+    private Set<InclusionDependency> generateCandidates(TableInfo tableInfo) {
+        Set<InclusionDependency> candidates = new HashSet<>();
         for (Attribute attributeA : tableInfo.getAttributes()) {
             for (Attribute attributeB : tableInfo.getAttributes()) {
                 if (attributeA.equals(attributeB)) continue;
