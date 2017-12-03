@@ -4,8 +4,7 @@ import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.bellbrockhausen.accessors.TableInfo;
-import de.metanome.algorithms.bellbrockhausen.accessors.PostgresTableInfoFactory;
-import de.metanome.algorithms.bellbrockhausen.accessors.TableInfoFactory;
+import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration;
 import de.metanome.algorithms.bellbrockhausen.models.Attribute;
 
@@ -15,16 +14,15 @@ import java.util.List;
 public class BellBrockhausen {
 
     private final BellBrockhausenConfiguration configuration;
-    private final TableInfoFactory tableInfoFactory;
+    private final DataAccessObject dataAccessObject;
 
-    public BellBrockhausen(final BellBrockhausenConfiguration configuration) {
+    public BellBrockhausen(BellBrockhausenConfiguration configuration, DataAccessObject dataAccessObject) {
         this.configuration = configuration;
-        this.tableInfoFactory = new PostgresTableInfoFactory(); // TODO: Inject database specific factory
+        this.dataAccessObject = dataAccessObject;
     }
 
     public void execute() throws AlgorithmExecutionException {
-        TableInfo tableInfo = tableInfoFactory.getTableInfo(
-                configuration.getConnectionGenerator(), configuration.getTableName());
+        TableInfo tableInfo = dataAccessObject.getTableInfo(configuration.getTableName());
         List<InclusionDependency> candidates = generateCandidates(tableInfo);
     }
 
