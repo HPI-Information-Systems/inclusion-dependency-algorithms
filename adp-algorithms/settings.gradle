@@ -1,4 +1,6 @@
 rootProject.name = "adp-seminar"
 
+include 'util'
+
 include 'spider'
 
