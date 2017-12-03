@@ -6,6 +6,7 @@ import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.InputGenerationException;
+import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.bellbrockhausen.models.Attribute;
 
 import java.sql.ResultSet;
@@ -15,9 +16,15 @@ import java.util.List;
 
 import static java.lang.String.format;
 
-public class PostgresTableInfoFactory implements TableInfoFactory {
+public class PostgresDataAccessObject implements DataAccessObject {
 
-    public TableInfo getTableInfo(final DatabaseConnectionGenerator connectionGenerator, final String tableName)
+    private final DatabaseConnectionGenerator connectionGenerator;
+
+    public PostgresDataAccessObject(DatabaseConnectionGenerator connectionGenerator) {
+        this.connectionGenerator = connectionGenerator;
+    }
+
+    public TableInfo getTableInfo(final String tableName)
             throws AlgorithmExecutionException {
         ImmutableList<ColumnIdentifier> columnNames = getColumnNames(connectionGenerator, tableName);
         List<Attribute> attributes = new ArrayList<>();
@@ -25,6 +32,20 @@ public class PostgresTableInfoFactory implements TableInfoFactory {
             attributes.add(getValueRange(connectionGenerator, columnName));
         }
         return new TableInfo(tableName, ImmutableList.copyOf(attributes));
+    }
+
+    @Override
+    public boolean isValidUIND(InclusionDependency candidate) throws AlgorithmExecutionException {
+        if (candidate.getDependant().getColumnIdentifiers().size() != 1 ||
+                candidate.getDependant().getColumnIdentifiers().size() != 1) {
+            throw new AlgorithmExecutionException(format("Algorithm can only handle UINDs. Got nIND: %s", candidate));
+        }
+        // TODO: Optimize this by combining checks for A \subseteq B and B \subseteq A
+        int dependantCount = getDistinctValues(candidate.getDependant().getColumnIdentifiers().get(0));
+        int sharedCount = getDistinctValues(
+                candidate.getDependant().getColumnIdentifiers().get(0),
+                candidate.getReferenced().getColumnIdentifiers().get(0));
+        return dependantCount == sharedCount;
     }
 
     private ImmutableList<ColumnIdentifier> getColumnNames(
@@ -56,6 +77,32 @@ public class PostgresTableInfoFactory implements TableInfoFactory {
         } catch (SQLException e) {
             throw new InputGenerationException(
                     format("Error calculating value range for column %s of table %s", columnName, tableName), e);
+        }
+    }
+
+    private int getDistinctValues(final ColumnIdentifier column) throws AlgorithmExecutionException {
+        String query = format("SELECT COUNT(DISTINCT(%s)) as values FROM %s",
+                column.getColumnIdentifier(), column.getTableIdentifier());
+        ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query);
+        try {
+            return resultSet.getInt("values");
+        } catch (SQLException e) {
+            throw new InputGenerationException(format("Error getting distinct value count for column %s of table %s",
+                        column.getColumnIdentifier(), column.getTableIdentifier()));
+        }
+    }
+
+    private int getDistinctValues(final ColumnIdentifier columnA, final ColumnIdentifier columnB)
+            throws AlgorithmExecutionException {
+        String query = format("SELECT COUNT(DISTINCT(%s)) as values FROM %s, %s WHERE %s = %s",
+                columnA.getColumnIdentifier(), columnA.getTableIdentifier(), columnB.getTableIdentifier(),
+                columnA.getColumnIdentifier(), columnB.getTableIdentifier());
+        ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query);
+        try {
+            return resultSet.getInt("values");
+        } catch (SQLException e) {
+            throw new InputGenerationException(format("Error getting distinct value count for column %s and %s",
+                    columnA.getColumnIdentifier(), columnB.getColumnIdentifier()));
         }
     }
 }

@@ -10,6 +10,8 @@ import de.metanome.algorithm_integration.configuration.ConfigurationRequirementD
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementString;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
+import de.metanome.algorithms.bellbrockhausen.accessors.PostgresDataAccessObject;
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration;
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration.BellBrockhausenConfigurationBuilder;
 
@@ -58,7 +60,8 @@ public class BellBrockhausenAlgorithm implements InclusionDependencyAlgorithm,
     @Override
     public void execute() throws AlgorithmExecutionException {
         BellBrockhausenConfiguration configuration = configurationBuilder.build();
-        BellBrockhausen algorithm = new BellBrockhausen(configuration);
+        DataAccessObject dataAccessObject = new PostgresDataAccessObject(configuration.getConnectionGenerator());
+        BellBrockhausen algorithm = new BellBrockhausen(configuration, dataAccessObject);
         algorithm.execute();
     }
 
