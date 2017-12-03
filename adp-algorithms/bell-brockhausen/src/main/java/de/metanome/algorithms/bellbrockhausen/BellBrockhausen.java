@@ -24,9 +24,11 @@ public class BellBrockhausen {
     public void execute() throws AlgorithmExecutionException {
         TableInfo tableInfo = dataAccessObject.getTableInfo(configuration.getTableName());
         List<InclusionDependency> candidates = generateCandidates(tableInfo);
-        /* TODO: Check if the candidates fulfill the IND requierements */
+
         for(InclusionDependency candidate: candidates) {
-            configuration.getResultReceiver().receiveResult(candidate);
+            if(dataAccessObject.isValidUIND(candidate)) {
+                configuration.getResultReceiver().receiveResult(candidate);
+            }
         }
     }
 
