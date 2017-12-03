@@ -24,6 +24,10 @@ public class BellBrockhausen {
     public void execute() throws AlgorithmExecutionException {
         TableInfo tableInfo = dataAccessObject.getTableInfo(configuration.getTableName());
         List<InclusionDependency> candidates = generateCandidates(tableInfo);
+        /* TODO: Check if the candidates fulfill the IND requierements */
+        for(InclusionDependency candidate: candidates) {
+            configuration.getResultReceiver().receiveResult(candidate);
+        }
     }
 
     private List<InclusionDependency> generateCandidates(TableInfo tableInfo) {
@@ -35,11 +39,6 @@ public class BellBrockhausen {
                     candidates.add(new InclusionDependency(
                             new ColumnPermutation(attributeB.getColumnIdentifier()),
                             new ColumnPermutation(attributeA.getColumnIdentifier())));
-                }
-                if (attributeB.getValueRange().encloses(attributeA.getValueRange())) {
-                    candidates.add(new InclusionDependency(
-                            new ColumnPermutation(attributeA.getColumnIdentifier()),
-                            new ColumnPermutation(attributeB.getColumnIdentifier())));
                 }
             }
         }

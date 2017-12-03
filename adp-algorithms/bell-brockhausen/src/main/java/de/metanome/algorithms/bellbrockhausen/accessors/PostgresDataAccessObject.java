@@ -33,7 +33,6 @@ public class PostgresDataAccessObject implements DataAccessObject {
         }
         return new TableInfo(tableName, ImmutableList.copyOf(attributes));
     }
-
     @Override
     public boolean isValidUIND(InclusionDependency candidate) throws AlgorithmExecutionException {
         if (candidate.getDependant().getColumnIdentifiers().size() != 1 ||
@@ -48,11 +47,16 @@ public class PostgresDataAccessObject implements DataAccessObject {
         return dependantCount == sharedCount;
     }
 
+    // TODO: Encapsulate schemaName and tableName to Class
+    private String getTableName(String tableName) {
+        return tableName.split("\\.")[1];
+    }
+
     private ImmutableList<ColumnIdentifier> getColumnNames(
             final DatabaseConnectionGenerator connectionGenerator,
             final String tableName)
             throws AlgorithmExecutionException {
-        String query = format("SELECT column_name FROM information_schema.columns WHERE table_name='%s'", tableName);
+        String query = format("SELECT column_name FROM information_schema.columns WHERE table_name='%s'", getTableName(tableName));
         ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query);
         List<ColumnIdentifier> columnNames = new ArrayList<>();
         try {
@@ -68,10 +72,11 @@ public class PostgresDataAccessObject implements DataAccessObject {
     private Attribute getValueRange(final DatabaseConnectionGenerator connectionGenerator, final ColumnIdentifier columnIdentifier)
             throws AlgorithmExecutionException {
         String columnName = columnIdentifier.getColumnIdentifier();
-        String tableName = columnIdentifier.getColumnIdentifier();
+        String tableName = columnIdentifier.getTableIdentifier();
         String query = format("SELECT MIN(%s) as minVal, MAX(%s) as maxVal FROM %s", columnName, columnName, tableName);
         ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query);
         try {
+            resultSet.next();
             Range<Integer> valueRange = Range.open(resultSet.getInt("minVal"), resultSet.getInt("maxVal"));
             return new Attribute(columnIdentifier, valueRange);
         } catch (SQLException e) {
