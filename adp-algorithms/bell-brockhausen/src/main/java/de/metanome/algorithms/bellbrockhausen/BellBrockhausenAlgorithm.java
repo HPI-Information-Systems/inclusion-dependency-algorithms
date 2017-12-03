@@ -67,7 +67,7 @@ public class BellBrockhausenAlgorithm implements InclusionDependencyAlgorithm,
 
     @Override
     public String getAuthors() {
-        return null;
+        return "Fabian Windheuser, Nils Strelow";
     }
 
     @Override
