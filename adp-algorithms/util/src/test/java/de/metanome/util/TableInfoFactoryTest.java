@@ -1,5 +1,6 @@
-package de.metanome.algorithms.spider;
+package de.metanome.util;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -33,10 +34,7 @@ class TableInfoFactoryTest {
         .build();
     given(generator.generateNewCopy()).willReturn(input1);
 
-    final SpiderConfiguration configuration = SpiderConfiguration.builder()
-        .relationalInputGenerator(generator).build();
-
-    final List<TableInfo> info = factory.create(configuration);
+    final List<TableInfo> info = factory.createFromRelationalInputs(asList(generator));
 
     assertThat(info).hasSize(1);
     final TableInfo info1 = info.get(0);

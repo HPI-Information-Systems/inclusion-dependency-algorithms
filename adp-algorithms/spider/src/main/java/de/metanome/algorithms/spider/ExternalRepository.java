@@ -6,6 +6,7 @@ import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithms.spider.tpmms.TPMMS;
+import de.metanome.util.TableInfo;
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.IOException;

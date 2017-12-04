@@ -1,4 +1,4 @@
-package de.metanome.algorithms.spider;
+package de.metanome.util;
 
 import static java.util.Arrays.asList;
 
@@ -12,23 +12,26 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
-class TableInfoFactory {
+public class TableInfoFactory {
 
   private static final String STRING_COLUMN_TYE = "String";
 
-  List<TableInfo> create(final SpiderConfiguration configuration)
+  public List<TableInfo> create(
+      final Collection<RelationalInputGenerator> relationalInputGenerators,
+      final Collection<TableInputGenerator> tableInputGenerators)
       throws InputGenerationException, AlgorithmConfigurationException {
 
     final List<TableInfo> tables = new ArrayList<>();
-    tables.addAll(getMetadataFromRelationalInput(configuration.getRelationalInputGenerators()));
-    tables.addAll(getMetadataFromTableInput(configuration.getTableInputGenerators()));
+    tables.addAll(createFromRelationalInputs(relationalInputGenerators));
+    tables.addAll(createFromTableInputs(tableInputGenerators));
     return tables;
   }
 
-  private List<TableInfo> getMetadataFromRelationalInput(
-      final List<RelationalInputGenerator> generators)
+  public List<TableInfo> createFromRelationalInputs(
+      final Collection<RelationalInputGenerator> generators)
       throws InputGenerationException, AlgorithmConfigurationException {
 
     final List<TableInfo> result = new ArrayList<>();
@@ -58,7 +61,8 @@ class TableInfoFactory {
     return asList(types);
   }
 
-  private List<TableInfo> getMetadataFromTableInput(final List<TableInputGenerator> generators)
+  public List<TableInfo> createFromTableInputs(
+      final Collection<TableInputGenerator> generators)
       throws InputGenerationException, AlgorithmConfigurationException {
 
     final List<TableInfo> result = new ArrayList<>();

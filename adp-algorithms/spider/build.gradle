@@ -1,5 +1,19 @@
 
+configurations {
+    extraLibs
+}
+
+dependencies {
+    extraLibs(project(':util')) {
+        setTransitive(false)
+    }
+    configurations.compile.extendsFrom configurations.extraLibs
+
+    testCompile project(path: ':util', configuration: 'tests')
+}
+
 jar {
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
     manifest {
         attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.spider.SpiderFileAlgorithm'
     }
@@ -8,6 +22,8 @@ jar {
 
 task spiderDatabase(type: Jar) {
     from sourceSets.main.output
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+
     manifest {
         attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.spider.SpiderDatabaseAlgorithm'
     }

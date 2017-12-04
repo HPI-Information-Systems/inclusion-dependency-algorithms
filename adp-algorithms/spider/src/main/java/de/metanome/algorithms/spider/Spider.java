@@ -6,6 +6,8 @@ import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.result_receiver.ColumnNameMismatchException;
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.TableInfo;
+import de.metanome.util.TableInfoFactory;
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -16,7 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-public class Spider {
+class Spider {
 
 
   private final TableInfoFactory tableInfoFactory;
@@ -27,15 +29,17 @@ public class Spider {
   private PriorityQueue<Attribute> priorityQueue;
 
 
-  public Spider() {
+  Spider() {
     tableInfoFactory = new TableInfoFactory();
     externalRepository = new ExternalRepository();
   }
 
 
-  public void execute(final SpiderConfiguration configuration) throws AlgorithmExecutionException {
+  void execute(final SpiderConfiguration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
-    final List<TableInfo> table = tableInfoFactory.create(configuration);
+    final List<TableInfo> table = tableInfoFactory
+        .create(configuration.getRelationalInputGenerators(),
+            configuration.getTableInputGenerators());
     initializeAttributes(table);
     calculateInclusionDependencies();
     collectResults();

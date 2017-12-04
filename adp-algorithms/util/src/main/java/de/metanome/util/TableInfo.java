@@ -1,4 +1,4 @@
-package de.metanome.algorithms.spider;
+package de.metanome.util;
 
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
@@ -8,7 +8,7 @@ import lombok.Data;
 
 @Data
 @Builder
-class TableInfo {
+public class TableInfo {
 
   private final String tableName;
   private final RelationalInputGenerator relationalInputGenerator;
@@ -16,11 +16,11 @@ class TableInfo {
   private final List<String> columnNames;
   private final List<String> columnTypes;
 
-  int getColumnCount() {
+  public int getColumnCount() {
     return columnNames.size();
   }
 
-  RelationalInputGenerator selectInputGenerator() {
+  public RelationalInputGenerator selectInputGenerator() {
     return relationalInputGenerator == null ? tableInputGenerator : relationalInputGenerator;
   }
 }

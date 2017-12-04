@@ -1,0 +1,13 @@
+
+configurations {
+    tests.extendsFrom testCompile
+}
+
+task testJar(type: Jar, dependsOn: testClasses) {
+    from sourceSets.test.output
+    classifier 'test'
+}
+
+artifacts {
+    tests testJar
+}
