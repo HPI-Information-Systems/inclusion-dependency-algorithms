@@ -1,8 +1,8 @@
 package de.metanome.algorithms.bellbrockhausen;
 
+import com.google.common.collect.ImmutableList;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.ColumnPermutation;
-import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithms.bellbrockhausen.accessors.TableInfo;
 import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration;
@@ -23,24 +23,25 @@ public class BellBrockhausen {
 
     public void execute() throws AlgorithmExecutionException {
         TableInfo tableInfo = dataAccessObject.getTableInfo(configuration.getTableName());
-        Set<InclusionDependency> candidates = generateCandidates(tableInfo);
+        Set<ColumnIdentifier> candidates = generateCandidates(tableInfo);
 
-        for(InclusionDependency candidate: candidates) {
-            if(dataAccessObject.isValidUIND(candidate)) {
-                configuration.getResultReceiver().receiveResult(candidate);
-            }
-        }
+        IndGraph indGraph = new IndGraph(
+                configuration.getResultReceiver(),
+                dataAccessObject,
+                ImmutableList.copyOf(candidates));
+
+        indGraph.testCandidates();
     }
 
-    private Set<InclusionDependency> generateCandidates(TableInfo tableInfo) {
-        Set<InclusionDependency> candidates = new HashSet<>();
+    private Set<ColumnIdentifier> generateCandidates(TableInfo tableInfo) {
+        Set<ColumnIdentifier> candidates = new HashSet<>();
         for (Attribute attributeA : tableInfo.getAttributes()) {
             for (Attribute attributeB : tableInfo.getAttributes()) {
                 if (attributeA.equals(attributeB)) continue;
-                if (attributeA.getValueRange().encloses(attributeB.getValueRange())) {
-                    candidates.add(new InclusionDependency(
-                            new ColumnPermutation(attributeB.getColumnIdentifier()),
-                            new ColumnPermutation(attributeA.getColumnIdentifier())));
+                if (attributeA.getValueRange().encloses(attributeB.getValueRange()) ||
+                        attributeB.getValueRange().encloses(attributeA.getValueRange())) {
+                    candidates.add(attributeA.getColumnIdentifier());
+                    candidates.add(attributeB.getColumnIdentifier());
                 }
             }
         }

@@ -1,9 +1,12 @@
 package de.metanome.algorithms.bellbrockhausen;
 
 import com.google.common.collect.ImmutableList;
+import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
+import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,18 +18,23 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 public class IndGraph {
 
+    private final InclusionDependencyResultReceiver resultReceiver;
+    private final DataAccessObject dataAccessObject;
     private final ImmutableList<ColumnIdentifier> candidates;
     private final Map<ColumnIdentifier, Set<ColumnIdentifier>> fromEdges;
     private final Map<ColumnIdentifier, Set<ColumnIdentifier>> toEdges;
     private final Map<ColumnIdentifier, List<InclusionDependency>> tests;
 
-    public IndGraph(ImmutableList<ColumnIdentifier> candidates) {
+    public IndGraph(
+            InclusionDependencyResultReceiver resultReceiver,
+            DataAccessObject dataAccessObject,
+            ImmutableList<ColumnIdentifier> candidates) {
+        this.resultReceiver = resultReceiver;
+        this.dataAccessObject = dataAccessObject;
         this.candidates = candidates;
         fromEdges = new HashMap<>();
         toEdges = new HashMap<>();
         tests = new HashMap<>();
-        buildTests();
-
     }
 
     private Map<ColumnIdentifier, List<InclusionDependency>> buildTests() {
@@ -44,7 +52,36 @@ public class IndGraph {
         return tests;
     }
 
-    public void updateGraph(final InclusionDependency ind) {
+    public void testCandidates() throws AlgorithmExecutionException {
+        buildTests();
+
+        for (int i = 0; i < candidates.size(); i++) {
+            for (int j = 1; j < candidates.size() - 1; j++) {
+                if (i == j) continue;
+                ColumnIdentifier dependant = candidates.get(i); // A_i
+                ColumnIdentifier referenced = candidates.get(j); // A_i+r
+                testCandidate(dependant, referenced, toInd(dependant, referenced));
+                testCandidate(dependant, referenced, toInd(referenced, dependant));
+            }
+        }
+    }
+
+    private void testCandidate(
+            final ColumnIdentifier dependant, final ColumnIdentifier referenced, final InclusionDependency test)
+            throws AlgorithmExecutionException {
+        if (hasTest(test)) {
+            final int dependantIndex = getCandidateIndex(dependant);
+            // Run test if not: has edge A_ref -> A_k with k < i and no edge A_depend -> A_k
+            if (fromEdges.get(referenced).stream().noneMatch(node -> getCandidateIndex(node) < dependantIndex &&
+                    !hasEdge(dependant, node))) {
+                if (dataAccessObject.isValidUIND(test)) {
+                    updateGraph(test);
+                }
+            }
+        }
+    }
+
+    private void updateGraph(final InclusionDependency ind) {
         // A_i -> A_j
         insertEdge(getDependant(ind), getReferenced(ind));
         int dependantIndex = getCandidateIndex(getDependant(ind));
@@ -106,7 +143,26 @@ public class IndGraph {
         }
     }
 
-    private InclusionDependency toInd(final ColumnIdentifier referenced, final ColumnIdentifier dependant) {
+    private void insertEdge(final ColumnIdentifier dependant, final ColumnIdentifier referenced) {
+        fromEdges.get(dependant).add(referenced);
+        toEdges.get(referenced).add(dependant);
+        resultReceiver.acceptedResult(toInd(dependant, referenced));
+    }
+
+    private boolean hasEdge(final ColumnIdentifier dependant, final ColumnIdentifier referenced) {
+        return fromEdges.get(dependant).contains(referenced);
+    }
+
+    private boolean hasTest(final InclusionDependency testInd) {
+        return tests.get(getDependant(testInd)).contains(testInd);
+    }
+
+    private int getCandidateIndex(final ColumnIdentifier candidate) {
+        // TODO(fwindheuser): Keep index of candidate positions to speed this up
+        return candidates.indexOf(candidate);
+    }
+
+    private InclusionDependency toInd(final ColumnIdentifier dependant, final ColumnIdentifier referenced) {
         return new InclusionDependency(new ColumnPermutation(referenced), new ColumnPermutation(dependant));
     }
 
@@ -116,14 +172,5 @@ public class IndGraph {
 
     private ColumnIdentifier getDependant(final InclusionDependency ind) {
         return ind.getDependant().getColumnIdentifiers().get(0);
-    }
-
-    private void insertEdge(final ColumnIdentifier dependant, final ColumnIdentifier referenced) {
-        fromEdges.get(dependant).add(referenced);
-        toEdges.get(referenced).add(dependant);
-    }
-
-    private int getCandidateIndex(final ColumnIdentifier candidate) {
-        return candidates.indexOf(candidate);
     }
 }
