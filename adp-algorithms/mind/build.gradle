@@ -1,0 +1,20 @@
+
+configurations {
+    extraLibs
+}
+
+dependencies {
+    extraLibs(project(':util')) {
+        transitive = false
+    }
+    configurations.compile.extendsFrom configurations.extraLibs
+
+    testCompile project(path: ':util', configuration: 'tests')
+}
+
+jar {
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.mind.MindAlgorithm'
+    }
+}
