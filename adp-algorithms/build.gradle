@@ -26,6 +26,11 @@ subprojects {
         mavenCentral()
     }
 
+    configurations {
+        extraLibs
+        configurations.compile.extendsFrom configurations.extraLibs
+    }
+
     dependencies {
         compile 'de.metanome:algorithm_integration:1.1-SNAPSHOT'
         compile 'org.projectlombok:lombok:1.16.16'
