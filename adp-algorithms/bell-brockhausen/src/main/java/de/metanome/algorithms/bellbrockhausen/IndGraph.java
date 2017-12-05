@@ -4,17 +4,21 @@ import com.google.common.collect.ImmutableList;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
+import de.metanome.algorithm_integration.result_receiver.ColumnNameMismatchException;
+import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
 
 public class IndGraph {
 
@@ -54,9 +58,8 @@ public class IndGraph {
 
     public void testCandidates() throws AlgorithmExecutionException {
         buildTests();
-
         for (int i = 0; i < candidates.size(); i++) {
-            for (int j = 1; j < candidates.size() - 1; j++) {
+            for (int j = 1; j < candidates.size(); j++) {
                 if (i == j) continue;
                 ColumnIdentifier dependant = candidates.get(i); // A_i
                 ColumnIdentifier referenced = candidates.get(j); // A_i+r
@@ -71,6 +74,7 @@ public class IndGraph {
             throws AlgorithmExecutionException {
         if (hasTest(test)) {
             final int dependantIndex = getCandidateIndex(dependant);
+            addKeyIfNotIn(fromEdges, referenced);
             // Run test if not: has edge A_ref -> A_k with k < i and no edge A_depend -> A_k
             if (fromEdges.get(referenced).stream().noneMatch(node -> getCandidateIndex(node) < dependantIndex &&
                     !hasEdge(dependant, node))) {
@@ -81,20 +85,23 @@ public class IndGraph {
         }
     }
 
-    private void updateGraph(final InclusionDependency ind) {
+    private void updateGraph(final InclusionDependency ind)
+            throws ColumnNameMismatchException, CouldNotReceiveResultException {
         // A_i -> A_j
         insertEdge(getDependant(ind), getReferenced(ind));
         int dependantIndex = getCandidateIndex(getDependant(ind));
         int referencedIndex = getCandidateIndex(getReferenced(ind));
         if (getCandidateIndex(getDependant(ind)) < getCandidateIndex(getReferenced(ind))) {
             // Find all nodes A_k, k > i with path to node A_i
+            addKeyIfNotIn(toEdges, getDependant(ind));
             ImmutableList<ColumnIdentifier> toDependant = toEdges.get(getDependant(ind)).stream()
                     .filter(column -> getCandidateIndex(column) > dependantIndex)
-                    .collect(toImmutableList());
+                    .collect(collectingAndThen(toList(), ImmutableList::copyOf));
             // Find all nodes A_l, l > i reachable from node A_j
+            addKeyIfNotIn(fromEdges, getReferenced(ind));
             ImmutableList<ColumnIdentifier> fromReferenced = fromEdges.get(getReferenced(ind)).stream()
                     .filter(column -> getCandidateIndex(column) > dependantIndex)
-                    .collect(toImmutableList());
+                    .collect(collectingAndThen(toList(), ImmutableList::copyOf));
 
             // Delete tests A_i -> A_l with l > i in list A_i
             tests.get(getDependant(ind)).removeIf(indTest -> getDependant(ind).equals(getDependant(indTest)) &&
@@ -115,13 +122,15 @@ public class IndGraph {
             }
         } else {
             // Find all nodes A_k, k > j with path to node A_i
+            addKeyIfNotIn(toEdges, getDependant(ind));
             ImmutableList<ColumnIdentifier> toDependant = toEdges.get(getDependant(ind)).stream()
                     .filter(column -> getCandidateIndex(column) > referencedIndex)
-                    .collect(toImmutableList());
+                    .collect(collectingAndThen(toList(), ImmutableList::copyOf));
             // Find all nodes A_l, l > j reachable from node A_j
+            addKeyIfNotIn(fromEdges, getReferenced(ind));
             ImmutableList<ColumnIdentifier> fromReferenced = fromEdges.get(getReferenced(ind)).stream()
                     .filter(column -> getCandidateIndex(column) > referencedIndex)
-                    .collect(toImmutableList());
+                    .collect(collectingAndThen(toList(), ImmutableList::copyOf));
 
             // Delete tests A_k -> A_j with k > i in list A_j
             tests.get(getReferenced(ind)).removeIf(indTest -> getReferenced(ind).equals(getReferenced(indTest)) &&
@@ -143,10 +152,19 @@ public class IndGraph {
         }
     }
 
-    private void insertEdge(final ColumnIdentifier dependant, final ColumnIdentifier referenced) {
+    private void addKeyIfNotIn(Map<ColumnIdentifier, Set<ColumnIdentifier>> m, ColumnIdentifier c) {
+        if(!m.containsKey(c)) {
+            m.put(c, new HashSet<>());
+        }
+    }
+
+    private void insertEdge(final ColumnIdentifier dependant, final ColumnIdentifier referenced)
+            throws ColumnNameMismatchException, CouldNotReceiveResultException {
+        addKeyIfNotIn(fromEdges, dependant);
+        addKeyIfNotIn(toEdges, referenced);
         fromEdges.get(dependant).add(referenced);
         toEdges.get(referenced).add(dependant);
-        resultReceiver.acceptedResult(toInd(dependant, referenced));
+        resultReceiver.receiveResult(toInd(dependant, referenced));
     }
 
     private boolean hasEdge(final ColumnIdentifier dependant, final ColumnIdentifier referenced) {
@@ -154,7 +172,8 @@ public class IndGraph {
     }
 
     private boolean hasTest(final InclusionDependency testInd) {
-        return tests.get(getDependant(testInd)).contains(testInd);
+        ColumnIdentifier dependant = getDependant(testInd);
+        return tests.containsKey(dependant) && tests.get(dependant).contains(testInd);
     }
 
     private int getCandidateIndex(final ColumnIdentifier candidate) {
