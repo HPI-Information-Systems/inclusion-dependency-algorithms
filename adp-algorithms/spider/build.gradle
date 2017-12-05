@@ -1,14 +1,8 @@
 
-configurations {
-    extraLibs
-}
-
 dependencies {
     extraLibs(project(':util')) {
-        setTransitive(false)
+        transitive = false
     }
-    configurations.compile.extendsFrom configurations.extraLibs
-
     testCompile project(path: ':util', configuration: 'tests')
 }
 

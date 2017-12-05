@@ -1,13 +1,12 @@
 
-configurations {
-    extraLibs
-}
-
 dependencies {
     extraLibs(project(':util')) {
         transitive = false
     }
-    configurations.compile.extendsFrom configurations.extraLibs
+
+    extraLibs(project(':demarchi')) {
+        transitive = false
+    }
 
     testCompile project(path: ':util', configuration: 'tests')
 }
