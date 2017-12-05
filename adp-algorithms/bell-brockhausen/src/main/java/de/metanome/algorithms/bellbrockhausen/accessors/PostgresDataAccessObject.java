@@ -90,6 +90,7 @@ public class PostgresDataAccessObject implements DataAccessObject {
                 column.getColumnIdentifier(), column.getTableIdentifier());
         ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query);
         try {
+            resultSet.next();
             return resultSet.getInt("values");
         } catch (SQLException e) {
             throw new InputGenerationException(format("Error getting distinct value count for column %s of table %s",
@@ -99,11 +100,12 @@ public class PostgresDataAccessObject implements DataAccessObject {
 
     private int getDistinctValues(final ColumnIdentifier columnA, final ColumnIdentifier columnB)
             throws AlgorithmExecutionException {
-        String query = format("SELECT COUNT(DISTINCT(%s)) as values FROM %s, %s WHERE %s = %s",
+        String query = format("SELECT COUNT(DISTINCT(a.%s)) as values FROM %s a, %s b WHERE a.%s = b.%s",
                 columnA.getColumnIdentifier(), columnA.getTableIdentifier(), columnB.getTableIdentifier(),
-                columnA.getColumnIdentifier(), columnB.getTableIdentifier());
+                columnA.getColumnIdentifier(), columnB.getColumnIdentifier());
         ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query);
         try {
+            resultSet.next();
             return resultSet.getInt("values");
         } catch (SQLException e) {
             throw new InputGenerationException(format("Error getting distinct value count for column %s and %s",
