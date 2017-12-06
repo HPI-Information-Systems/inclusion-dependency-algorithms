@@ -7,7 +7,13 @@ Build requirement is only Java 1.8. The build system is Gradle.
 In order to build all algorithm JARs, invoke:
 
     ./gradlew assemble
+    
+Or to build individual modules, prepend the module's name (in this case 'spider'):
+  
+    ./gradlew :spider:assemble  
 
+This does only create the output artifacts but does not run the tests. Use other tasks such as
+`check`, `test` or `build` for that purpose.  
 You will not be required to install Gradle - upon first invocation an appropriate distribution will
 be downloaded and run automatically.  
 You will find the algorithm JARs inside the `<algorithm>/build/libs` directory.
@@ -68,3 +74,20 @@ de.metanome.cli.App \
 `pgpass.txt` contains more details about the database connection and credentials in the format
  `hostname:port:database:username:password` (see the
  [docs](https://wiki.postgresql.org/wiki/Pgpass)).
+ 
+ ## Dependency Management
+ 
+ Actually the current dependency management is a little wicked.
+ At the time of writing the Metanome algorithm integration JAR packages some of Metanome's
+ dependencies (fat JAR approach). For instance this means we get Guava for free on our classpath.
+ However, even during algorithm execution Metanome lacks basic isolation properties.
+ For instance, we need to explicitly declare a dependency on "fastutil" to compile (since it is not
+ part of the algorithm integration), but we are not required to a package it is part of Metanome's
+ classpath during execution.  
+ This makes reproducible algorithm executions a challenge. In short term there is no fix in sight.
+ As a result we should avoid repackaging the algorithm integration package and all hidden
+ dependencies that Metanome might ship since duplicates on the classpath might lead to undefined
+ results. For this reason we should exclude transitive dependencies from other modules and put
+ dependencies which are explicitly meant for inclusion in the final algorithm JARs in the
+ `extraLibs` configuration.
+   
