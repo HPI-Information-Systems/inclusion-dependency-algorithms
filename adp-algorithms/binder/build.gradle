@@ -1,0 +1,31 @@
+
+dependencies {
+    extraLibs(project(':util')) {
+        transitive = false
+    }
+
+    compile 'de.uni-potsdam.hpi:utils:0.0.1-SNAPSHOT'
+    compile 'de.uni-potsdam.hpi:dao:0.0.1-SNAPSHOT'
+
+    testCompile project(path: ':util', configuration: 'tests')
+}
+
+jar {
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.binder.BinderFileAlgorithm'
+    }
+    classifier 'file'
+}
+
+task binderDatabase(type: Jar) {
+    from sourceSets.main.output
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.binder.BinderDatabaseAlgorithm'
+    }
+    classifier 'database'
+}
+
+assemble.dependsOn binderDatabase
