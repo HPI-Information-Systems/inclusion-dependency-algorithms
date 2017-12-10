@@ -18,7 +18,6 @@ import org.junit.runner.RunWith;
 
 import javax.inject.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -38,12 +37,13 @@ public class BellBrockhausenTest extends IndBaseTest {
     }
 
     @Test
-    public void givenTableInfo_when_execute_thenReturnUINDS(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
+    public void testTableWithTwoInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
         // GIVEN
         Attribute attributeA = new Attribute(new ColumnIdentifier(dummyTableName, "a"), Range.open(1, 3));
         Attribute attributeB = new Attribute(new ColumnIdentifier(dummyTableName, "b"), Range.open(2, 4));
         Attribute attributeC = new Attribute(new ColumnIdentifier(dummyTableName, "c"), Range.open(1, 4));
-        TableInfo tableInfo = new TableInfo(dummyTableName, ImmutableList.of(attributeA, attributeB, attributeC));
+        ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC);
+        TableInfo tableInfo = new TableInfo(dummyTableName, attributes);
         InclusionDependency indAC = toInd(attributeA.getColumnIdentifier(), attributeC.getColumnIdentifier());
         InclusionDependency indBC = toInd(attributeB.getColumnIdentifier(), attributeC.getColumnIdentifier());
         ImmutableSet<InclusionDependency> validInds = ImmutableSet.of(indAC, indBC);
@@ -56,16 +56,53 @@ public class BellBrockhausenTest extends IndBaseTest {
         bellBrockhausen.execute();
 
         // THEN
-        recievedAllValidInds(ImmutableList.of(attributeA, attributeB, attributeC), validInds);
+        recievedAllValidInds(resultReceiver, attributes, validInds);
     }
 
-    private void recievedAllValidInds(ImmutableList<Attribute> attributes, ImmutableSet<InclusionDependency> validInds) {
-        for (Attribute attrA : attributes) {
-            for (Attribute attrB : attributes) {
-                InclusionDependency ind = toInd(attrA.getColumnIdentifier(), attrB.getColumnIdentifier());
-                boolean isValidInd = validInds.contains(ind);
-                assertThat(resultReceiver.acceptedResult(ind)).isEqualTo(isValidInd);
-            }
-        }
+    @Test
+    public void testTableWithNoInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
+        // GIVEN
+        Attribute attributeA = new Attribute(new ColumnIdentifier(dummyTableName, "a"), Range.open(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(dummyTableName, "b"), Range.open(2, 4));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(dummyTableName, "c"), Range.open(1, 4));
+        ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC);
+        TableInfo tableInfo = new TableInfo(dummyTableName, ImmutableList.of(attributeA, attributeB, attributeC));
+        ImmutableSet<InclusionDependency> validInds = ImmutableSet.of();
+
+        when(dataAccessObject.isValidUIND(any(InclusionDependency.class))).thenReturn(false);
+
+        // WHEN
+        when(dataAccessObject.getTableInfo(dummyTableName)).thenReturn(tableInfo);
+        bellBrockhausen.execute();
+
+        // THEN
+        recievedAllValidInds(resultReceiver, attributes, validInds);
+    }
+
+    @Test
+    public void testTableWithTransitiveInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
+        // GIVEN
+        Attribute attributeA = new Attribute(new ColumnIdentifier(dummyTableName, "a"), Range.open(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(dummyTableName, "b"), Range.open(3, 4));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(dummyTableName, "c"), Range.open(1, 3));
+        Attribute attributeD = new Attribute(new ColumnIdentifier(dummyTableName, "d"), Range.open(1, 4));
+        ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC, attributeD);
+        TableInfo tableInfo = new TableInfo(dummyTableName, attributes);
+        InclusionDependency indAC = toInd(attributeA.getColumnIdentifier(), attributeC.getColumnIdentifier());
+        InclusionDependency indAD = toInd(attributeA.getColumnIdentifier(), attributeD.getColumnIdentifier());
+        InclusionDependency indCA = toInd(attributeC.getColumnIdentifier(), attributeA.getColumnIdentifier());
+        InclusionDependency indCD = toInd(attributeC.getColumnIdentifier(), attributeD.getColumnIdentifier());
+        InclusionDependency indBD = toInd(attributeB.getColumnIdentifier(), attributeD.getColumnIdentifier());
+        ImmutableSet<InclusionDependency> validInds = ImmutableSet.of(indAC, indAD, indCA, indCD, indBD);
+
+        when(dataAccessObject.isValidUIND(any(InclusionDependency.class)))
+                .thenAnswer(invocation -> validInds.contains(invocation.<InclusionDependency>getArgument(0)));
+
+        // WHEN
+        when(dataAccessObject.getTableInfo(dummyTableName)).thenReturn(tableInfo);
+        bellBrockhausen.execute();
+
+        // THEN
+        recievedAllValidInds(resultReceiver, attributes, validInds);
     }
 }
