@@ -8,6 +8,7 @@ import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration;
 import de.metanome.algorithms.bellbrockhausen.models.Attribute;
 
+import javax.inject.Inject;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,6 +17,7 @@ public class BellBrockhausen {
     private final BellBrockhausenConfiguration configuration;
     private final DataAccessObject dataAccessObject;
 
+    @Inject
     public BellBrockhausen(BellBrockhausenConfiguration configuration, DataAccessObject dataAccessObject) {
         this.configuration = configuration;
         this.dataAccessObject = dataAccessObject;
