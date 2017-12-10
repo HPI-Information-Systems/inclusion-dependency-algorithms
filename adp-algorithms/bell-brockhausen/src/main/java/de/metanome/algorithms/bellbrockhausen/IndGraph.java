@@ -107,29 +107,7 @@ public class IndGraph {
                 }
             });
 
-            // Delete tests A_k -> A_l with k < l in lists A_k
-            for (ColumnIdentifier node : toDependant) {
-                if (!tests.containsKey(node)) continue;
-                int nodeIndex = getCandidateIndex(node);
-                tests.get(node).forEach(indTest -> {
-                    if (node.equals(getDependant(indTest.getTest())) &&
-                            nodeIndex < getCandidateIndex(getReferenced(indTest.getTest()))) {
-                        indTest.setDeleted(true);
-                    }
-                });
-            }
-
-            // Delete tests A_l -> A_k with k > l in lists A_l
-            for (ColumnIdentifier node: fromReferenced) {
-                if (!tests.containsKey(node)) continue;
-                int nodeIndex = getCandidateIndex(node);
-                tests.get(node).forEach(indTest -> {
-                    if (node.equals(getDependant(indTest.getTest())) &&
-                            nodeIndex > getCandidateIndex(getReferenced(indTest.getTest()))) {
-                        indTest.setDeleted(true);
-                    }
-                });
-            }
+            deleteTests(toDependant, fromReferenced);
         } else {
             // Find all nodes A_k, k > j with path to node A_i
             ImmutableList<ColumnIdentifier> toDependant = toEdges.get(getDependant(ind)).stream()
@@ -148,29 +126,33 @@ public class IndGraph {
                 }
             });
 
-            // Delete tests A_k -> A_l with k < l in lists A_k
-            for (ColumnIdentifier node : toDependant) {
-                if (!tests.containsKey(node)) continue;
-                int nodeIndex = getCandidateIndex(node);
-                tests.get(node).forEach(indTest -> {
-                    if (node.equals(getDependant(indTest.getTest())) &&
-                            nodeIndex < getCandidateIndex(getReferenced(indTest.getTest()))) {
-                        indTest.setDeleted(true);
-                    }
-                });
-            }
+            deleteTests(toDependant, fromReferenced);
+        }
+    }
 
-            // Delete tests A_k -> A_l with k > l in lists A_l
-            for (ColumnIdentifier node : fromReferenced) {
-                if (!tests.containsKey(node)) continue;
-                int nodeIndex = getCandidateIndex(node);
-                tests.get(node).forEach(indTest -> {
-                    if (node.equals(getDependant(indTest.getTest())) &&
-                            nodeIndex > getCandidateIndex(getReferenced(indTest.getTest()))) {
-                        indTest.setDeleted(true);
-                    }
-                });
-            }
+    private void deleteTests(ImmutableList<ColumnIdentifier> toDependant, ImmutableList<ColumnIdentifier> fromReferenced) {
+        // Delete tests A_k -> A_l with k < l in lists A_k
+        for (ColumnIdentifier node : toDependant) {
+            if (!tests.containsKey(node)) continue;
+            int nodeIndex = getCandidateIndex(node);
+            tests.get(node).forEach(indTest -> {
+                if (node.equals(getDependant(indTest.getTest())) &&
+                        nodeIndex < getCandidateIndex(getReferenced(indTest.getTest()))) {
+                    indTest.setDeleted(true);
+                }
+            });
+        }
+
+        // Delete tests A_k -> A_l with k > l in lists A_l
+        for (ColumnIdentifier node : fromReferenced) {
+            if (!tests.containsKey(node)) continue;
+            int nodeIndex = getCandidateIndex(node);
+            tests.get(node).forEach(indTest -> {
+                if (node.equals(getDependant(indTest.getTest())) &&
+                        nodeIndex > getCandidateIndex(getReferenced(indTest.getTest()))) {
+                    indTest.setDeleted(true);
+                }
+            });
         }
     }
 
@@ -183,11 +165,6 @@ public class IndGraph {
 
     private boolean hasEdge(final ColumnIdentifier dependant, final ColumnIdentifier referenced) {
         return fromEdges.get(dependant).contains(referenced);
-    }
-
-    private boolean hasTest(final InclusionDependency testInd) {
-        ColumnIdentifier dependant = getDependant(testInd);
-        return tests.containsKey(dependant) && tests.get(dependant).contains(testInd);
     }
 
     private int getCandidateIndex(final ColumnIdentifier candidate) {
