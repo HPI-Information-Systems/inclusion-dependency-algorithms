@@ -109,6 +109,7 @@ public class IndGraph {
 
             // Delete tests A_k -> A_l with k < l in lists A_k
             for (ColumnIdentifier node : toDependant) {
+                if (!tests.containsKey(node)) continue;
                 int nodeIndex = getCandidateIndex(node);
                 tests.get(node).forEach(indTest -> {
                     if (node.equals(getDependant(indTest.getTest())) &&
@@ -120,6 +121,7 @@ public class IndGraph {
 
             // Delete tests A_l -> A_k with k > l in lists A_l
             for (ColumnIdentifier node: fromReferenced) {
+                if (!tests.containsKey(node)) continue;
                 int nodeIndex = getCandidateIndex(node);
                 tests.get(node).forEach(indTest -> {
                     if (node.equals(getDependant(indTest.getTest())) &&
@@ -148,6 +150,7 @@ public class IndGraph {
 
             // Delete tests A_k -> A_l with k < l in lists A_k
             for (ColumnIdentifier node : toDependant) {
+                if (!tests.containsKey(node)) continue;
                 int nodeIndex = getCandidateIndex(node);
                 tests.get(node).forEach(indTest -> {
                     if (node.equals(getDependant(indTest.getTest())) &&
@@ -159,6 +162,7 @@ public class IndGraph {
 
             // Delete tests A_k -> A_l with k > l in lists A_l
             for (ColumnIdentifier node : fromReferenced) {
+                if (!tests.containsKey(node)) continue;
                 int nodeIndex = getCandidateIndex(node);
                 tests.get(node).forEach(indTest -> {
                     if (node.equals(getDependant(indTest.getTest())) &&
