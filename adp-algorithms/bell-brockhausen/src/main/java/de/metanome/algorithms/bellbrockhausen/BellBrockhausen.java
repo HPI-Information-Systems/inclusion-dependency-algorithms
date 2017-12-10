@@ -42,6 +42,7 @@ public class BellBrockhausen {
                 if (attributeA.equals(attributeB)) continue;
                 if (attributeA.getValueRange().encloses(attributeB.getValueRange()) ||
                         attributeB.getValueRange().encloses(attributeA.getValueRange())) {
+                    // TODO(fwindheuser): Already reduce number of possible tests when intervA in intervB
                     candidates.add(attributeA.getColumnIdentifier());
                     candidates.add(attributeB.getColumnIdentifier());
                 }

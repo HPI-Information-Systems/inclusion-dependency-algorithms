@@ -69,6 +69,7 @@ public class PostgresDataAccessObject implements DataAccessObject {
         return ImmutableList.copyOf(columnNames);
     }
 
+    // TODO(fwindheuser): Handle String columns
     private Attribute getValueRange(final DatabaseConnectionGenerator connectionGenerator, final ColumnIdentifier columnIdentifier)
             throws AlgorithmExecutionException {
         String columnName = columnIdentifier.getColumnIdentifier();
