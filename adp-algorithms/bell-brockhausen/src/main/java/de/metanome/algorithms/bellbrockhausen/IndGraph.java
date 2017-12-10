@@ -9,6 +9,7 @@ import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultEx
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
+import de.metanome.algorithms.bellbrockhausen.models.IndTest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toList;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.stream.Collectors.toMap;
 
 public class IndGraph {
 
@@ -27,7 +28,7 @@ public class IndGraph {
     private final ImmutableList<ColumnIdentifier> candidates;
     private final Map<ColumnIdentifier, Set<ColumnIdentifier>> fromEdges;
     private final Map<ColumnIdentifier, Set<ColumnIdentifier>> toEdges;
-    private final Map<ColumnIdentifier, List<InclusionDependency>> tests;
+    private final Map<ColumnIdentifier, List<IndTest>> tests;
 
     public IndGraph(
             InclusionDependencyResultReceiver resultReceiver,
@@ -36,12 +37,26 @@ public class IndGraph {
         this.resultReceiver = resultReceiver;
         this.dataAccessObject = dataAccessObject;
         this.candidates = candidates;
-        fromEdges = new HashMap<>();
-        toEdges = new HashMap<>();
+        fromEdges = candidates.stream().collect(toMap(c -> c, c -> new HashSet<>()));
+        toEdges = candidates.stream().collect(toMap(c -> c, c -> new HashSet<>()));
         tests = new HashMap<>();
     }
 
-    private Map<ColumnIdentifier, List<InclusionDependency>> buildTests() {
+    public void testCandidates() throws AlgorithmExecutionException {
+        buildTests();
+
+        for (int i = 0; i < candidates.size() - 1; i++) {
+            ColumnIdentifier testGroupIndex = candidates.get(i);
+            List<IndTest> testGroup = tests.get(testGroupIndex);
+            for (IndTest test : testGroup) {
+                if (!test.isDeleted()) {
+                    testCandidate(test.getTest());
+                }
+            }
+        }
+    }
+
+    private void buildTests() {
         for (int i = 0; i < candidates.size(); i++) {
             ColumnIdentifier candidateA = candidates.get(i);
             for (int j = i + 1; j < candidates.size(); j++) {
@@ -49,38 +64,21 @@ public class IndGraph {
                 if (!tests.containsKey(candidateA)) {
                     tests.put(candidateA, new ArrayList<>());
                 }
-                tests.get(candidateA).add(toInd(candidateA, candidateB));
-                tests.get(candidateA).add(toInd(candidateB, candidateA));
-            }
-        }
-        return tests;
-    }
-
-    public void testCandidates() throws AlgorithmExecutionException {
-        buildTests();
-        for (int i = 0; i < candidates.size(); i++) {
-            for (int j = 1; j < candidates.size(); j++) {
-                if (i == j) continue;
-                ColumnIdentifier dependant = candidates.get(i); // A_i
-                ColumnIdentifier referenced = candidates.get(j); // A_i+r
-                testCandidate(dependant, referenced, toInd(dependant, referenced));
-                testCandidate(dependant, referenced, toInd(referenced, dependant));
+                tests.get(candidateA).add(new IndTest(toInd(candidateA, candidateB)));
+                tests.get(candidateA).add(new IndTest(toInd(candidateB, candidateA)));
             }
         }
     }
 
-    private void testCandidate(
-            final ColumnIdentifier dependant, final ColumnIdentifier referenced, final InclusionDependency test)
-            throws AlgorithmExecutionException {
-        if (hasTest(test)) {
-            final int dependantIndex = getCandidateIndex(dependant);
-            addKeyIfNotIn(fromEdges, referenced);
-            // Run test if not: has edge A_ref -> A_k with k < i and no edge A_depend -> A_k
-            if (fromEdges.get(referenced).stream().noneMatch(node -> getCandidateIndex(node) < dependantIndex &&
-                    !hasEdge(dependant, node))) {
-                if (dataAccessObject.isValidUIND(test)) {
-                    updateGraph(test);
-                }
+    private void testCandidate(final InclusionDependency test) throws AlgorithmExecutionException {
+        ColumnIdentifier dependant = getDependant(test);
+        ColumnIdentifier referenced = getReferenced(test);
+        final int dependantIndex = getCandidateIndex(dependant);
+        // Run test if not: has edge A_ref -> A_k with k < i and no edge A_depend -> A_k
+        if (fromEdges.get(referenced).stream()
+                .noneMatch(node -> getCandidateIndex(node) < dependantIndex && !hasEdge(dependant, node))) {
+            if (dataAccessObject.isValidUIND(test)) {
+                updateGraph(test);
             }
         }
     }
@@ -93,75 +91,87 @@ public class IndGraph {
         int referencedIndex = getCandidateIndex(getReferenced(ind));
         if (getCandidateIndex(getDependant(ind)) < getCandidateIndex(getReferenced(ind))) {
             // Find all nodes A_k, k > i with path to node A_i
-            addKeyIfNotIn(toEdges, getDependant(ind));
             ImmutableList<ColumnIdentifier> toDependant = toEdges.get(getDependant(ind)).stream()
                     .filter(column -> getCandidateIndex(column) > dependantIndex)
-                    .collect(collectingAndThen(toList(), ImmutableList::copyOf));
+                    .collect(toImmutableList());
             // Find all nodes A_l, l > i reachable from node A_j
-            addKeyIfNotIn(fromEdges, getReferenced(ind));
             ImmutableList<ColumnIdentifier> fromReferenced = fromEdges.get(getReferenced(ind)).stream()
                     .filter(column -> getCandidateIndex(column) > dependantIndex)
-                    .collect(collectingAndThen(toList(), ImmutableList::copyOf));
+                    .collect(toImmutableList());
 
             // Delete tests A_i -> A_l with l > i in list A_i
-            tests.get(getDependant(ind)).removeIf(indTest -> getDependant(ind).equals(getDependant(indTest)) &&
-                        getCandidateIndex(getReferenced(indTest)) > getCandidateIndex(getReferenced(ind)));
+            tests.get(getDependant(ind)).forEach(indTest -> {
+                if (fromReferenced.contains(getReferenced(indTest.getTest())) &&
+                        getCandidateIndex(getReferenced(indTest.getTest())) > getCandidateIndex(getDependant(ind))) {
+                    indTest.setDeleted(true);
+                }
+            });
 
             // Delete tests A_k -> A_l with k < l in lists A_k
             for (ColumnIdentifier node : toDependant) {
                 int nodeIndex = getCandidateIndex(node);
-                tests.get(node).removeIf(indTest -> node.equals(getDependant(indTest)) &&
-                        nodeIndex < getCandidateIndex(getReferenced(indTest)));
+                tests.get(node).forEach(indTest -> {
+                    if (node.equals(getDependant(indTest.getTest())) &&
+                            nodeIndex < getCandidateIndex(getReferenced(indTest.getTest()))) {
+                        indTest.setDeleted(true);
+                    }
+                });
             }
 
             // Delete tests A_l -> A_k with k > l in lists A_l
             for (ColumnIdentifier node: fromReferenced) {
                 int nodeIndex = getCandidateIndex(node);
-                tests.get(node).removeIf(indTest -> node.equals(getDependant(indTest)) &&
-                        nodeIndex > getCandidateIndex(getReferenced(indTest)));
+                tests.get(node).forEach(indTest -> {
+                    if (node.equals(getDependant(indTest.getTest())) &&
+                            nodeIndex > getCandidateIndex(getReferenced(indTest.getTest()))) {
+                        indTest.setDeleted(true);
+                    }
+                });
             }
         } else {
             // Find all nodes A_k, k > j with path to node A_i
-            addKeyIfNotIn(toEdges, getDependant(ind));
             ImmutableList<ColumnIdentifier> toDependant = toEdges.get(getDependant(ind)).stream()
                     .filter(column -> getCandidateIndex(column) > referencedIndex)
-                    .collect(collectingAndThen(toList(), ImmutableList::copyOf));
+                    .collect(toImmutableList());
             // Find all nodes A_l, l > j reachable from node A_j
-            addKeyIfNotIn(fromEdges, getReferenced(ind));
             ImmutableList<ColumnIdentifier> fromReferenced = fromEdges.get(getReferenced(ind)).stream()
                     .filter(column -> getCandidateIndex(column) > referencedIndex)
-                    .collect(collectingAndThen(toList(), ImmutableList::copyOf));
+                    .collect(toImmutableList());
 
             // Delete tests A_k -> A_j with k > i in list A_j
-            tests.get(getReferenced(ind)).removeIf(indTest -> getReferenced(ind).equals(getReferenced(indTest)) &&
-                    getCandidateIndex(getDependant(indTest)) > dependantIndex);
+            tests.get(getReferenced(ind)).forEach(indTest -> {
+                if (toDependant.contains(getDependant(indTest.getTest())) &&
+                        getCandidateIndex(getDependant(indTest.getTest())) > dependantIndex) {
+                    indTest.setDeleted(true);
+                }
+            });
 
             // Delete tests A_k -> A_l with k < l in lists A_k
             for (ColumnIdentifier node : toDependant) {
                 int nodeIndex = getCandidateIndex(node);
-                tests.get(node).removeIf(indTest -> node.equals(getDependant(indTest)) &&
-                        nodeIndex < getCandidateIndex(getReferenced(indTest)));
+                tests.get(node).forEach(indTest -> {
+                    if (node.equals(getDependant(indTest.getTest())) &&
+                            nodeIndex < getCandidateIndex(getReferenced(indTest.getTest()))) {
+                        indTest.setDeleted(true);
+                    }
+                });
             }
 
             // Delete tests A_k -> A_l with k > l in lists A_l
             for (ColumnIdentifier node : fromReferenced) {
                 int nodeIndex = getCandidateIndex(node);
-                tests.get(node).removeIf(indTest -> node.equals(getDependant(indTest)) &&
-                        nodeIndex > getCandidateIndex(getReferenced(indTest)));
+                tests.get(node).forEach(indTest -> {
+                    if (node.equals(getDependant(indTest.getTest())) &&
+                            nodeIndex > getCandidateIndex(getReferenced(indTest.getTest()))) {
+                        indTest.setDeleted(true);
+                    }
+                });
             }
-        }
-    }
-
-    private void addKeyIfNotIn(Map<ColumnIdentifier, Set<ColumnIdentifier>> m, ColumnIdentifier c) {
-        if(!m.containsKey(c)) {
-            m.put(c, new HashSet<>());
         }
     }
 
     private void insertEdge(final ColumnIdentifier dependant, final ColumnIdentifier referenced)
             throws ColumnNameMismatchException, CouldNotReceiveResultException {
-        addKeyIfNotIn(fromEdges, dependant);
-        addKeyIfNotIn(toEdges, referenced);
         fromEdges.get(dependant).add(referenced);
         toEdges.get(referenced).add(dependant);
         resultReceiver.receiveResult(toInd(dependant, referenced));
@@ -182,7 +192,7 @@ public class IndGraph {
     }
 
     private InclusionDependency toInd(final ColumnIdentifier dependant, final ColumnIdentifier referenced) {
-        return new InclusionDependency(new ColumnPermutation(referenced), new ColumnPermutation(dependant));
+        return new InclusionDependency(new ColumnPermutation(dependant), new ColumnPermutation(referenced));
     }
 
     private ColumnIdentifier getReferenced(final InclusionDependency ind) {
