@@ -12,7 +12,6 @@ import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnCombination;
-import de.metanome.backend.input.database.DefaultTableInputGeneratorWrapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +36,7 @@ class Mind {
     int depth = 1;
     while(candidates.size() > 0) {
 
-      List<ColumnPermutation[]> inds = genLevel1Candidates();
+      List<ColumnPermutation[]> inds = new ArrayList<ColumnPermutation[]>();
       for (ColumnPermutation[] candidate : candidates) {
         ColumnPermutation lhs = candidate[0];
         ColumnPermutation rhs = candidate[1];
@@ -77,7 +76,7 @@ class Mind {
   private List<ColumnPermutation[]> genNextLevelCandidates(List<ColumnPermutation[]> previous) {
     List<ColumnPermutation[]> candidates = new ArrayList<ColumnPermutation[]>();
     for(int index1 = 0; index1 < previous.size(); index1++){
-      for(int index2 = 0; index2 < previous.size(); index2++){
+      for(int index2 = index1+1; index2 < previous.size(); index2++){
 
         if(samePrefix(previous.get(index1)[0], previous.get(index2)[0]) &&
             samePrefix(previous.get(index1)[1], previous.get(index2)[1]) &&
@@ -131,6 +130,7 @@ class Mind {
         return false;
       }
     }
+
     return true;
   }
 
@@ -145,7 +145,7 @@ class Mind {
     List<ColumnIdentifier> col1Identifiers = columnPermutation1.getColumnIdentifiers();
     List<ColumnIdentifier> col2Identifiers = columnPermutation2.getColumnIdentifiers();
 
-    for(int index = 0; index < col1Identifiers.size()-2; index++){
+    for(int index = 0; index < col1Identifiers.size()-1; index++){
       if(col1Identifiers.get(index) != col2Identifiers.get(index)){
         return false;
       }
