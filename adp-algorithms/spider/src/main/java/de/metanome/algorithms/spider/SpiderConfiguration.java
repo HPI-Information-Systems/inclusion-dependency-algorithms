@@ -1,5 +1,6 @@
 package de.metanome.algorithms.spider;
 
+import de.metanome.algorithm_integration.algorithm_execution.FileGenerator;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
@@ -12,8 +13,7 @@ import lombok.Singular;
 @Builder
 class SpiderConfiguration {
 
-  private final String temporaryFolderPath;
-  private final boolean clearTemporaryFolder;
+  private final FileGenerator tempFileGenerator;
   private final InclusionDependencyResultReceiver resultReceiver;
 
   private final int inputRowLimit;

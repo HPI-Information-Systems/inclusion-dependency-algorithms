@@ -10,6 +10,7 @@ import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.FileGeneratorFake;
 import de.metanome.util.RelationalInputStub;
 import de.metanome.util.Row;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +32,6 @@ class SpiderTest {
   @Captor
   private ArgumentCaptor<InclusionDependency> ind;
 
-
   private RelationalInput input;
   private SpiderConfiguration configuration;
 
@@ -49,7 +49,7 @@ class SpiderTest {
     given(generator.generateNewCopy()).willReturn(input);
 
     configuration = SpiderConfiguration.builder()
-        .clearTemporaryFolder(true)
+        .tempFileGenerator(new FileGeneratorFake())
         .resultReceiver(resultReceiver)
         .inputRowLimit(-1)
         .maxMemoryUsage(1024)
