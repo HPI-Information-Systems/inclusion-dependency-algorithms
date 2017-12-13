@@ -27,6 +27,7 @@ class Mind {
   protected List<String> relationNames;
 
   protected List<TableInfo> tables;
+  List<ColumnPermutation[]> results = new ArrayList<ColumnPermutation[]>();
 
   void execute(final Configuration configuration) throws AlgorithmExecutionException{
     this.configuration = configuration;
@@ -34,8 +35,8 @@ class Mind {
     List<ColumnPermutation[]> candidates = genLevel1Candidates();
 
     int depth = 1;
-    while(candidates.size() > 0) {
 
+    while(candidates.size() > 0) {
       List<ColumnPermutation[]> inds = new ArrayList<ColumnPermutation[]>();
       for (ColumnPermutation[] candidate : candidates) {
         ColumnPermutation lhs = candidate[0];
@@ -43,6 +44,7 @@ class Mind {
         if (isInd(lhs, rhs, depth)) {
           InclusionDependency ind = new InclusionDependency(lhs, rhs);
           configuration.getResultReceiver().receiveResult(ind);
+          results.add(candidate);
           inds.add(candidate);
         }
       }
@@ -72,7 +74,6 @@ class Mind {
     return candidates;
   }
 
-  // TODO ensure that no duplicates are created.
   private List<ColumnPermutation[]> genNextLevelCandidates(List<ColumnPermutation[]> previous) {
     List<ColumnPermutation[]> candidates = new ArrayList<ColumnPermutation[]>();
     for(int index1 = 0; index1 < previous.size(); index1++){
@@ -103,7 +104,6 @@ class Mind {
           candidate[0].setColumnIdentifiers(colIdsLHS);
           candidate[1].setColumnIdentifiers(colIdsRHS);
           if(notToPrune(candidate) && isNotDoublon(candidate)){
-            System.out.println(candidate[0].toString() +" -> "+ candidate[1].toString());
             candidates.add(candidate);
           }
         }
@@ -112,8 +112,22 @@ class Mind {
     return candidates;
   }
 
-  // TODO implement
   private boolean notToPrune(ColumnPermutation[] candidate){
+    for(int index = 0; index < candidate[0].getColumnIdentifiers().size(); index++){
+      List<ColumnIdentifier> lhs = new ArrayList<ColumnIdentifier>(candidate[0].getColumnIdentifiers());
+      List<ColumnIdentifier> rhs = new ArrayList<ColumnIdentifier>(candidate[1].getColumnIdentifiers());
+      lhs.remove(index);
+      rhs.remove(index);
+      boolean is_included = false;
+      for(ColumnPermutation[] ind : this.results){
+        if(ind[0].getColumnIdentifiers().equals(lhs) && ind[1].getColumnIdentifiers().equals(rhs)) {
+          is_included = true;
+          break;
+        }
+      }
+      if(!is_included)
+        return is_included;
+    }
     return true;
   }
 
