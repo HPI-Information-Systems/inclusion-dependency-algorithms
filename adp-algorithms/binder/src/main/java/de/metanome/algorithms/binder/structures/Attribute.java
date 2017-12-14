@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import de.uni_potsdam.hpi.utils.DatabaseUtils;
+import de.metanome.algorithms.binder.utils.DatabaseUtils;
 
 public class Attribute implements Comparable<Attribute> {
 

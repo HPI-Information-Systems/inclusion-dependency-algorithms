@@ -4,9 +4,6 @@ dependencies {
         transitive = false
     }
 
-    compile 'de.uni-potsdam.hpi:utils:0.0.1-SNAPSHOT'
-    compile 'de.uni-potsdam.hpi:dao:0.0.1-SNAPSHOT'
-
     testCompile project(path: ':util', configuration: 'tests')
 }
 

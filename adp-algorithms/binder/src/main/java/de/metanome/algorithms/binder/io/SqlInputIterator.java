@@ -10,8 +10,8 @@ import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.input.InputIterationException;
-import de.uni_potsdam.hpi.dao.DataAccessObject;
-import de.uni_potsdam.hpi.utils.DatabaseUtils;
+import de.metanome.algorithms.binder.dao.DataAccessObject;
+import de.metanome.algorithms.binder.utils.DatabaseUtils;
 
 public class SqlInputIterator implements InputIterator {
 	
@@ -21,7 +21,7 @@ public class SqlInputIterator implements InputIterator {
 	public SqlInputIterator(DatabaseConnectionGenerator inputGenerator, DataAccessObject dao, String tableName, int inputRowLimit) throws InputGenerationException, AlgorithmConfigurationException {
 		this.resultSet = inputGenerator.generateResultSetFromSql(dao.buildSelectEverythingQuery(tableName, inputRowLimit));
 	}
-	
+
 	@Override
 	public boolean next() throws InputIterationException {
 		try {

@@ -3,7 +3,7 @@ package de.metanome.algorithms.binder.structures;
 import java.util.Arrays;
 import java.util.List;
 
-import de.uni_potsdam.hpi.utils.CollectionUtils;
+import de.metanome.algorithms.binder.utils.CollectionUtils;
 
 public class AttributeCombination implements Comparable<AttributeCombination> {
 
