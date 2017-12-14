@@ -1,9 +1,6 @@
 package de.metanome.algorithms.binder;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -44,11 +41,10 @@ import de.metanome.algorithms.binder.structures.IntSingleLinkedList;
 import de.metanome.algorithms.binder.structures.IntSingleLinkedList.ElementIterator;
 import de.metanome.algorithms.binder.structures.Level;
 import de.metanome.algorithms.binder.structures.PruningStatistics;
-import de.uni_potsdam.hpi.dao.DataAccessObject;
-import de.uni_potsdam.hpi.utils.CollectionUtils;
-import de.uni_potsdam.hpi.utils.DatabaseUtils;
-import de.uni_potsdam.hpi.utils.FileUtils;
-import de.uni_potsdam.hpi.utils.LoggingUtils;
+import de.metanome.algorithms.binder.utils.CollectionUtils;
+import de.metanome.algorithms.binder.utils.DatabaseUtils;
+import de.metanome.algorithms.binder.utils.FileUtils;
+import de.metanome.algorithms.binder.dao.DataAccessObject;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntIterator;
@@ -187,7 +183,7 @@ public class Binder {
 
 	public void execute() throws AlgorithmExecutionException {
 		// Disable Logging (FastSet sometimes complains about skewed key distributions with lots of WARNINGs)
-		LoggingUtils.disableLogging();
+		//LoggingUtils.disableLogging();
 		
 		try {
 			////////////////////////////////////////////////////////
@@ -266,12 +262,12 @@ public class Binder {
 		this.columnTypes = new ArrayList<>();
 		
 		for (int tableIndex = 0; tableIndex < this.tableNames.length; tableIndex++) {
+			this.numColumnsPerTable[tableIndex] = this.columnNames.size();
+
 			if (this.databaseConnectionGenerator != null)
 				this.collectStatisticsFrom(this.databaseConnectionGenerator, tableIndex);
 			else
 				this.collectStatisticsFrom(this.fileInputGenerator[tableIndex]);
-
-			this.numColumnsPerTable[tableIndex] = this.columnNames.size();
 		}
 		
 		this.numColumns = this.columnNames.size();
@@ -1711,7 +1707,8 @@ public class Binder {
 				
 				String refTableName = this.getTableNameFor(ref, this.numColumnsPerTable);
 				String refColumnName = this.columnNames.get(ref);
-				
+
+				System.out.print(refTableName + ": " + refColumnName + "\n");
 				this.resultReceiver.receiveResult(new InclusionDependency(new ColumnPermutation(new ColumnIdentifier(depTableName, depColumnName)), new ColumnPermutation(new ColumnIdentifier(refTableName, refColumnName))));
 				this.numUnaryINDs++;
 			}

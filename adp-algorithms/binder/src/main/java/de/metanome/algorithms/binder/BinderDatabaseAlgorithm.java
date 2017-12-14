@@ -17,11 +17,11 @@ import de.metanome.algorithm_integration.configuration.ConfigurationRequirementI
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementString;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
-import de.uni_potsdam.hpi.dao.DB2DataAccessObject;
-import de.uni_potsdam.hpi.dao.MySQLDataAccessObject;
-import de.uni_potsdam.hpi.dao.PostgreSQLDataAccessObject;
-import de.uni_potsdam.hpi.utils.CollectionUtils;
-import de.uni_potsdam.hpi.utils.FileUtils;
+import de.metanome.algorithms.binder.utils.CollectionUtils;
+import de.metanome.algorithms.binder.utils.FileUtils;
+import de.metanome.algorithms.binder.dao.DB2DataAccessObject;
+import de.metanome.algorithms.binder.dao.MySQLDataAccessObject;
+import de.metanome.algorithms.binder.dao.PostgreSQLDataAccessObject;
 
 public class BinderDatabaseAlgorithm extends Binder implements InclusionDependencyAlgorithm, DatabaseConnectionParameterAlgorithm, IntegerParameterAlgorithm, StringParameterAlgorithm, BooleanParameterAlgorithm {
 

@@ -19,8 +19,8 @@ import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
-import de.uni_potsdam.hpi.utils.CollectionUtils;
-import de.uni_potsdam.hpi.utils.FileUtils;
+import de.metanome.algorithms.binder.utils.CollectionUtils;
+import de.metanome.algorithms.binder.utils.FileUtils;
 
 public class BinderFileAlgorithm extends Binder implements InclusionDependencyAlgorithm, RelationalInputParameterAlgorithm, IntegerParameterAlgorithm, StringParameterAlgorithm, BooleanParameterAlgorithm {
 
