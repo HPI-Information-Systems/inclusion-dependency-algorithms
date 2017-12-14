@@ -57,7 +57,7 @@ import it.unimi.dsi.fastutil.ints.IntListIterator;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 // Bucketing IND ExtractoR (BINDER)
-public class BINDER {
+public class Binder {
 
 	protected DatabaseConnectionGenerator databaseConnectionGenerator = null;
 	protected RelationalInputGenerator[] fileInputGenerator = null;
