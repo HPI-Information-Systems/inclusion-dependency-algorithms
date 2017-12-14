@@ -43,12 +43,7 @@ public class Attribute implements Comparable<Attribute> {
 	
 	public void setValues(List<String> values) {
 		this.values = values;
-		Collections.sort(this.values, new Comparator<String>() {
-				@Override
-				public int compare(String first, String second) {
-					return first.compareTo(second) * (-1);
-				}
-			}); // Sort in reverse order to be able to remove values in reverse order that then results in a correct removal order
+		Collections.sort(this.values, (first, second) -> first.compareTo(second) * (-1)); // Sort in reverse order to be able to remove values in reverse order that then results in a correct removal order
 		this.nextValue();
 	}
 	
@@ -91,7 +86,7 @@ public class Attribute implements Comparable<Attribute> {
 	}
 	
 	private void removeDependent(int dependent) {
-		this.dependents.rem(dependent);
+		this.dependents.remove(dependent);
 	}
 	
 	public boolean isRunning() {

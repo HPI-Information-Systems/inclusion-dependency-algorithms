@@ -76,9 +76,7 @@ public class IntSingleLinkedList {
 	
 	private void initialize() {
 		if (this.seed != null) {
-			for (int value : this.seed)
-				if (value != this.except)
-					this.selfAdd(value);
+			this.seed.stream().filter(value -> value != this.except).forEach(this::selfAdd);
 			this.seed = null;
 		}
 	}
