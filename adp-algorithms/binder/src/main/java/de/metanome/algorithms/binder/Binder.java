@@ -72,7 +72,6 @@ public class Binder {
 	protected int maxMemoryUsagePercentage = 60; // The algorithm spills to disc if memory usage exceeds X% of available memory
 
 	private int numColumns;
-	private long availableMemory;
 	private long maxMemoryUsage;
 
 	private File tempFolder = null;
@@ -91,87 +90,75 @@ public class Binder {
 	private int numNaryINDs = 0;
 	
 	private BitSet nullValueColumns;
-	
-	private long unaryStatisticTime = -1;
-	private long unaryLoadTime = -1;
-	private long unaryCompareTime = -1;
-	private LongArrayList naryGenerationTime = null;
-	private LongArrayList naryLoadTime = null;
-	private LongArrayList naryCompareTime = null;
-	private long outputTime = -1;
 
-	private IntArrayList activeAttributesPerBucketLevel;
-	private IntArrayList naryActiveAttributesPerBucketLevel;
+	private LongArrayList naryGenerationTime = null;
+	private LongArrayList naryCompareTime = null;
+
+//	private IntArrayList activeAttributesPerBucketLevel; # TODO contents updated, but never queried
+//	private IntArrayList naryActiveAttributesPerBucketLevel; # TODO contents updated, but never queried
 	private int[] spillCounts = null;
-	private List<int[]> narySpillCounts = null;
 	private int[] refinements = null;
 	private List<int[]> naryRefinements = null;
 	private int[] bucketComparisonOrder = null;
 	private LongArrayList columnSizes = null;
-	
-	private PruningStatistics pruningStatistics = null;
+
+	//private PruningStatistics pruningStatistics = null;
 
 	@Override
 	public String toString() {
-		String input = "-";
-		if (this.databaseConnectionGenerator != null) 
-			input = this.databaseConnectionGenerator.getClass().getName();
-		else if (this.fileInputGenerator != null)
-			input = this.fileInputGenerator[0].getClass().getName() + " (" + this.fileInputGenerator.length + ")";
-		 
-		return "BINDER: \r\n\t" +
-				"input: " + input + "\r\n\t" +
-				"dao: " + ((this.dao != null) ? this.dao.getClass().getName() : "-") + "\r\n\t" +
-				"databaseName: " + this.databaseName + "\r\n\t" +
-				"inputRowLimit: " + this.inputRowLimit + "\r\n\t" +
-				"resultReceiver: " + ((this.resultReceiver != null) ? this.resultReceiver.getClass().getName() : "-") + "\r\n\t" +
-				"tempFolderPath: " + this.tempFolder.getPath() + "\r\n\t" +
-				"tableNames: " + ((this.tableNames != null) ? CollectionUtils.concat(this.tableNames, ", ") : "-") + "\r\n\t" +
-				"numColumns: " + this.numColumns + " (" + ((this.spillCounts != null) ? String.valueOf(CollectionUtils.countNotN(this.spillCounts, 0)) : "-") + " spilled)\r\n\t" +
-				"numBucketsPerColumn: " + this.numBucketsPerColumn + "\r\n\t" +
-				"bucketComparisonOrder: " + ((this.bucketComparisonOrder != null) ? CollectionUtils.concat(this.bucketComparisonOrder, ", ") : "-") + "\r\n\t" +
-				"memoryCheckFrequency: " + this.memoryCheckFrequency + "\r\n\t" +
-				"maxMemoryUsagePercentage: " + this.maxMemoryUsagePercentage + "%\r\n\t" +
-				"availableMemory: " + this.availableMemory + " byte (spilled when exceeding " + this.maxMemoryUsage + " byte)\r\n\t" +
-				"numBucketsPerColumn: " + this.numBucketsPerColumn + "\r\n\t" +
-				"memoryCheckFrequency: " + this.memoryCheckFrequency + "\r\n\t" +
-				"cleanTemp: " + this.cleanTemp + "\r\n\t" +
-				"detectNary: " + this.detectNary + "\r\n\t" +
-				"numUnaryINDs: " + this.numUnaryINDs + "\r\n\t" +
-				"numNaryINDs: " + this.numNaryINDs + "\r\n\t" +
-			"\r\n" +
-			"nullValueColumns: " + this.nullValueColumns.toString() +
-			"\r\n" +
-			((this.pruningStatistics != null) ? String.valueOf(this.pruningStatistics.getPrunedCombinations()) : "-") + " candidates pruned by statistical pruning\r\n\t" +
-			"\r\n" +
-			"columnSizes: " + ((this.columnSizes != null) ? CollectionUtils.concat(this.columnSizes, ", ") : "-") + "\r\n" +
-			"numEmptyColumns: " + ((this.columnSizes != null) ? String.valueOf(CollectionUtils.countN(this.columnSizes, 0)) : "-") + "\r\n" +
-			"\r\n" +
-			"activeAttributesPerBucketLevel: " + ((this.activeAttributesPerBucketLevel != null) ? CollectionUtils.concat(this.activeAttributesPerBucketLevel, ", ") : "-") + "\r\n" +	
-			"naryActiveAttributesPerBucketLevel: " + ((this.naryActiveAttributesPerBucketLevel == null) ? "-" : CollectionUtils.concat(this.naryActiveAttributesPerBucketLevel, ", ")) + "\r\n" +	
-			"\r\n" +
-			"spillCounts: " + ((this.spillCounts != null) ? CollectionUtils.concat(this.spillCounts, ", ") : "-") + "\r\n" +	
-			"narySpillCounts: " + ((this.narySpillCounts == null) ? "-" : CollectionUtils.concat(this.narySpillCounts, ", ", "\r\n")) + "\r\n" + 
-			"\r\n" +
-			"refinements: " + ((this.refinements != null) ? CollectionUtils.concat(this.refinements, ", ") : "-") + "\r\n" +	
-			"naryRefinements: " + ((this.naryRefinements == null) ? "-" : CollectionUtils.concat(this.naryRefinements, ", ", "\r\n")) + "\r\n" + 
-			"\r\n" +
-			"unaryStatisticTime: " + this.unaryStatisticTime + "\r\n" +
-			"unaryLoadTime: " + this.unaryLoadTime + "\r\n" +
-			"unaryCompareTime: " + this.unaryCompareTime + "\r\n" +
-			"naryGenerationTime: " + this.naryGenerationTime + "\r\n" +
-			"naryLoadTime: " + this.naryLoadTime + "\r\n" +
-			"naryCompareTime: " + this.naryCompareTime + "\r\n" +
-			"outputTime: " + this.outputTime;
+		return "it worked";
+//		String input = "-";
+//		if (this.databaseConnectionGenerator != null)
+//			input = this.databaseConnectionGenerator.getClass().getName();
+//		else if (this.fileInputGenerator != null)
+//			input = this.fileInputGenerator[0].getClass().getName() + " (" + this.fileInputGenerator.length + ")";
+//
+//		return "BINDER: \r\n\t" +
+//				"input: " + input + "\r\n\t" +
+//				"dao: " + ((this.dao != null) ? this.dao.getClass().getName() : "-") + "\r\n\t" +
+//				"databaseName: " + this.databaseName + "\r\n\t" +
+//				"inputRowLimit: " + this.inputRowLimit + "\r\n\t" +
+//				"resultReceiver: " + ((this.resultReceiver != null) ? this.resultReceiver.getClass().getName() : "-") + "\r\n\t" +
+//				"tempFolderPath: " + this.tempFolder.getPath() + "\r\n\t" +
+//				"tableNames: " + ((this.tableNames != null) ? CollectionUtils.concat(this.tableNames, ", ") : "-") + "\r\n\t" +
+//				"numColumns: " + this.numColumns + " (" + ((this.spillCounts != null) ? String.valueOf(CollectionUtils.countNotN(this.spillCounts, 0)) : "-") + " spilled)\r\n\t" +
+//				"numBucketsPerColumn: " + this.numBucketsPerColumn + "\r\n\t" +
+//				"bucketComparisonOrder: " + ((this.bucketComparisonOrder != null) ? CollectionUtils.concat(this.bucketComparisonOrder, ", ") : "-") + "\r\n\t" +
+//				"memoryCheckFrequency: " + this.memoryCheckFrequency + "\r\n\t" +
+//				"maxMemoryUsagePercentage: " + this.maxMemoryUsagePercentage + "%\r\n\t" +
+//				"availableMemory: " + this.availableMemory + " byte (spilled when exceeding " + this.maxMemoryUsage + " byte)\r\n\t" +
+//				"numBucketsPerColumn: " + this.numBucketsPerColumn + "\r\n\t" +
+//				"memoryCheckFrequency: " + this.memoryCheckFrequency + "\r\n\t" +
+//				"cleanTemp: " + this.cleanTemp + "\r\n\t" +
+//				"detectNary: " + this.detectNary + "\r\n\t" +
+//				"numUnaryINDs: " + this.numUnaryINDs + "\r\n\t" +
+//				"numNaryINDs: " + this.numNaryINDs + "\r\n\t" +
+//			"\r\n" +
+//			"nullValueColumns: " + this.nullValueColumns.toString() +
+//			"\r\n" +
+//			((this.pruningStatistics != null) ? String.valueOf(this.pruningStatistics.getPrunedCombinations()) : "-") + " candidates pruned by statistical pruning\r\n\t" +
+//			"\r\n" +
+//			"columnSizes: " + ((this.columnSizes != null) ? CollectionUtils.concat(this.columnSizes, ", ") : "-") + "\r\n" +
+//			"numEmptyColumns: " + ((this.columnSizes != null) ? String.valueOf(CollectionUtils.countN(this.columnSizes, 0)) : "-") + "\r\n" +
+//			"\r\n" +
+//			"activeAttributesPerBucketLevel: " + ((this.activeAttributesPerBucketLevel != null) ? CollectionUtils.concat(this.activeAttributesPerBucketLevel, ", ") : "-") + "\r\n" +
+//			"naryActiveAttributesPerBucketLevel: " + ((this.naryActiveAttributesPerBucketLevel == null) ? "-" : CollectionUtils.concat(this.naryActiveAttributesPerBucketLevel, ", ")) + "\r\n" +
+//			"\r\n" +
+//			"spillCounts: " + ((this.spillCounts != null) ? CollectionUtils.concat(this.spillCounts, ", ") : "-") + "\r\n" +
+//			"narySpillCounts: " + ((this.narySpillCounts == null) ? "-" : CollectionUtils.concat(this.narySpillCounts, ", ", "\r\n")) + "\r\n" +
+//			"\r\n" +
+//			"refinements: " + ((this.refinements != null) ? CollectionUtils.concat(this.refinements, ", ") : "-") + "\r\n" +
+//			"naryRefinements: " + ((this.naryRefinements == null) ? "-" : CollectionUtils.concat(this.naryRefinements, ", ", "\r\n")) + "\r\n" +
+//			"\r\n" +
+//			"unaryStatisticTime: " + this.unaryStatisticTime + "\r\n" +
+//			"unaryLoadTime: " + this.unaryLoadTime + "\r\n" +
+//			"unaryCompareTime: " + this.unaryCompareTime + "\r\n" +
+//			"naryGenerationTime: " + this.naryGenerationTime + "\r\n" +
+//			"naryLoadTime: " + this.naryLoadTime + "\r\n" +
+//			"naryCompareTime: " + this.naryCompareTime + "\r\n" +
+//			"outputTime: " + this.outputTime;
 	}
-	
-//	private String toString(OpenBitSet o) {
-//		StringBuilder builder = new StringBuilder("[");
-//		for (int i = 0; i < o.length(); i++)
-//			builder.append((o.get(i)) ? 1 : 0);
-//		builder.append("]");
-//		return builder.toString();
-//	}
+
 
 	protected String getAuthorName() {
 		return "Maxi Fischer, Axel Stebner";
@@ -189,26 +176,26 @@ public class Binder {
 			////////////////////////////////////////////////////////
 			// Phase 0: Initialization (Collect basic statistics) //
 			////////////////////////////////////////////////////////
-			this.unaryStatisticTime = System.currentTimeMillis();
+			long unaryStatisticTime = System.currentTimeMillis();
 			this.initialize();
-			this.unaryStatisticTime = System.currentTimeMillis() - this.unaryStatisticTime;
+			unaryStatisticTime = System.currentTimeMillis() - unaryStatisticTime;
 
 			//////////////////////////////////////////////////////
 			// Phase 1: Bucketing (Create and fill the buckets) //
 			//////////////////////////////////////////////////////
-			this.unaryLoadTime = System.currentTimeMillis();
+			long unaryLoadTime = System.currentTimeMillis();
 			this.bucketize();
-			this.unaryLoadTime = System.currentTimeMillis() - this.unaryLoadTime;
+			unaryLoadTime = System.currentTimeMillis() - unaryLoadTime;
 
 			//////////////////////////////////////////////////////
 			// Phase 2: Checking (Check INDs using the buckets) //
 			//////////////////////////////////////////////////////
-			this.unaryCompareTime = System.currentTimeMillis();
+			long unaryCompareTime = System.currentTimeMillis();
 			//this.checkViaHashing();
 			//this.checkViaSorting();
 			//this.checkViaTwoStageIndexAndBitSets();
 			this.checkViaTwoStageIndexAndLists();
-			this.unaryCompareTime = System.currentTimeMillis() - this.unaryCompareTime;
+			unaryCompareTime = System.currentTimeMillis() - unaryCompareTime;
 
 			/////////////////////////////////////////////////////////
 			// Phase 3: N-ary IND detection (Find INDs of size > 1 //
@@ -220,9 +207,9 @@ public class Binder {
 			//////////////////////////////////////////////////////
 			// Phase 4: Output (Return and/or write the results //
 			//////////////////////////////////////////////////////
-			this.outputTime = System.currentTimeMillis();
+			long outputTime = System.currentTimeMillis();
 			this.output();
-			this.outputTime = System.currentTimeMillis() - this.outputTime;
+			outputTime = System.currentTimeMillis() - outputTime;
 			
 			System.out.println(this.toString());
 			System.out.println();
@@ -253,8 +240,8 @@ public class Binder {
 		FileUtils.cleanDirectory(this.tempFolder);
 		
 		// Initialize memory management
-		this.availableMemory = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
-		this.maxMemoryUsage = (long)(this.availableMemory * (this.maxMemoryUsagePercentage / 100.0f));
+		long availableMemory = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
+		this.maxMemoryUsage = (long)(availableMemory * (this.maxMemoryUsagePercentage / 100.0f));
 		
 		// Query meta data for input tables
 		this.numColumnsPerTable = new int[this.tableNames.length];
@@ -272,7 +259,7 @@ public class Binder {
 		
 		this.numColumns = this.columnNames.size();
 
-		this.activeAttributesPerBucketLevel = new IntArrayList(this.numBucketsPerColumn);
+		//this.activeAttributesPerBucketLevel = new IntArrayList(this.numBucketsPerColumn);
 		
 		this.spillCounts = new int[this.numColumns];
 		for (int columnNumber = 0; columnNumber < this.numColumns; columnNumber++)
@@ -284,7 +271,7 @@ public class Binder {
 		
 		this.nullValueColumns = new BitSet(this.columnNames.size());
 		
-		this.pruningStatistics = new PruningStatistics(this.numColumns, this.numBucketsPerColumn);
+		//this.pruningStatistics = new PruningStatistics(this.numColumns, this.numBucketsPerColumn);
 		
 		// Build an index that assigns the columns to their tables, because the n-ary detection can only group those attributes that belong to the same table and the foreign key detection also only groups attributes from different tables.
 		this.column2table = new int[this.numColumns];
@@ -482,16 +469,16 @@ public class Binder {
 					continue;
 				
 				// c1 > c2 ?
-				if (this.pruningStatistics.isValid(c2, c1)) {
-					refCounts[c1] = refCounts[c1] + 1;
-					this.dep2ref.get(c2).add(c1);
-				}
+				//if (this.pruningStatistics.isValid(c2, c1)) {
+				//	refCounts[c1] = refCounts[c1] + 1;
+				//	this.dep2ref.get(c2).add(c1);
+				//}
 				
 				// c2 > c1 ?
-				if (this.pruningStatistics.isValid(c1, c2)) {
-					refCounts[c2] = refCounts[c2] + 1;
-					this.dep2ref.get(c1).add(c2);
-				}
+				//if (this.pruningStatistics.isValid(c1, c2)) {
+				//	refCounts[c2] = refCounts[c2] + 1;
+				//	this.dep2ref.get(c1).add(c2);
+				//}
 			}
 		}
 		
@@ -555,7 +542,7 @@ public class Binder {
 		IntArrayList activeAttributes = new IntArrayList(this.numColumns);
 		
 		for (int globalColumnIndex = 0; globalColumnIndex < this.numColumns; globalColumnIndex++) {
-			Attribute attribute = new Attribute(globalColumnIndex, this.columnTypes, this.pruningStatistics);
+			Attribute attribute = new Attribute(globalColumnIndex, this.columnTypes);
 			attributeId2attributeObject.put(globalColumnIndex, attribute);
 			
 			if (!attribute.isPruneable())
@@ -567,7 +554,7 @@ public class Binder {
 			// Refine the current bucket level if it does not fit into memory at once
 			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, bucketNumber);
 			for (int subBucketNumber : subBucketNumbers) {
-				this.activeAttributesPerBucketLevel.add(activeAttributes.size());
+				//this.activeAttributesPerBucketLevel.add(activeAttributes.size());
 				if (activeAttributes.isEmpty())
 					break;
 				
@@ -665,7 +652,7 @@ public class Binder {
 			for (int subBucketNumber : subBucketNumbers) {
 				// Identify all currently active attributes
 				activeAttributes = this.getActiveAttributesFromBitSets(activeAttributes, attribute2Refs);
-				this.activeAttributesPerBucketLevel.add(activeAttributes.cardinality());
+				//this.activeAttributesPerBucketLevel.add(activeAttributes.cardinality());
 				if (activeAttributes.isEmpty())
 					break levelloop;
 				
@@ -771,7 +758,7 @@ public class Binder {
 			for (int subBucketNumber : subBucketNumbers) {
 				// Identify all currently active attributes
 				activeAttributes = this.getActiveAttributesFromLists(activeAttributes, attribute2Refs);
-				this.activeAttributesPerBucketLevel.add(activeAttributes.cardinality());
+				//this.activeAttributesPerBucketLevel.add(activeAttributes.cardinality());
 				if (activeAttributes.isEmpty())
 					break levelloop;
 				
@@ -1119,8 +1106,8 @@ public class Binder {
 		int naryOffset = this.numColumns;
 
 		// Initialize counters
-		this.naryActiveAttributesPerBucketLevel = new IntArrayList();
-		this.narySpillCounts = new ArrayList<>();
+		//this.naryActiveAttributesPerBucketLevel = new IntArrayList();
+		List<int[]> narySpillCounts = new ArrayList<>();
 		this.naryRefinements = new ArrayList<>();
 		
 		// Initialize nPlusOneAryDep2ref with unary dep2ref
@@ -1142,7 +1129,7 @@ public class Binder {
 		// Generate, bucketize and test the n-ary INDs level-wise
 		this.naryDep2ref = new HashMap<>();
 		this.naryGenerationTime = new LongArrayList();
-		this.naryLoadTime = new LongArrayList();
+		LongArrayList naryLoadTime = new LongArrayList();
 		this.naryCompareTime = new LongArrayList();
 		while (++naryLevel <= this.maxNaryLevel || this.maxNaryLevel <= 0) {
 			System.out.print(" L" + naryLevel);
@@ -1167,7 +1154,7 @@ public class Binder {
 			int[] currentNarySpillCounts = new int[attributeCombinations.size()];
 			for (int attributeCombinationNumber = 0; attributeCombinationNumber < attributeCombinations.size(); attributeCombinationNumber++)
 				currentNarySpillCounts[attributeCombinationNumber] = 0;
-			this.narySpillCounts.add(currentNarySpillCounts);
+			narySpillCounts.add(currentNarySpillCounts);
 			
 			int[] currentNaryRefinements = new int[this.numBucketsPerColumn];
 			for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++)
@@ -1179,7 +1166,7 @@ public class Binder {
 			// Read the input dataset again and bucketize all attribute combinations that are refs or deps
 			long naryLoadTimeCurrent = System.currentTimeMillis();
 			this.naryBucketize(attributeCombinations, naryOffset, currentNarySpillCounts);
-			this.naryLoadTime.add(System.currentTimeMillis() - naryLoadTimeCurrent);
+			naryLoadTime.add(System.currentTimeMillis() - naryLoadTimeCurrent);
 			
 			// Check the n-ary IND candidates
 			long naryCompareTimeCurrent = System.currentTimeMillis();
@@ -1621,7 +1608,7 @@ public class Binder {
 			for (int subBucketNumber : subBucketNumbers) {
 				// Identify all currently active attributes
 				activeAttributeCombinations = this.getActiveAttributeCombinations(activeAttributeCombinations, naryDep2ref, attributeCombinations);
-				this.naryActiveAttributesPerBucketLevel.add(activeAttributeCombinations.cardinality());
+				//this.naryActiveAttributesPerBucketLevel.add(activeAttributeCombinations.cardinality());
 				if (activeAttributeCombinations.isEmpty())
 					break levelloop;
 				
@@ -1690,7 +1677,7 @@ public class Binder {
 		List<AttributeCombination> attributeCombinationGroup = new ArrayList<>(attributeCombinationGroupIndexes.size());
 		attributeCombinationGroup.addAll(attributeCombinationGroupIndexes.stream().map(attributeCombinations::get).collect(Collectors.toList()));
 
-		attributeCombinationGroup.stream().filter(attributeCombination -> naryDep2ref.containsKey(attributeCombination)).forEach(attributeCombination -> naryDep2ref.get(attributeCombination).retainAll(attributeCombinationGroup));
+		attributeCombinationGroup.stream().filter(naryDep2ref::containsKey).forEach(attributeCombination -> naryDep2ref.get(attributeCombination).retainAll(attributeCombinationGroup));
 	}
 	
 	private void output() throws CouldNotReceiveResultException, ColumnNameMismatchException {

@@ -20,11 +20,11 @@ public class Attribute implements Comparable<Attribute> {
 	private IntLinkedOpenHashSet dependents;
 
 	public Attribute(int attributeId, List<String> attributeTypes, List<String> values, PruningStatistics pruningStatistics) {
-		this(attributeId, attributeTypes, pruningStatistics);
+		this(attributeId, attributeTypes); // , pruningStatistics
 		this.setValues(values);
 	}
 	
-	public Attribute(int attributeId, List<String> attributeTypes, PruningStatistics pruningStatistics) {
+	public Attribute(int attributeId, List<String> attributeTypes) {//PruningStatistics pruningStatistics) {
 		this.attributeId = attributeId;
 		
 		int numAttributes = attributeTypes.size();
@@ -33,9 +33,9 @@ public class Attribute implements Comparable<Attribute> {
 		
 		for (int i = 0; i < numAttributes; i++) {
 			if ((i != this.attributeId) && (DatabaseUtils.matchSameDataTypeClass(attributeTypes.get(i), attributeTypes.get(this.attributeId)))) {
-				if (pruningStatistics.isValid(i, this.attributeId))
+				//if (pruningStatistics.isValid(i, this.attributeId))
 					this.dependents.add(i);
-				if (pruningStatistics.isValid(this.attributeId, i))
+				//if (pruningStatistics.isValid(this.attributeId, i))
 					this.referenced.add(i);
 			}
 		}
