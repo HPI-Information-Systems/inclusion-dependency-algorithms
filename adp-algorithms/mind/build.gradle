@@ -4,6 +4,10 @@ dependencies {
         transitive = false
     }
 
+    extraLibs(project(':validation-strategies')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
+    }
+
     extraLibs(project(':demarchi')) {
         transitive = false
     }

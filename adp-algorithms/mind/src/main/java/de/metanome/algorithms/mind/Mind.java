@@ -1,6 +1,5 @@
 package de.metanome.algorithms.mind;
 
-
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
@@ -9,13 +8,10 @@ import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import de.metanome.validation.ValidationStrategy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-
 
 class Mind {
 
@@ -24,6 +20,12 @@ class Mind {
 
   private List<TableInfo> tables;
   private final List<ColumnPermutation[]> results = new ArrayList<>();
+
+  private final ValidationStrategy validationStrategy;
+
+  Mind(final ValidationStrategy validationStrategy) {
+    this.validationStrategy = validationStrategy;
+  }
 
   void execute(final Configuration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
@@ -182,98 +184,6 @@ class Mind {
   }
 
   private boolean isInd(final ColumnPermutation lhs, final ColumnPermutation rhs, int depth) {
-    try {
-      String query = "";
-      if (depth == 1) {
-        query = indTestQueryNotIn(lhs, rhs);
-      } else {
-        query = indTestQueryNotExists(lhs, rhs);
-      }
-      ResultSet result = configuration.getDatabaseConnectionGenerator()
-          .generateResultSetFromSql(query);
-      result.next();
-
-      return result.getInt("result") == 0;
-
-    } catch (SQLException se) {
-      //Handle errors for JDBC
-      se.printStackTrace();
-    } catch (Exception e) {
-      //Handle errors for Class.forName
-      e.printStackTrace();
-    }
-    return false;
+    return validationStrategy.validate(new InclusionDependency(lhs, rhs)).isValid();
   }
-
-  // select count(*) as result from (SELECT test.a FROM test where test.a NOT IN (SELECT test.c FROM test)) as d
-  // Does not work with mysql for n-ary inds
-  private String indTestQueryNotIn(ColumnPermutation lhs, ColumnPermutation rhs) {
-    String strQuery = "SELECT count(*) as result FROM ";
-    strQuery += "(SELECT ";
-    strQuery += lhs.getColumnIdentifiers().stream()
-        .map(ColumnIdentifier::toString)
-        .collect(Collectors.joining(", "));
-    strQuery += " FROM ";
-    //strQuery += lhs.getColumnIdentifiers().stream()
-    //    .map(ColumnIdentifier::getTableIdentifier)
-    //    .collect(Collectors.joining(", "));
-    strQuery += this.relationNames.stream()
-        .collect(Collectors.joining(", "));
-    strQuery += " WHERE ( ";
-    strQuery += lhs.getColumnIdentifiers().stream()
-        .map(ColumnIdentifier::toString)
-        .collect(Collectors.joining(" IS NOT NULL AND "));
-    strQuery += " IS NOT NULL) AND ";
-    strQuery += lhs.getColumnIdentifiers().stream()
-        .map(ColumnIdentifier::toString)
-        .collect(Collectors.joining(", "));
-    strQuery += " NOT IN (SELECT ";
-    strQuery += rhs.getColumnIdentifiers().stream()
-        .map(ColumnIdentifier::toString)
-        .collect(Collectors.joining(", "));
-    strQuery += " FROM ";
-    strQuery += this.relationNames.stream()
-        .collect(Collectors.joining(", "));
-    strQuery += ")) as indCheck";
-
-    return strQuery;
-  }
-
-  // SELECT * From test, test_copy where test.a is not null and test.c and test_copy.a is not null and test_copy.c is not null and
-  // not exists (
-  // SELECT test.a, test.b, test_copy.a, test_copy.b FROM test WHERE test.a = test_copy.a and test.b = test_copy.b) LIMIT 1
-  // select count(*) as result from (SELECT test.a FROM test where test.a NOT IN (SELECT test.c FROM test)) as d
-  // Does not work with mysql for unary-ary inds.
-  private String indTestQueryNotExists(ColumnPermutation lhs, ColumnPermutation rhs) {
-    String strQuery = "SELECT count(*) as result FROM ";
-    strQuery += this.relationNames.stream()
-        .collect(Collectors.joining(", "));
-    strQuery += " WHERE ";
-    strQuery += lhs.getColumnIdentifiers().stream()
-        .map(ColumnIdentifier::toString)
-        .collect(Collectors.joining(" IS NOT NULL AND "));
-    strQuery += " IS NOT NULL AND NOT EXISTS (SELECT ";
-    strQuery += lhs.getColumnIdentifiers().stream()
-        .map(ColumnIdentifier::toString)
-        .collect(Collectors.joining(", "));
-    strQuery += ", ";
-    strQuery += rhs.getColumnIdentifiers().stream()
-        .map(ColumnIdentifier::toString)
-        .collect(Collectors.joining(", "));
-    strQuery += " FROM ";
-    strQuery += this.relationNames.stream()
-        .collect(Collectors.joining(", "));
-    strQuery += " WHERE ( ";
-    List<String> tuples = new ArrayList<>();
-    for (int index = 0; index < lhs.getColumnIdentifiers().size(); index++) {
-      tuples.add(
-          lhs.getColumnIdentifiers().get(index).toString() + " = " + rhs.getColumnIdentifiers()
-              .get(index).toString());
-    }
-    strQuery += tuples.stream()
-        .collect(Collectors.joining(" AND "));
-    strQuery += ")) LIMIT 1";
-    return strQuery;
-  }
-
 }
