@@ -3,35 +3,24 @@ package de.metanome.algorithms.mind;
 import static java.util.Arrays.asList;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
+import de.metanome.algorithm_integration.algorithm_types.DatabaseConnectionParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
-import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
-import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
-import de.metanome.algorithm_integration.AlgorithmConfigurationException;
-import de.metanome.algorithm_integration.input.TableInputGenerator;
+import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
+import de.metanome.algorithm_integration.configuration.ConfigurationRequirementDatabaseConnection;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
-import de.metanome.algorithm_integration.algorithm_types.DatabaseConnectionParameterAlgorithm;
-import de.metanome.algorithm_integration.configuration.ConfigurationRequirementDatabaseConnection;
-
-
-import java.util.ArrayList;
-
-
+import de.metanome.algorithm_integration.input.TableInputGenerator;
+import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import java.util.ArrayList;
 
 public class MindAlgorithm implements InclusionDependencyAlgorithm,
-        TableInputParameterAlgorithm, DatabaseConnectionParameterAlgorithm {
+    TableInputParameterAlgorithm, DatabaseConnectionParameterAlgorithm {
 
   private final Configuration.ConfigurationBuilder builder;
-  private final Mind mind;
-  protected DatabaseConnectionGenerator databaseConnectionGenerator;
-  public static final String DATABASE_IDENTIFIER = "database identifier";
-
 
   public MindAlgorithm() {
     builder = Configuration.builder();
-    mind = new Mind();
   }
 
   @Override
@@ -39,7 +28,7 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
     final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
     requirements.add(tableInput());
     requirements.add(new ConfigurationRequirementDatabaseConnection(
-        DATABASE_IDENTIFIER));
+        ConfigurationKey.DATABASE_IDENTIFIER.name()));
     return requirements;
   }
 
@@ -50,13 +39,13 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
   }
 
   @Override
-  public void setResultReceiver(InclusionDependencyResultReceiver resultReceiver) {
+  public void setResultReceiver(final InclusionDependencyResultReceiver resultReceiver) {
     builder.resultReceiver(resultReceiver);
   }
 
   @Override
-  public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values)
-          throws AlgorithmConfigurationException {
+  public void setTableInputConfigurationValue(final String identifier,
+      final TableInputGenerator... values) {
 
     if (identifier.equals(ConfigurationKey.TABLE.name())) {
       builder.tableInputGenerators(asList(values));
@@ -64,20 +53,18 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
   }
 
   @Override
-  public void setDatabaseConnectionGeneratorConfigurationValue(String identifier,
-                                                        DatabaseConnectionGenerator... values)
-      throws AlgorithmConfigurationException{
-    builder.databaseConnectionGenerator(values[0]);
-    this.databaseConnectionGenerator = values[0];
+  public void setDatabaseConnectionGeneratorConfigurationValue(final String identifier,
+      final DatabaseConnectionGenerator... values) {
 
-    System.out.println("##############################################################");
-    System.out.println("database generator : "+ identifier +"; values :"+ values[0]);
+    if (identifier.equals(ConfigurationKey.DATABASE_IDENTIFIER.name())) {
+      builder.databaseConnectionGenerator(values[0]);
+    }
   }
 
   @Override
   public void execute() throws AlgorithmExecutionException {
     final Configuration configuration = builder.build();
-    System.out.println("database: "+ this.databaseConnectionGenerator);
+    final Mind mind = new Mind();
     mind.execute(configuration);
   }
 

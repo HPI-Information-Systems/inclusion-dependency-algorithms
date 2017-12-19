@@ -1,48 +1,44 @@
 package de.metanome.algorithms.mind;
 
 
-import de.metanome.algorithms.demarchi.DeMarchiAlgorithm;
-import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.input.InputGenerationException;
-import de.metanome.util.TableInfo;
-import de.metanome.util.TableInfoFactory;
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
+import de.metanome.algorithm_integration.AlgorithmExecutionException;
+import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
-import de.metanome.algorithm_integration.ColumnIdentifier;
-import de.metanome.algorithm_integration.ColumnCombination;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import de.metanome.util.TableInfo;
+import de.metanome.util.TableInfoFactory;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 class Mind {
 
   private Configuration configuration;
-  protected List<String> relationNames;
+  private List<String> relationNames;
 
-  protected List<TableInfo> tables;
-  List<ColumnPermutation[]> results = new ArrayList<ColumnPermutation[]>();
+  private List<TableInfo> tables;
+  private final List<ColumnPermutation[]> results = new ArrayList<>();
 
-  void execute(final Configuration configuration) throws AlgorithmExecutionException{
+  void execute(final Configuration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
     initialize();
     List<ColumnPermutation[]> candidates = genLevel1Candidates();
 
     int depth = 1;
 
-    while(candidates.size() > 0) {
-      List<ColumnPermutation[]> inds = new ArrayList<ColumnPermutation[]>();
-      for (ColumnPermutation[] candidate : candidates) {
-        ColumnPermutation lhs = candidate[0];
-        ColumnPermutation rhs = candidate[1];
+    while (!candidates.isEmpty()) {
+      final List<ColumnPermutation[]> inds = new ArrayList<>();
+      for (final ColumnPermutation[] candidate : candidates) {
+        final ColumnPermutation lhs = candidate[0];
+        final ColumnPermutation rhs = candidate[1];
         if (isInd(lhs, rhs, depth)) {
-          InclusionDependency ind = new InclusionDependency(lhs, rhs);
+          final InclusionDependency ind = new InclusionDependency(lhs, rhs);
           configuration.getResultReceiver().receiveResult(ind);
           results.add(candidate);
           inds.add(candidate);
@@ -53,19 +49,20 @@ class Mind {
     }
   }
 
-  private List<ColumnPermutation[]> genLevel1Candidates(){
-    List<ColumnIdentifier> attributes = new ArrayList<ColumnIdentifier>();
-    List<ColumnPermutation[]> candidates = new ArrayList<ColumnPermutation[]>();
-    for (final TableInfo table : this.tables) {
-      for(String column : table.getColumnNames()){
+  private List<ColumnPermutation[]> genLevel1Candidates() {
+    final List<ColumnIdentifier> attributes = new ArrayList<>();
+    final List<ColumnPermutation[]> candidates = new ArrayList<>();
+    for (final TableInfo table : tables) {
+      for (String column : table.getColumnNames()) {
         attributes.add(new ColumnIdentifier(table.getTableName(), column));
       }
     }
 
-    for(ColumnIdentifier lhs : attributes){
-      for(ColumnIdentifier rhs : attributes){
-        if(lhs != rhs) {
-          ColumnPermutation[] candidate = {new ColumnPermutation(lhs), new ColumnPermutation(rhs)};
+    for (final ColumnIdentifier lhs : attributes) {
+      for (final ColumnIdentifier rhs : attributes) {
+        if (!lhs.equals(rhs)) {
+          final ColumnPermutation[] candidate = {new ColumnPermutation(lhs),
+              new ColumnPermutation(rhs)};
           candidates.add(candidate);
         }
       }
@@ -74,36 +71,33 @@ class Mind {
     return candidates;
   }
 
-  private List<ColumnPermutation[]> genNextLevelCandidates(List<ColumnPermutation[]> previous) {
-    List<ColumnPermutation[]> candidates = new ArrayList<ColumnPermutation[]>();
-    for(int index1 = 0; index1 < previous.size(); index1++){
-      for(int index2 = index1+1; index2 < previous.size(); index2++){
+  private List<ColumnPermutation[]> genNextLevelCandidates(
+      final List<ColumnPermutation[]> previous) {
+    final List<ColumnPermutation[]> candidates = new ArrayList<>();
+    for (int index1 = 0; index1 < previous.size(); index1++) {
+      for (int index2 = index1 + 1; index2 < previous.size(); index2++) {
 
-        if(samePrefix(previous.get(index1)[0], previous.get(index2)[0]) &&
+        if (samePrefix(previous.get(index1)[0], previous.get(index2)[0]) &&
             samePrefix(previous.get(index1)[1], previous.get(index2)[1]) &&
-            sameTable(previous.get(index1), previous.get(index2))){
+            sameTable(previous.get(index1), previous.get(index2))) {
 
-          ColumnPermutation[] candidate = {
+          final ColumnPermutation[] candidate = {
               new ColumnPermutation(),
-              new ColumnPermutation() };
-          List<ColumnIdentifier> colIdsLHS = new ArrayList<ColumnIdentifier>();
-          List<ColumnIdentifier> colIdsRHS = new ArrayList<ColumnIdentifier>();
-          for(ColumnIdentifier colId : previous.get(index1)[0].getColumnIdentifiers()){
-            colIdsLHS.add(colId);
-          }
+              new ColumnPermutation()};
+          final List<ColumnIdentifier> colIdsLHS = new ArrayList<>(
+              previous.get(index1)[0].getColumnIdentifiers());
           List<ColumnIdentifier> index2Ids = previous.get(index2)[0].getColumnIdentifiers();
-          colIdsLHS.add(index2Ids.get(index2Ids.size()-1));
+          colIdsLHS.add(index2Ids.get(index2Ids.size() - 1));
 
-          for(ColumnIdentifier colId : previous.get(index1)[1].getColumnIdentifiers()){
-            colIdsRHS.add(colId);
-          }
+          final List<ColumnIdentifier> colIdsRHS = new ArrayList<>(
+              previous.get(index1)[1].getColumnIdentifiers());
 
           index2Ids = previous.get(index2)[1].getColumnIdentifiers();
-          colIdsRHS.add(index2Ids.get(index2Ids.size()-1));
+          colIdsRHS.add(index2Ids.get(index2Ids.size() - 1));
 
           candidate[0].setColumnIdentifiers(colIdsLHS);
           candidate[1].setColumnIdentifiers(colIdsRHS);
-          if(notToPrune(candidate) && isNotDoublon(candidate)){
+          if (notToPrune(candidate) && isNotDoublon(candidate)) {
             candidates.add(candidate);
           }
         }
@@ -112,35 +106,41 @@ class Mind {
     return candidates;
   }
 
-  private boolean notToPrune(ColumnPermutation[] candidate){
-    for(int index = 0; index < candidate[0].getColumnIdentifiers().size(); index++){
-      List<ColumnIdentifier> lhs = new ArrayList<ColumnIdentifier>(candidate[0].getColumnIdentifiers());
-      List<ColumnIdentifier> rhs = new ArrayList<ColumnIdentifier>(candidate[1].getColumnIdentifiers());
+  private boolean notToPrune(final ColumnPermutation[] candidate) {
+    for (int index = 0; index < candidate[0].getColumnIdentifiers().size(); index++) {
+      final List<ColumnIdentifier> lhs = new ArrayList<>(
+          candidate[0].getColumnIdentifiers());
+      final List<ColumnIdentifier> rhs = new ArrayList<>(
+          candidate[1].getColumnIdentifiers());
       lhs.remove(index);
       rhs.remove(index);
       boolean is_included = false;
-      for(ColumnPermutation[] ind : this.results){
-        if(ind[0].getColumnIdentifiers().equals(lhs) && ind[1].getColumnIdentifiers().equals(rhs)) {
+      for (final ColumnPermutation[] ind : results) {
+        if (ind[0].getColumnIdentifiers().equals(lhs) && ind[1].getColumnIdentifiers()
+            .equals(rhs)) {
           is_included = true;
           break;
         }
       }
-      if(!is_included)
-        return is_included;
+      if (!is_included) {
+        return false;
+      }
     }
     return true;
   }
 
-  private boolean isNotDoublon(ColumnPermutation[] candidate){
-    List<ColumnIdentifier> colIdsLHS = candidate[0].getColumnIdentifiers();
-    List<ColumnIdentifier> colIdsRHS = candidate[1].getColumnIdentifiers();
-    for(ColumnIdentifier colId : colIdsLHS){
-      if(Collections.frequency(colIdsLHS, colId) > 1 || Collections.frequency(colIdsRHS, colId) > 0){
+  private boolean isNotDoublon(final ColumnPermutation[] candidate) {
+    final List<ColumnIdentifier> colIdsLHS = candidate[0].getColumnIdentifiers();
+    final List<ColumnIdentifier> colIdsRHS = candidate[1].getColumnIdentifiers();
+    for (final ColumnIdentifier colId : colIdsLHS) {
+      if (Collections.frequency(colIdsLHS, colId) > 1
+          || Collections.frequency(colIdsRHS, colId) > 0) {
         return false;
       }
     }
-    for(ColumnIdentifier colId : colIdsRHS){
-      if(Collections.frequency(colIdsLHS, colId) > 0 || Collections.frequency(colIdsRHS, colId) > 1){
+    for (final ColumnIdentifier colId : colIdsRHS) {
+      if (Collections.frequency(colIdsLHS, colId) > 0
+          || Collections.frequency(colIdsRHS, colId) > 1) {
         return false;
       }
     }
@@ -148,30 +148,32 @@ class Mind {
     return true;
   }
 
-  private boolean sameTable(ColumnPermutation[] columnPermutation1, ColumnPermutation[] columnPermutation2){
+  private boolean sameTable(final ColumnPermutation[] columnPermutation1,
+      final ColumnPermutation[] columnPermutation2) {
     return (columnPermutation1[0].getColumnIdentifiers().get(0).getTableIdentifier().equals(
-            columnPermutation2[0].getColumnIdentifiers().get(0).getTableIdentifier())) &&
-            (columnPermutation1[1].getColumnIdentifiers().get(0).getTableIdentifier().equals(
+        columnPermutation2[0].getColumnIdentifiers().get(0).getTableIdentifier())) &&
+        (columnPermutation1[1].getColumnIdentifiers().get(0).getTableIdentifier().equals(
             columnPermutation2[1].getColumnIdentifiers().get(0).getTableIdentifier()));
   }
 
-  private boolean samePrefix(ColumnPermutation columnPermutation1, ColumnPermutation columnPermutation2){
-    List<ColumnIdentifier> col1Identifiers = columnPermutation1.getColumnIdentifiers();
-    List<ColumnIdentifier> col2Identifiers = columnPermutation2.getColumnIdentifiers();
+  private boolean samePrefix(final ColumnPermutation columnPermutation1,
+      final ColumnPermutation columnPermutation2) {
+    final List<ColumnIdentifier> col1Identifiers = columnPermutation1.getColumnIdentifiers();
+    final List<ColumnIdentifier> col2Identifiers = columnPermutation2.getColumnIdentifiers();
 
-    for(int index = 0; index < col1Identifiers.size()-1; index++){
-      if(col1Identifiers.get(index) != col2Identifiers.get(index)){
+    for (int index = 0; index < col1Identifiers.size() - 1; index++) {
+      if (!col1Identifiers.get(index).equals(col2Identifiers.get(index))) {
         return false;
       }
     }
     return true;
   }
 
-  private void initialize() throws InputGenerationException, AlgorithmConfigurationException{
-    this.relationNames = new ArrayList<String>();
-    TableInfoFactory tableInfoFactory = new TableInfoFactory();
+  private void initialize() throws InputGenerationException, AlgorithmConfigurationException {
+    this.relationNames = new ArrayList<>();
+    final TableInfoFactory tableInfoFactory = new TableInfoFactory();
 
-    this.tables = tableInfoFactory
+    tables = tableInfoFactory
         .createFromTableInputs(configuration.getTableInputGenerators());
 
     for (final TableInfo table : tables) {
@@ -179,24 +181,24 @@ class Mind {
     }
   }
 
-  private boolean isInd(ColumnPermutation lhs, ColumnPermutation rhs, int depth) throws InputGenerationException, AlgorithmConfigurationException{
-
-    try{
+  private boolean isInd(final ColumnPermutation lhs, final ColumnPermutation rhs, int depth) {
+    try {
       String query = "";
-      if(depth == 1){
+      if (depth == 1) {
         query = indTestQueryNotIn(lhs, rhs);
-      } else{
+      } else {
         query = indTestQueryNotExists(lhs, rhs);
       }
-      ResultSet result = configuration.getDatabaseConnectionGenerator().generateResultSetFromSql(query);
+      ResultSet result = configuration.getDatabaseConnectionGenerator()
+          .generateResultSetFromSql(query);
       result.next();
 
       return result.getInt("result") == 0;
 
-    }catch(SQLException se){
+    } catch (SQLException se) {
       //Handle errors for JDBC
       se.printStackTrace();
-    }catch(Exception e){
+    } catch (Exception e) {
       //Handle errors for Class.forName
       e.printStackTrace();
     }
@@ -205,8 +207,8 @@ class Mind {
 
   // select count(*) as result from (SELECT test.a FROM test where test.a NOT IN (SELECT test.c FROM test)) as d
   // Does not work with mysql for n-ary inds
-  private String indTestQueryNotIn(ColumnPermutation lhs, ColumnPermutation rhs){
-    String strQuery =  "SELECT count(*) as result FROM ";
+  private String indTestQueryNotIn(ColumnPermutation lhs, ColumnPermutation rhs) {
+    String strQuery = "SELECT count(*) as result FROM ";
     strQuery += "(SELECT ";
     strQuery += lhs.getColumnIdentifiers().stream()
         .map(ColumnIdentifier::toString)
@@ -242,8 +244,8 @@ class Mind {
   // SELECT test.a, test.b, test_copy.a, test_copy.b FROM test WHERE test.a = test_copy.a and test.b = test_copy.b) LIMIT 1
   // select count(*) as result from (SELECT test.a FROM test where test.a NOT IN (SELECT test.c FROM test)) as d
   // Does not work with mysql for unary-ary inds.
-  private String indTestQueryNotExists(ColumnPermutation lhs, ColumnPermutation rhs){
-    String strQuery =  "SELECT count(*) as result FROM ";
+  private String indTestQueryNotExists(ColumnPermutation lhs, ColumnPermutation rhs) {
+    String strQuery = "SELECT count(*) as result FROM ";
     strQuery += this.relationNames.stream()
         .collect(Collectors.joining(", "));
     strQuery += " WHERE ";
@@ -262,9 +264,11 @@ class Mind {
     strQuery += this.relationNames.stream()
         .collect(Collectors.joining(", "));
     strQuery += " WHERE ( ";
-    List<String> tuples = new ArrayList<String>();
-    for(int index=0; index < lhs.getColumnIdentifiers().size(); index++){
-      tuples.add(lhs.getColumnIdentifiers().get(index).toString() +" = "+ rhs.getColumnIdentifiers().get(index).toString());
+    List<String> tuples = new ArrayList<>();
+    for (int index = 0; index < lhs.getColumnIdentifiers().size(); index++) {
+      tuples.add(
+          lhs.getColumnIdentifiers().get(index).toString() + " = " + rhs.getColumnIdentifiers()
+              .get(index).toString());
     }
     strQuery += tuples.stream()
         .collect(Collectors.joining(" AND "));
