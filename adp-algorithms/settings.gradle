@@ -4,4 +4,5 @@ include 'util'
 
 include 'spider'
 include 'demarchi'
+include 'mind'
 include 'bell-brockhausen'
