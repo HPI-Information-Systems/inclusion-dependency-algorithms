@@ -9,6 +9,7 @@ import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
 import de.metanome.validation.ValidationStrategy;
+import de.metanome.validation.ValidationStrategyFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,19 +17,23 @@ import java.util.List;
 class Mind {
 
   private Configuration configuration;
+  private ValidationStrategy validationStrategy;
   private List<String> relationNames;
 
   private List<TableInfo> tables;
   private final List<ColumnPermutation[]> results = new ArrayList<>();
 
-  private final ValidationStrategy validationStrategy;
+  private final ValidationStrategyFactory validationStrategyFactory;
 
-  Mind(final ValidationStrategy validationStrategy) {
-    this.validationStrategy = validationStrategy;
+  Mind() {
+    validationStrategyFactory = new ValidationStrategyFactory();
   }
 
   void execute(final Configuration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
+    validationStrategy = validationStrategyFactory
+        .forDatabase(configuration.getValidationParameters());
+
     initialize();
     List<ColumnPermutation[]> candidates = genLevel1Candidates();
 
@@ -49,6 +54,8 @@ class Mind {
       depth++;
       candidates = genNextLevelCandidates(inds);
     }
+
+    validationStrategy.close();
   }
 
   private List<ColumnPermutation[]> genLevel1Candidates() {

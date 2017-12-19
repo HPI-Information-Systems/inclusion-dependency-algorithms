@@ -3,7 +3,6 @@ package de.metanome.validation;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.validation.database.DatabaseValidationFactory;
-import de.metanome.validation.database.QueryType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -15,11 +14,10 @@ public class ValidationStrategyFactory {
     databaseValidationFactory = new DatabaseValidationFactory();
   }
 
-  public ValidationStrategy forDatabase(final DatabaseConnectionGenerator connectionGenerator,
-      final QueryType queryType) {
-
-    ensureConnected(connectionGenerator);
-    return databaseValidationFactory.create(connectionGenerator.getConnection(), queryType);
+  public ValidationStrategy forDatabase(final ValidationParameters parameters) {
+    final DatabaseConnectionGenerator generator = parameters.getConnectionGenerator();
+    ensureConnected(generator);
+    return databaseValidationFactory.create(generator.getConnection(), parameters.getQueryType());
   }
 
   // https://github.com/HPI-Information-Systems/Metanome/issues/385

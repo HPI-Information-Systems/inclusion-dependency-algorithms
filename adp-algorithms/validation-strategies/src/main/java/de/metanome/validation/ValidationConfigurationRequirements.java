@@ -5,9 +5,9 @@ import static java.util.stream.Collectors.toList;
 
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementListBox;
+import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.validation.database.QueryType;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class ValidationConfigurationRequirements {
 
@@ -32,14 +32,20 @@ public class ValidationConfigurationRequirements {
   }
 
   public static boolean acceptListBox(final String identifier, final String[] selectedValues,
-      final Consumer<QueryType> queryTypeConsumer) {
+      final ValidationParameters parameters) {
 
     if (identifier.equals(QUERY_KEY)) {
       final QueryType queryType = QueryType.valueOf(selectedValues[0]);
-      queryTypeConsumer.accept(queryType);
+      parameters.setQueryType(queryType);
       return true;
     }
 
     return false;
+  }
+
+  public static void acceptDatabaseConnectionGenerator(final DatabaseConnectionGenerator[] values,
+      final ValidationParameters parameters) {
+
+    parameters.setConnectionGenerator(values[0]);
   }
 }

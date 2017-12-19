@@ -3,7 +3,7 @@ package de.metanome.algorithms.mind;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
-import de.metanome.validation.database.QueryType;
+import de.metanome.validation.ValidationParameters;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;
@@ -14,8 +14,8 @@ import lombok.Singular;
 @Builder
 class Configuration {
 
-  private final QueryType validationQueryType;
   private final InclusionDependencyResultReceiver resultReceiver;
+  private final ValidationParameters validationParameters;
 
   @Singular
   private final List<TableInputGenerator> tableInputGenerators;
