@@ -24,10 +24,12 @@ abstract class SpiderAlgorithm implements InclusionDependencyAlgorithm,
     TempFileAlgorithm {
 
   final SpiderConfigurationBuilder builder;
+  final SpiderConfiguration defaultValues;
   final Spider spider;
 
   SpiderAlgorithm() {
     builder = SpiderConfiguration.builder();
+    defaultValues = SpiderConfiguration.withDefaults();
     spider = new Spider();
   }
 
@@ -40,15 +42,15 @@ abstract class SpiderAlgorithm implements InclusionDependencyAlgorithm,
   private List<ConfigurationRequirement<?>> tpmms() {
     final ConfigurationRequirementInteger inputRowLimit = new ConfigurationRequirementInteger(
         INPUT_ROW_LIMIT.name());
-    inputRowLimit.setDefaultValues(new Integer[]{-1});
+    inputRowLimit.setDefaultValues(new Integer[]{defaultValues.getInputRowLimit()});
 
     final ConfigurationRequirementInteger maxMemoryUsage = new ConfigurationRequirementInteger(
         MAX_MEMORY_USAGE.name());
-    maxMemoryUsage.setDefaultValues(new Integer[]{2048 * 1024});
+    maxMemoryUsage.setDefaultValues(new Integer[]{defaultValues.getMaxMemoryUsage()});
 
     final ConfigurationRequirementInteger memoryCheckInterval = new ConfigurationRequirementInteger(
         MEMORY_CHECK_INTERVAL.name());
-    memoryCheckInterval.setDefaultValues(new Integer[]{500});
+    memoryCheckInterval.setDefaultValues(new Integer[]{defaultValues.getMemoryCheckInterval()});
 
     return asList(inputRowLimit, maxMemoryUsage, memoryCheckInterval);
   }

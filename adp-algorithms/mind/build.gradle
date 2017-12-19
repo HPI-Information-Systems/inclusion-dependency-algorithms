@@ -8,10 +8,6 @@ dependencies {
         exclude(group: 'de.metanome', module: 'algorithm_integration')
     }
 
-    extraLibs(project(':demarchi')) {
-        transitive = false
-    }
-
     testCompile(project(path: ':util', configuration: 'tests')) {
         exclude(group: 'de.metanome', module: 'algorithm_integration')
     }

@@ -1,0 +1,8 @@
+
+dependencies {
+    extraLibs project(':demarchi')
+    extraLibs project(':spider')
+
+    extraLibs group: 'commons-beanutils', name: 'commons-beanutils', version: '1.9.3'
+
+}
