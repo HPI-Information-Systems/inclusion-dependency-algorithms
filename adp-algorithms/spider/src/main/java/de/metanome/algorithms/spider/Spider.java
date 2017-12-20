@@ -175,7 +175,6 @@ class Spider {
       for (final Attribute attribute : attributeIndex.values()) {
         attribute.close();
       }
-      externalRepository.close(configuration);
     } catch (final IOException e) {
       throw new AlgorithmExecutionException("failed to close attribute", e);
     }

@@ -31,5 +31,3 @@ SPIDER
 5. Revisit I/O handling. If a single I/O-Exception occurs, the algorithm execution can be aborted
   immediately. However, if resources are allocated in batch, failure to allocate a single resource
   currently does not free the already open resources. 
-6. Use temporary file functionality of Metanome.
-
