@@ -17,7 +17,6 @@ public class MetadataBuilder {
 
 	public static void build(final Configuration configuration) throws SQLException {
 
-		List<Schema> schemas = null;
 		try {
 
 			List<TableInfo> tables = createTables(configuration);
@@ -39,6 +38,7 @@ public class MetadataBuilder {
 		Map<String, Attribute> id2attMap = new HashMap<String, Attribute>();
 		for (Attribute att : attributes) {
 			String id = att.getId();
+
 			id2attMap.put(id, att);
 		}
 
@@ -46,7 +46,6 @@ public class MetadataBuilder {
 	}
 
 	private static List<TableInfo> createTables(final Configuration configuration) throws InputGenerationException, AlgorithmConfigurationException {
-		Schema schema = new Schema();
 		final TableInfoFactory tableInfoFactory = new TableInfoFactory();
 		List<TableInfo> schemaNames = tableInfoFactory
 				.createFromTableInputs(configuration.getTableInputGenerators());

@@ -1,5 +1,6 @@
 package de.metanome.algorithms.sindd;
 
+import com.google.common.annotations.VisibleForTesting;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
@@ -13,6 +14,7 @@ import de.metanome.algorithms.sindd.sindd.UnaryINDsGenerator;
 import de.metanome.algorithms.sindd.util.CommonObjects;
 import de.metanome.algorithms.sindd.util.PartitionPerformance;
 import de.metanome.algorithms.sindd.util.Performance;
+import de.metanome.util.TableInfoFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,9 +28,16 @@ import java.util.logging.Logger;
 
 class Sindd {
 
+  private final TableInfoFactory tableInfoFactory;
   private Configuration configuration;
   private final static Logger LOGGER = Logger.getLogger("Sindd");
 
+  Sindd() { tableInfoFactory = new TableInfoFactory();}
+
+  @VisibleForTesting
+  Sindd(final TableInfoFactory tableInfoFactory) {
+    this.tableInfoFactory = tableInfoFactory;
+  }
 
   void execute(final Configuration configuration) throws AlgorithmExecutionException {
 
@@ -92,7 +101,7 @@ class Sindd {
     Map<String, Attribute> id2attMap = CommonObjects.getId2attributeMap();
     UnaryINDsGenerator uindsGenerator = new UnaryINDsGenerator(id2attMap);
 
-    Performance performance = de.metanome.algorithms.sindd.util.CommonObjects.getPerformnce();
+    Performance performance = de.metanome.algorithms.sindd.util.CommonObjects.getPerformance();
     List<Partition> partitions = CommonObjects.getPartitions();
     for (Partition partition : partitions) {
       LOGGER.info("partition " + partition.getId() + ": ");
@@ -127,8 +136,8 @@ class Sindd {
     partitionPerformance.setUindsGenTime(st, et);
   }
 
-  private static void exportData() throws SQLException, IOException {
-    Exporter.export();
+  private void exportData() throws SQLException, IOException {
+    Exporter.export(configuration);
   }
 
   private void createMetadata() throws SQLException {

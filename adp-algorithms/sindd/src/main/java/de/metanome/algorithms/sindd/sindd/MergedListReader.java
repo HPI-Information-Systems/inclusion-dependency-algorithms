@@ -8,12 +8,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-
-/**
- * 
- * @author Nuhad.Shaabani
- *
- */
 public class MergedListReader implements Comparable<MergedListReader> {
 
 	private CSVReader reader;
