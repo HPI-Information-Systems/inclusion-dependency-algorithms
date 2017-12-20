@@ -1,5 +1,6 @@
 package de.metanome.algorithms.mind;
 
+import static de.metanome.algorithms.mind.ConfigurationKey.DATABASE;
 import static java.util.Arrays.asList;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
@@ -12,23 +13,30 @@ import de.metanome.algorithm_integration.configuration.ConfigurationRequirementT
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+import de.metanome.validation.InclusionDependencyValidationAlgorithm;
+import de.metanome.validation.ValidationConfigurationRequirements;
+import de.metanome.validation.ValidationParameters;
 import java.util.ArrayList;
 
 public class MindAlgorithm implements InclusionDependencyAlgorithm,
-    TableInputParameterAlgorithm, DatabaseConnectionParameterAlgorithm {
+    TableInputParameterAlgorithm,
+    DatabaseConnectionParameterAlgorithm,
+    InclusionDependencyValidationAlgorithm {
 
   private final Configuration.ConfigurationBuilder builder;
+  private final ValidationParameters validationParameters;
 
   public MindAlgorithm() {
     builder = Configuration.builder();
+    validationParameters = new ValidationParameters();
   }
 
   @Override
   public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() {
     final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
     requirements.add(tableInput());
-    requirements.add(new ConfigurationRequirementDatabaseConnection(
-        ConfigurationKey.DATABASE_IDENTIFIER.name()));
+    requirements.addAll(ValidationConfigurationRequirements.validationStrategy());
+    requirements.add(new ConfigurationRequirementDatabaseConnection(DATABASE.name()));
     return requirements;
   }
 
@@ -37,6 +45,7 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
         ConfigurationKey.TABLE.name(),
         ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES);
   }
+
 
   @Override
   public void setResultReceiver(final InclusionDependencyResultReceiver resultReceiver) {
@@ -55,15 +64,25 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
   @Override
   public void setDatabaseConnectionGeneratorConfigurationValue(final String identifier,
       final DatabaseConnectionGenerator... values) {
-
-    if (identifier.equals(ConfigurationKey.DATABASE_IDENTIFIER.name())) {
+    if (identifier.equals(ConfigurationKey.DATABASE.name())) {
       builder.databaseConnectionGenerator(values[0]);
+      ValidationConfigurationRequirements
+          .acceptDatabaseConnectionGenerator(values, validationParameters);
     }
   }
 
   @Override
+  public void setListBoxConfigurationValue(final String identifier,
+      final String... selectedValues) {
+
+    ValidationConfigurationRequirements
+        .acceptListBox(identifier, selectedValues, validationParameters);
+  }
+
+  @Override
   public void execute() throws AlgorithmExecutionException {
-    final Configuration configuration = builder.build();
+    final Configuration configuration = builder.validationParameters(validationParameters).build();
+
     final Mind mind = new Mind();
     mind.execute(configuration);
   }

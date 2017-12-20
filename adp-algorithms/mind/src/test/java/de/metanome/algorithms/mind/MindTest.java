@@ -1,19 +1,97 @@
 package de.metanome.algorithms.mind;
 
+import static de.metanome.util.InclusionDependencyListConditions.binaryCountOf;
+import static de.metanome.util.InclusionDependencyListConditions.unaryCountOf;
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
+
+import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
+import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.InclusionDependencyBuilder;
+import de.metanome.util.TestDatabase;
+import de.metanome.validation.ValidationParameters;
+import de.metanome.validation.database.QueryType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 class MindTest {
 
+  @Mock
+  private InclusionDependencyResultReceiver resultReceiver;
+  @Captor
+  private ArgumentCaptor<InclusionDependency> ind;
+
+  private TestDatabase testDatabase;
+  private DatabaseConnectionGenerator connectionGenerator;
+
+  private Configuration configuration;
   private Mind mind;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws Exception {
+    MockitoAnnotations.initMocks(this);
+
+    testDatabase = TestDatabase.builder()
+        .resourceClass(MindTest.class)
+        .columnNames(asList("A", "B", "C", "D"))
+        .csvPath("test.csv")
+        .relationName("TEST")
+        .build();
+
+    testDatabase.setUp();
+    connectionGenerator = testDatabase.asConnectionGenerator();
+
+    configuration = Configuration.builder()
+        .databaseConnectionGenerator(connectionGenerator)
+        .tableInputGenerator(testDatabase.asTableInputGenerator())
+        .resultReceiver(resultReceiver)
+        .validationParameters(validationParameters())
+        .build();
+
     mind = new Mind();
   }
 
-  @Test
-  void runMind() {
+  private ValidationParameters validationParameters() {
+    final ValidationParameters parameters = new ValidationParameters();
+    parameters.setQueryType(QueryType.NOT_IN);
+    parameters.setConnectionGenerator(connectionGenerator);
+    return parameters;
+  }
 
+  @AfterEach
+  void tearDown() {
+    testDatabase.tearDown();
+  }
+
+  @Test
+  void runMind() throws Exception {
+    mind.execute(configuration);
+
+    verify(resultReceiver, atLeastOnce()).receiveResult(ind.capture());
+    assertThat(ind.getAllValues())
+        .hasSize(8)
+        .has(unaryCountOf(4))
+        .has(binaryCountOf(4))
+        .contains(exampleNary());
+  }
+
+  private InclusionDependency exampleNary() {
+    final String relationName = testDatabase.getRelationName();
+
+    return InclusionDependencyBuilder.dependent()
+        .column(relationName, "A")
+        .column(relationName, "B")
+        .referenced()
+        .column(relationName, "C")
+        .column(relationName, "D")
+        .build();
   }
 }

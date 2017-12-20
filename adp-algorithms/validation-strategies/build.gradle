@@ -1,0 +1,8 @@
+dependencies {
+
+    extraLibs group: 'org.jooq', name: 'jooq', version: '3.10.2'
+    extraLibs(project(':util'))
+
+    testCompile 'org.hsqldb:hsqldb:2.3.4'
+    testCompile 'org.quicktheories:quicktheories:0.24'
+}
