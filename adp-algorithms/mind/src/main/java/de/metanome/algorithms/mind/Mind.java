@@ -23,9 +23,11 @@ class Mind {
   private List<TableInfo> tables;
   private final List<ColumnPermutation[]> results = new ArrayList<>();
 
+  private final TableInfoFactory tableInfoFactory;
   private final ValidationStrategyFactory validationStrategyFactory;
 
   Mind() {
+    tableInfoFactory = new TableInfoFactory();
     validationStrategyFactory = new ValidationStrategyFactory();
   }
 
@@ -180,7 +182,6 @@ class Mind {
 
   private void initialize() throws InputGenerationException, AlgorithmConfigurationException {
     this.relationNames = new ArrayList<>();
-    final TableInfoFactory tableInfoFactory = new TableInfoFactory();
 
     tables = tableInfoFactory
         .createFromTableInputs(configuration.getTableInputGenerators());

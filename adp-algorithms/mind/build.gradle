@@ -12,7 +12,9 @@ dependencies {
         transitive = false
     }
 
-    testCompile project(path: ':util', configuration: 'tests')
+    testCompile(project(path: ':util', configuration: 'tests')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
+    }
 }
 
 jar {
