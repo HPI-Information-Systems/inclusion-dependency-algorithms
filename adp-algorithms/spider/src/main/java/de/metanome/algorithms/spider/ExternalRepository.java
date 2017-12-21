@@ -12,12 +12,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.regex.Pattern;
 
 class ExternalRepository {
-
-  private static final Pattern NEWLINE = Pattern.compile(Pattern.quote("\n"));
-  private static final String NULL = "⟂";
 
   ReadPointer[] uniqueAndSort(final SpiderConfiguration configuration, final TableInfo table)
       throws AlgorithmExecutionException {
@@ -61,8 +57,10 @@ class ExternalRepository {
         final List<String> next = input.next();
         for (int index = 0; index < writers.length; ++index) {
           final String value = index >= next.size() ? null : next.get(index);
-          writers[index].write(escape(value));
-          writers[index].newLine();
+          if (value != null) {
+            writers[index].write(escape(value));
+            writers[index].newLine();
+          }
         }
       }
     } catch (final Exception e) {
@@ -103,7 +101,7 @@ class ExternalRepository {
   }
 
   private String escape(final String value) {
-    return value == null ? NULL : NEWLINE.matcher(value).replaceAll("\0");
+    return value.replace('\n', '\0');
   }
 
   private Path getPath(final SpiderConfiguration configuration)

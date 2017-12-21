@@ -66,7 +66,9 @@ class Spider {
 
       for (final Attribute attribute : attributes) {
         attributeIndex.put(attribute.getId(), attribute);
-        priorityQueue.enqueue(attribute);
+        if (attribute.getReadPointer().hasNext()) {
+          priorityQueue.enqueue(attribute);
+        }
       }
     }
   }

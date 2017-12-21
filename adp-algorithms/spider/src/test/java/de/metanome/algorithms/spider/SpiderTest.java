@@ -2,6 +2,7 @@ package de.metanome.algorithms.spider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
 import de.metanome.algorithm_integration.ColumnIdentifier;
@@ -65,7 +66,7 @@ class SpiderTest {
 
     spider.execute(configuration);
 
-    verify(resultReceiver).receiveResult(ind.capture());
+    verify(resultReceiver, atLeastOnce()).receiveResult(ind.capture());
     assertThat(ind.getAllValues())
         .hasSize(1)
         .first()
