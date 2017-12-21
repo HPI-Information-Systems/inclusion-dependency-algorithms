@@ -40,6 +40,7 @@ class SpiderTest {
     MockitoAnnotations.initMocks(this);
 
     input = RelationalInputStub.builder()
+        .relationName("Test")
         .columnName(COL_A).columnName(COL_B)
         .row(Row.of("x", "z"))
         .row(Row.of("x", "y"))

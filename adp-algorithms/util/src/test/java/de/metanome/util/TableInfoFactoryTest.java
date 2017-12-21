@@ -30,6 +30,7 @@ class TableInfoFactoryTest {
   @Test
   void collectFromRelationalSource() throws Exception {
     final RelationalInput input1 = RelationalInputStub.builder()
+        .relationName("Test")
         .columnName("A").columnName("B")
         .build();
     given(generator.generateNewCopy()).willReturn(input1);
