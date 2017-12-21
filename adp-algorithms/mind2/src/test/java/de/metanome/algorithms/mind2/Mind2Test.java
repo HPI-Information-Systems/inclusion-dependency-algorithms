@@ -48,18 +48,19 @@ public class Mind2Test {
         ColumnIdentifier b5 = new ColumnIdentifier("S", "B5");
 
         RelationalInputGenerator tableR = RelationalInputGeneratorStub.builder()
+                .relationName("R")
                 .columnNames(ImmutableList.of("A1", "A2", "A3", "A4", "A5"))
                 .rows(ImmutableList.of(
                         Row.of("a", "b", "c", "d", "e"),
                         Row.of("f", "g", "i", "j", "k")))
                 .build();
         RelationalInputGenerator tableS = RelationalInputGeneratorStub.builder()
+                .relationName("S")
                 .columnNames(ImmutableList.of("B1", "B2", "B3", "B4", "B5"))
                 .rows(ImmutableList.of(
                         Row.of("a", "b", "c", "d", null),
                         Row.of(null, null, "c", "d", null),
                         Row.of(null, null, "c", "d", "e"),
-                        Row.of("f", "g", "i", null, null),
                         Row.of("f", "g", "i", null, null),
                         Row.of("f", "g", null, "j", "k")))
                 .build();
