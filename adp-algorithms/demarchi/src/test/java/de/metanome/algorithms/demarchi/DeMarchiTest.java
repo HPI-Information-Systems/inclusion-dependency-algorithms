@@ -59,7 +59,7 @@ class DeMarchiTest {
 
   @Test
   void runDeMarchi() throws Exception {
-    given(tableInfoFactory.createFromTableInputs(anyList())).willReturn(tableFixture());
+    given(tableInfoFactory.create(anyList(), anyList())).willReturn(tableFixture());
 
     impl.execute(getConfiguration());
 
