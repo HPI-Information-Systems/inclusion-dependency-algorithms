@@ -3,6 +3,7 @@ package de.metanome.util;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.input.InputIterationException;
 
 import java.util.NoSuchElementException;
@@ -28,7 +29,7 @@ public abstract class CheckedAbstractIterator<T> {
     private T next;
     private T current;
 
-    protected abstract T computeNext() throws InputIterationException;
+    protected abstract T computeNext() throws AlgorithmExecutionException;
 
     @Nullable
     @CanIgnoreReturnValue
@@ -37,7 +38,7 @@ public abstract class CheckedAbstractIterator<T> {
         return null;
     }
 
-    public final boolean hasNext() throws InputIterationException {
+    public final boolean hasNext() throws AlgorithmExecutionException {
         checkState(state != State.FAILED);
         switch (state) {
             case READY:
@@ -49,7 +50,7 @@ public abstract class CheckedAbstractIterator<T> {
         return tryToComputeNext();
     }
 
-    private boolean tryToComputeNext() throws InputIterationException {
+    private boolean tryToComputeNext() throws AlgorithmExecutionException {
         state = State.FAILED; // temporary pessimism
         next = computeNext();
         if (state != State.DONE) {
@@ -59,7 +60,7 @@ public abstract class CheckedAbstractIterator<T> {
         return false;
     }
 
-    public final T next() throws InputIterationException {
+    public final T next() throws AlgorithmExecutionException {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
