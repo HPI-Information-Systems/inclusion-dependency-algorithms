@@ -1,4 +1,4 @@
-package de.metanome.algorithms.mind2.utils;
+package de.metanome.algorithms.mind2.model;
 
 import lombok.Data;
 

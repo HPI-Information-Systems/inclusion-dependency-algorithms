@@ -5,6 +5,7 @@ import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.input.InputIterationException;
 import de.metanome.algorithm_integration.input.RelationalInput;
+import de.metanome.algorithms.mind2.model.AttributeValuePosition;
 import de.metanome.util.CheckedAbstractIterator;
 
 import java.util.List;

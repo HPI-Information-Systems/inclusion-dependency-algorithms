@@ -1,4 +1,4 @@
-package de.metanome.algorithms.mind2.utils;
+package de.metanome.algorithms.mind2.model;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -18,9 +18,9 @@ public class UindCoordinates {
     public static final String ELEM_SEPERATOR = ",";
 
     public static UindCoordinates fromLine(InclusionDependency uind, String data) {
-        ImmutableList<String> parts = ImmutableList.copyOf(Splitter.on(";").trimResults().split(data));
+        ImmutableList<String> parts = ImmutableList.copyOf(Splitter.on(FIELD_SEPERATOR).trimResults().split(data));
         int lhsIndex = Integer.valueOf(parts.get(0));
-        ImmutableList<Integer> rhsIndices = Streams.stream(Splitter.on(",").trimResults().split(data))
+        ImmutableList<Integer> rhsIndices = Streams.stream(Splitter.on(ELEM_SEPERATOR).trimResults().split(parts.get(1)))
                 .map(Integer::valueOf).collect(toImmutableList());
         return new UindCoordinates(uind, lhsIndex, rhsIndices);
     }

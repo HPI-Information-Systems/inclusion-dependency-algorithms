@@ -14,8 +14,8 @@ import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
 import de.metanome.algorithms.mind2.utils.AttributeIterator;
-import de.metanome.algorithms.mind2.utils.AttributeValuePosition;
-import de.metanome.algorithms.mind2.utils.UindCoordinates;
+import de.metanome.algorithms.mind2.model.AttributeValuePosition;
+import de.metanome.algorithms.mind2.model.UindCoordinates;
 import de.metanome.algorithms.mind2.utils.UindCoordinatesReader;
 
 import java.io.IOException;
@@ -47,6 +47,7 @@ public class CoordinatesRepository {
     }
 
     public void storeUindCoordinates(Mind2Configuration config) throws AlgorithmExecutionException {
+        // TODO(fwindheuser): Use TableInput to sort values
         ImmutableMap<ColumnIdentifier, RelationalInputGenerator> attributes =
                 getRelationalInputMap(config.getRelationalInputGenerators());
 
