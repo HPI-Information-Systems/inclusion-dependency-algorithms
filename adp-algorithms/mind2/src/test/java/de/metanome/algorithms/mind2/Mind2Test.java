@@ -5,9 +5,11 @@ import com.google.common.collect.ImmutableSet;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
+import de.metanome.algorithm_integration.algorithm_execution.FileGenerator;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
+import de.metanome.util.FileGeneratorFake;
 import de.metanome.util.InclusionDependencyResultReceiverStub;
 import de.metanome.util.RelationalInputGeneratorStub;
 import de.metanome.util.Row;
@@ -30,7 +32,9 @@ public class Mind2Test {
     @Before
     public void setupMocks(Mind2Configuration config) {
         resultReceiver = new InclusionDependencyResultReceiverStub();
+        FileGenerator fileGenerator = new FileGeneratorFake();
         when(config.getResultReceiver()).thenReturn(resultReceiver);
+        when(config.getTempFileGenerator()).thenReturn(fileGenerator);
     }
 
     @Test
