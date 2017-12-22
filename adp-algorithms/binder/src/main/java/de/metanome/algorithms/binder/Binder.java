@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
@@ -83,26 +84,17 @@ public class Binder {
 	private List<String> columnTypes = null;
 
 	private Int2ObjectOpenHashMap<IntSingleLinkedList> dep2ref = null;
-	private int numUnaryINDs = 0;
-	
+
 	private Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = null;
 	private int[] column2table = null;
-	private int numNaryINDs = 0;
-	
+
 	private BitSet nullValueColumns;
 
 	private LongArrayList naryGenerationTime = null;
 	private LongArrayList naryCompareTime = null;
 
-//	private IntArrayList activeAttributesPerBucketLevel; # TODO contents updated, but never queried
-//	private IntArrayList naryActiveAttributesPerBucketLevel; # TODO contents updated, but never queried
-	private int[] spillCounts = null;
-	private int[] refinements = null;
-	private List<int[]> naryRefinements = null;
 	private int[] bucketComparisonOrder = null;
 	private LongArrayList columnSizes = null;
-
-	//private PruningStatistics pruningStatistics = null;
 
 	@Override
 	public String toString() {
@@ -261,14 +253,6 @@ public class Binder {
 
 		//this.activeAttributesPerBucketLevel = new IntArrayList(this.numBucketsPerColumn);
 		
-		this.spillCounts = new int[this.numColumns];
-		for (int columnNumber = 0; columnNumber < this.numColumns; columnNumber++)
-			this.spillCounts[columnNumber] = 0;
-		
-		this.refinements = new int[this.numBucketsPerColumn];
-		for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++)
-			this.refinements[bucketNumber] = 0;
-		
 		this.nullValueColumns = new BitSet(this.columnNames.size());
 		
 		//this.pruningStatistics = new PruningStatistics(this.numColumns, this.numBucketsPerColumn);
@@ -325,7 +309,12 @@ public class Binder {
 	
 	private void bucketize() throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		System.out.print("Bucketizing ... ");
-		
+
+		// externalized methods from initialize()
+		int[] spillCounts = new int[this.numColumns];
+		for (int columnNumber = 0; columnNumber < this.numColumns; columnNumber++)
+			spillCounts[columnNumber] = 0;
+
 		// Initialize the counters that count the empty buckets per bucket level to identify sparse buckets and promising bucket levels for comparison
 		int[] emptyBuckets = new int[this.numBucketsPerColumn];
 		
@@ -407,7 +396,7 @@ public class Binder {
 								}
 								numValuesInColumn[largestColumnNumber] = 0;
 								
-								this.spillCounts[globalLargestColumnIndex] = this.spillCounts[globalLargestColumnIndex] + 1;
+								spillCounts[globalLargestColumnIndex] = spillCounts[globalLargestColumnIndex] + 1;
 								
 								System.gc();
 							}
@@ -422,7 +411,7 @@ public class Binder {
 			// Write buckets to disk
 			for (int columnNumber = 0; columnNumber < numTableColumns; columnNumber++) {
 				int globalColumnIndex = startTableColumnIndex + columnNumber;
-				if (this.spillCounts[globalColumnIndex] == 0) { // if a column was spilled to disk, we do not count empty buckets for this column, because the partitioning distributes the values evenly and hence all buckets should have been populated
+				if (spillCounts[globalColumnIndex] == 0) { // if a column was spilled to disk, we do not count empty buckets for this column, because the partitioning distributes the values evenly and hence all buckets should have been populated
 					for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++) {
 						Set<String> bucket = buckets.get(columnNumber).get(bucketNumber);
 						if (bucket.size() != 0)
@@ -465,8 +454,8 @@ public class Binder {
 		for (int c1 = 0; c1 < this.numColumns; c1++) {
 			for (int c2 = c1 + 1; c2 < this.numColumns; c2++) {
 				// Columns of different type cannot be included in each other
-				if (!DatabaseUtils.matchSameDataTypeClass(this.columnTypes.get(c1), this.columnTypes.get(c2)))
-					continue;
+				//if (!DatabaseUtils.matchSameDataTypeClass(this.columnTypes.get(c1), this.columnTypes.get(c2)))
+				//	continue;
 				
 				// c1 > c2 ?
 				//if (this.pruningStatistics.isValid(c2, c1)) {
@@ -988,14 +977,14 @@ public class Binder {
 	
 	private int[] refineBucketLevel(IntArrayList activeAttributes, int level) throws IOException {
 		BitSet activeAttributesBits = new BitSet(this.numColumns);
-		activeAttributes.forEach((int attribute) -> activeAttributesBits.set(attribute));
+		activeAttributes.forEach((IntConsumer) activeAttributesBits::set);
 		return this.refineBucketLevel(activeAttributesBits, 0, level);
 	}
 	
 	private int[] refineBucketLevel(BitSet activeAttributes, int attributeOffset, int level) throws IOException { // The offset is used for n-ary INDs, because their buckets are placed behind the unary buckets on disk, which is important if the unary buckets have not been deleted before
 		// Empty sub bucket cache, because it will be refilled in the following
 		this.attribute2subBucketsCache = null;
-		
+
 		// Give a hint to the gc
 		System.gc();
 		
@@ -1031,11 +1020,6 @@ public class Binder {
 		for (int subBucketNumber = 0; subBucketNumber < numSubBuckets; subBucketNumber++)
 			subBucketNumbers[subBucketNumber] = subBucketNumber;
 		
-		if (attributeOffset == 0)
-			this.refinements[level] = numSubBuckets;
-		else
-			this.naryRefinements.get(this.naryRefinements.size() - 1)[level] = numSubBuckets;
-		
 		this.attribute2subBucketsCache = new Int2ObjectOpenHashMap<>(numSubBuckets);
 		
 		// Refine
@@ -1046,7 +1030,7 @@ public class Binder {
 			//int expectedNewBucketSize = (int)(bucket.size() * (1.2f / numSubBuckets)); // The expected size is bucket.size()/subBuckets and we add 20% to it to avoid resizing
 			//int expectedNewBucketSize = (int)(this.columnSizes.getLong(attributeIndex) / this.numBucketsPerColumn / 80); // We estimate an average String size of 8 chars, hence 64+2*8=80 byte
 			for (int subBucket = 0; subBucket < numSubBuckets; subBucket++)
-				subBuckets.add(new ArrayList<String>());
+				subBuckets.add(new ArrayList<>());
 			
 			BufferedReader reader = null;
 			String value;
@@ -1104,11 +1088,6 @@ public class Binder {
 		
 		// N-ary column combinations are enumerated following the enumeration of the attributes
 		int naryOffset = this.numColumns;
-
-		// Initialize counters
-		//this.naryActiveAttributesPerBucketLevel = new IntArrayList();
-		List<int[]> narySpillCounts = new ArrayList<>();
-		this.naryRefinements = new ArrayList<>();
 		
 		// Initialize nPlusOneAryDep2ref with unary dep2ref
 		Map<AttributeCombination, List<AttributeCombination>> nPlusOneAryDep2ref = new HashMap<>();
@@ -1129,7 +1108,6 @@ public class Binder {
 		// Generate, bucketize and test the n-ary INDs level-wise
 		this.naryDep2ref = new HashMap<>();
 		this.naryGenerationTime = new LongArrayList();
-		LongArrayList naryLoadTime = new LongArrayList();
 		this.naryCompareTime = new LongArrayList();
 		while (++naryLevel <= this.maxNaryLevel || this.maxNaryLevel <= 0) {
 			System.out.print(" L" + naryLevel);
@@ -1154,19 +1132,11 @@ public class Binder {
 			int[] currentNarySpillCounts = new int[attributeCombinations.size()];
 			for (int attributeCombinationNumber = 0; attributeCombinationNumber < attributeCombinations.size(); attributeCombinationNumber++)
 				currentNarySpillCounts[attributeCombinationNumber] = 0;
-			narySpillCounts.add(currentNarySpillCounts);
-			
-			int[] currentNaryRefinements = new int[this.numBucketsPerColumn];
-			for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++)
-				currentNaryRefinements[bucketNumber] = 0;
-			this.naryRefinements.add(currentNaryRefinements);
 			
 			this.naryGenerationTime.add(System.currentTimeMillis() - naryGenerationTimeCurrent);
 			
 			// Read the input dataset again and bucketize all attribute combinations that are refs or deps
-			long naryLoadTimeCurrent = System.currentTimeMillis();
 			this.naryBucketize(attributeCombinations, naryOffset, currentNarySpillCounts);
-			naryLoadTime.add(System.currentTimeMillis() - naryLoadTimeCurrent);
 			
 			// Check the n-ary IND candidates
 			long naryCompareTimeCurrent = System.currentTimeMillis();
@@ -1697,7 +1667,6 @@ public class Binder {
 
 				System.out.print(refTableName + ": " + refColumnName + "\n");
 				this.resultReceiver.receiveResult(new InclusionDependency(new ColumnPermutation(new ColumnIdentifier(depTableName, depColumnName)), new ColumnPermutation(new ColumnIdentifier(refTableName, refColumnName))));
-				this.numUnaryINDs++;
 			}
 		}
 		
@@ -1711,7 +1680,6 @@ public class Binder {
 				ColumnPermutation ref = this.buildColumnPermutationFor(refAttributeCombination);
 				
 				this.resultReceiver.receiveResult(new InclusionDependency(dep, ref));
-				this.numNaryINDs++;
 			}
 		}
 	}
