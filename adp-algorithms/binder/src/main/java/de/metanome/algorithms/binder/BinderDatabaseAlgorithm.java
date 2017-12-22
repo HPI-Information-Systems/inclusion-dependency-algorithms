@@ -37,11 +37,7 @@ public class BinderDatabaseAlgorithm extends Binder implements InclusionDependen
 	public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() {
 		ArrayList<ConfigurationRequirement<?>> configs = new ArrayList<>(8);
 		configs.add(new ConfigurationRequirementDatabaseConnection(BinderDatabaseAlgorithm.Identifier.INPUT_DATABASE.name()));
-		
-		ConfigurationRequirementString databaseName = new ConfigurationRequirementString(BinderDatabaseAlgorithm.Identifier.DATABASE_NAME.name());
-		databaseName.setRequired(true);
-		configs.add(databaseName); // TODO: take this from the input source
-		
+
 		ConfigurationRequirementString databaseType = new ConfigurationRequirementString(BinderDatabaseAlgorithm.Identifier.DATABASE_TYPE.name());
 		String[] defaultDatabaseType = new String[1];
 		defaultDatabaseType[0] = "MYSQL";
