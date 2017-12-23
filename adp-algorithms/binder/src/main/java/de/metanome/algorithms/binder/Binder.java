@@ -41,7 +41,6 @@ import de.metanome.algorithms.binder.structures.AttributeCombination;
 import de.metanome.algorithms.binder.structures.IntSingleLinkedList;
 import de.metanome.algorithms.binder.structures.IntSingleLinkedList.ElementIterator;
 import de.metanome.algorithms.binder.structures.Level;
-import de.metanome.algorithms.binder.structures.PruningStatistics;
 import de.metanome.algorithms.binder.utils.CollectionUtils;
 import de.metanome.algorithms.binder.utils.DatabaseUtils;
 import de.metanome.algorithms.binder.utils.FileUtils;
@@ -88,12 +87,9 @@ class Binder {
 	private Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = null;
 	private int[] column2table = null;
 
-	private BitSet nullValueColumns;
-
-	private LongArrayList naryGenerationTime = null;
-	private LongArrayList naryCompareTime = null;
-
+	// candidates for TableInfo class
 	private LongArrayList columnSizes = null;
+
 
 	@Override
 	public String toString() {
@@ -124,7 +120,7 @@ class Binder {
 			// Phase 1: Bucketing (Create and fill the buckets) //
 			//////////////////////////////////////////////////////
 			long unaryLoadTime = System.currentTimeMillis();
-			int[] bucketComparisonOrder = this.bucketize();
+			BucketizedAttribute bucketizedAttribute = this.bucketize();
 			unaryLoadTime = System.currentTimeMillis() - unaryLoadTime;
 
 			//////////////////////////////////////////////////////
@@ -132,9 +128,9 @@ class Binder {
 			//////////////////////////////////////////////////////
 			long unaryCompareTime = System.currentTimeMillis();
 			this.checkViaHashing();
-			this.checkViaSorting(bucketComparisonOrder);
-			this.checkViaTwoStageIndexAndBitSets(bucketComparisonOrder);
-			this.checkViaTwoStageIndexAndLists(bucketComparisonOrder);
+			this.checkViaSorting(bucketizedAttribute);
+			this.checkViaTwoStageIndexAndBitSets(bucketizedAttribute);
+			this.checkViaTwoStageIndexAndLists(bucketizedAttribute);
 			unaryCompareTime = System.currentTimeMillis() - unaryCompareTime;
 
 			/////////////////////////////////////////////////////////
@@ -199,12 +195,6 @@ class Binder {
 		
 		this.numColumns = this.columnNames.size();
 
-		//this.activeAttributesPerBucketLevel = new IntArrayList(this.numBucketsPerColumn);
-		
-		this.nullValueColumns = new BitSet(this.columnNames.size());
-		
-		//this.pruningStatistics = new PruningStatistics(this.numColumns, this.numBucketsPerColumn);
-		
 		// Build an index that assigns the columns to their tables, because the n-ary detection can only group those attributes that belong to the same table and the foreign key detection also only groups attributes from different tables.
 		this.column2table = new int[this.numColumns];
 		int table = 0;
@@ -255,7 +245,7 @@ class Binder {
 		}
 	}
 	
-	private int[] bucketize() throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
+	private BucketizedAttribute bucketize() throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		System.out.print("Bucketizing ... ");
 
 		// externalized methods from initialize()
@@ -265,6 +255,7 @@ class Binder {
 
 		// Initialize the counters that count the empty buckets per bucket level to identify sparse buckets and promising bucket levels for comparison
 		int[] emptyBuckets = new int[this.numBucketsPerColumn];
+		BitSet nullValueColumns = new BitSet(this.columnNames.size());
 		
 		// Initialize aggregators to measure the size of the columns
 		this.columnSizes = new LongArrayList(this.numColumns);
@@ -308,7 +299,7 @@ class Binder {
 						//value = new StringBuilder(value).reverse().toString(); // This is an optimization if urls with long, common prefixes are used to later improve the comparison values
 						
 						if (value == null) {
-							this.nullValueColumns.set(startTableColumnIndex + columnNumber);
+							nullValueColumns.set(startTableColumnIndex + columnNumber);
 							continue;
 						}
 						
@@ -380,7 +371,7 @@ class Binder {
 		
 		// Calculate the bucket comparison order from the emptyBuckets to minimize the influence of sparse-attribute-issue
 		int[] bucketComparisonOrder = this.calculateBucketComparisonOrder(emptyBuckets);
-		return bucketComparisonOrder;
+		return new BucketizedAttribute(bucketComparisonOrder, nullValueColumns);
 	}
 		
 	private void checkViaHashing() throws IOException {
@@ -447,7 +438,7 @@ class Binder {
 		}
 	}
 	
-	private void checkViaSorting(int[] bucketComparisonOrder) throws IOException {
+	private void checkViaSorting(BucketizedAttribute bucketizedAttribute) throws IOException {
 		/////////////////////////////////////
 		// Phase 2: Pruning and Validation //
 		/////////////////////////////////////
@@ -466,7 +457,7 @@ class Binder {
 		}
 		
 		// Validate INDs
-		for (int bucketNumber : bucketComparisonOrder) {
+		for (int bucketNumber : bucketizedAttribute.getBucketComparisonOrder()) {
 			// Refine the current bucket level if it does not fit into memory at once
 			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, bucketNumber);
 			for (int subBucketNumber : subBucketNumbers) {
@@ -517,7 +508,7 @@ class Binder {
 		attributeId2attributeObject.values().stream().filter(attribute -> !attribute.getReferenced().isEmpty()).forEach(attribute -> this.dep2ref.put(attribute.getAttributeId(), new IntSingleLinkedList(attribute.getReferenced())));
 	}
 	
-	private void checkViaTwoStageIndexAndBitSets(int[] bucketComparisonOrder) throws IOException {
+	private void checkViaTwoStageIndexAndBitSets(BucketizedAttribute bucketizedAttribute) throws IOException {
 		/////////////////////////////////////////////////////////
 		// Phase 2.1: Pruning (Dismiss first candidates early) //
 		/////////////////////////////////////////////////////////
@@ -562,7 +553,7 @@ class Binder {
 		
 		// Iterate the buckets for all remaining INDs until the end is reached or no more INDs exist
 		BitSet activeAttributes = (BitSet)allAttributes.clone();
-		levelloop : for (int bucketNumber : bucketComparisonOrder) { // TODO: Externalize this code into a method and use return instead of break
+		levelloop : for (int bucketNumber : bucketizedAttribute.getBucketComparisonOrder()) { // TODO: Externalize this code into a method and use return instead of break
 			// Refine the current bucket level if it does not fit into memory at once
 			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber);
 			for (int subBucketNumber : subBucketNumbers) {
@@ -623,7 +614,7 @@ class Binder {
 		}
 	}
 	
-	private void checkViaTwoStageIndexAndLists(int[] bucketComparisonOrder) throws IOException {
+	private void checkViaTwoStageIndexAndLists(BucketizedAttribute bucketizedAttribute) throws IOException {
 		System.out.println("Checking ...");
 		
 		/////////////////////////////////////////////////////////
@@ -649,10 +640,10 @@ class Binder {
 		// Empty attributes can directly be placed in the output as they are contained in everything else; no empty attribute needs to be checked
 		Int2ObjectOpenHashMap<IntSingleLinkedList> dep2refFinal = new Int2ObjectOpenHashMap<>(this.numColumns);
 		Int2ObjectOpenHashMap<IntSingleLinkedList> attribute2Refs = new Int2ObjectOpenHashMap<>(this.numColumns);
-		this.fetchCandidates(strings, attribute2Refs, dep2refFinal);
-		this.fetchCandidates(numerics, attribute2Refs, dep2refFinal);
-		this.fetchCandidates(temporals, attribute2Refs, dep2refFinal);
-		this.fetchCandidates(unknown, attribute2Refs, dep2refFinal);
+		this.fetchCandidates(strings, attribute2Refs, dep2refFinal, bucketizedAttribute);
+		this.fetchCandidates(numerics, attribute2Refs, dep2refFinal, bucketizedAttribute);
+		this.fetchCandidates(temporals, attribute2Refs, dep2refFinal, bucketizedAttribute);
+		this.fetchCandidates(unknown, attribute2Refs, dep2refFinal, bucketizedAttribute);
 		
 		// Apply statistical pruning
 		// TODO ...
@@ -668,7 +659,7 @@ class Binder {
 				activeAttributes.set(column);
 		
 		// Iterate the buckets for all remaining INDs until the end is reached or no more INDs exist
-		levelloop : for (int bucketNumber : bucketComparisonOrder) { // TODO: Externalize this code into a method and use return instead of break
+		levelloop : for (int bucketNumber : bucketizedAttribute.getBucketComparisonOrder()) { // TODO: Externalize this code into a method and use return instead of break
 			// Refine the current bucket level if it does not fit into memory at once
 			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber);
 			for (int subBucketNumber : subBucketNumbers) {
@@ -725,7 +716,7 @@ class Binder {
 		this.dep2ref.putAll(dep2refFinal);
 	}
 	
-	private void fetchCandidates(IntArrayList columns, Int2ObjectOpenHashMap<IntSingleLinkedList> dep2refToCheck, Int2ObjectOpenHashMap<IntSingleLinkedList> dep2refFinal) {
+	private void fetchCandidates(IntArrayList columns, Int2ObjectOpenHashMap<IntSingleLinkedList> dep2refToCheck, Int2ObjectOpenHashMap<IntSingleLinkedList> dep2refFinal, BucketizedAttribute bucketizedAttribute) {
 		IntArrayList nonEmptyColumns = new IntArrayList(columns.size());
 		nonEmptyColumns.addAll(columns.stream().filter(column -> this.columnSizes.getLong(column) > 0).collect(Collectors.toList()));
 		
@@ -740,7 +731,7 @@ class Binder {
 				IntListIterator iterator = seed.iterator();
 				while (iterator.hasNext()) {
 					int ref = iterator.nextInt();
-					if ((this.column2table[dep] == this.column2table[ref]) || this.nullValueColumns.get(ref))
+					if ((this.column2table[dep] == this.column2table[ref]) || bucketizedAttribute.getNullValueColumns().get(ref))
 						iterator.remove();
 				}
 				
@@ -1035,8 +1026,8 @@ class Binder {
 		
 		// Generate, bucketize and test the n-ary INDs level-wise
 		this.naryDep2ref = new HashMap<>();
-		this.naryGenerationTime = new LongArrayList();
-		this.naryCompareTime = new LongArrayList();
+		LongArrayList naryGenerationTime = new LongArrayList();
+		LongArrayList naryCompareTime = new LongArrayList();
 		while (++naryLevel <= this.maxNaryLevel || this.maxNaryLevel <= 0) {
 			System.out.print(" L" + naryLevel);
 			
@@ -1061,7 +1052,7 @@ class Binder {
 			for (int attributeCombinationNumber = 0; attributeCombinationNumber < attributeCombinations.size(); attributeCombinationNumber++)
 				currentNarySpillCounts[attributeCombinationNumber] = 0;
 			
-			this.naryGenerationTime.add(System.currentTimeMillis() - naryGenerationTimeCurrent);
+			naryGenerationTime.add(System.currentTimeMillis() - naryGenerationTimeCurrent);
 			
 			// Read the input dataset again and bucketize all attribute combinations that are refs or deps
 			int[] bucketComparisonOrder = this.naryBucketize(attributeCombinations, naryOffset, currentNarySpillCounts);
@@ -1075,7 +1066,7 @@ class Binder {
 			// Add the number of created buckets for n-ary INDs of this level to the naryOffset
 			naryOffset = naryOffset + attributeCombinations.size();
 
-			this.naryCompareTime.add(System.currentTimeMillis() - naryCompareTimeCurrent);
+			naryCompareTime.add(System.currentTimeMillis() - naryCompareTimeCurrent);
 			System.out.print("(" + (System.currentTimeMillis() - naryGenerationTimeCurrent) + " ms)");
 		}
 		System.out.println();
@@ -1105,15 +1096,15 @@ class Binder {
 		
 		// Generate, bucketize and test the n-ary INDs level-wise
 		this.naryDep2ref = new HashMap<>();
-		this.naryGenerationTime = new LongArrayList();
-		this.naryCompareTime = new LongArrayList();
+		LongArrayList naryGenerationTime = new LongArrayList();
+		LongArrayList naryCompareTime = new LongArrayList();
 		while (true) {
 			// Generate (n+1)-ary IND candidates from the already identified unary and n-ary IND candidates
 			long naryGenerationTimeCurrent = System.currentTimeMillis();
 			nPlusOneAryDep2ref = this.generateNPlusOneAryCandidates(nPlusOneAryDep2ref);
 			if (nPlusOneAryDep2ref.isEmpty())
 				break;
-			this.naryGenerationTime.add(System.currentTimeMillis() - naryGenerationTimeCurrent);
+			naryGenerationTime.add(System.currentTimeMillis() - naryGenerationTimeCurrent);
 			
 			// Check the n-ary IND candidates
 			long naryCompareTimeCurrent = System.currentTimeMillis();
@@ -1171,7 +1162,7 @@ class Binder {
 			
 			this.naryDep2ref.putAll(nPlusOneAryDep2ref);
 			
-			this.naryCompareTime.add(System.currentTimeMillis() - naryCompareTimeCurrent);
+			naryCompareTime.add(System.currentTimeMillis() - naryCompareTimeCurrent);
 		}
 	}
 /**/
