@@ -54,23 +54,23 @@ import it.unimi.dsi.fastutil.ints.IntListIterator;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 // Bucketing IND ExtractoR (BINDER)
-public class Binder {
+class Binder {
 
-	protected DatabaseConnectionGenerator databaseConnectionGenerator = null;
-	protected RelationalInputGenerator[] fileInputGenerator = null;
-	protected InclusionDependencyResultReceiver resultReceiver = null;
-	protected DataAccessObject dao = null;
-	protected String[] tableNames = null;
-	protected String databaseName = null;
-	protected String tempFolderPath = "BINDER_temp"; // TODO: Use Metanome temp file functionality here (interface TempFileAlgorithm)
-	protected boolean cleanTemp = true;
-	protected boolean detectNary = false;
-	protected boolean filterKeyForeignkeys = false;
-	protected int maxNaryLevel = -1;
-	protected int inputRowLimit = -1;
-	protected int numBucketsPerColumn = 10; // Initial number of buckets per column
-	protected int memoryCheckFrequency = 100; // Number of new, i.e., so far unseen values during bucketing that trigger a memory consumption check
-	protected int maxMemoryUsagePercentage = 60; // The algorithm spills to disc if memory usage exceeds X% of available memory
+	DatabaseConnectionGenerator databaseConnectionGenerator = null;
+	RelationalInputGenerator[] fileInputGenerator = null;
+	InclusionDependencyResultReceiver resultReceiver = null;
+	DataAccessObject dao = null;
+	String[] tableNames = null;
+	String databaseName = null;
+	String tempFolderPath = "BINDER_temp"; // TODO: Use Metanome temp file functionality here (interface TempFileAlgorithm)
+	boolean cleanTemp = true;
+	boolean detectNary = false;
+	boolean filterKeyForeignkeys = false;
+	int maxNaryLevel = -1;
+	int inputRowLimit = -1;
+	int numBucketsPerColumn = 10; // Initial number of buckets per column
+	int memoryCheckFrequency = 100; // Number of new, i.e., so far unseen values during bucketing that trigger a memory consumption check
+	int maxMemoryUsagePercentage = 60; // The algorithm spills to disc if memory usage exceeds X% of available memory
 
 	private int numColumns;
 	private long maxMemoryUsage;
@@ -93,70 +93,18 @@ public class Binder {
 	private LongArrayList naryGenerationTime = null;
 	private LongArrayList naryCompareTime = null;
 
-	private int[] bucketComparisonOrder = null;
 	private LongArrayList columnSizes = null;
 
 	@Override
 	public String toString() {
 		return "it worked";
-//		String input = "-";
-//		if (this.databaseConnectionGenerator != null)
-//			input = this.databaseConnectionGenerator.getClass().getName();
-//		else if (this.fileInputGenerator != null)
-//			input = this.fileInputGenerator[0].getClass().getName() + " (" + this.fileInputGenerator.length + ")";
-//
-//		return "BINDER: \r\n\t" +
-//				"input: " + input + "\r\n\t" +
-//				"dao: " + ((this.dao != null) ? this.dao.getClass().getName() : "-") + "\r\n\t" +
-//				"databaseName: " + this.databaseName + "\r\n\t" +
-//				"inputRowLimit: " + this.inputRowLimit + "\r\n\t" +
-//				"resultReceiver: " + ((this.resultReceiver != null) ? this.resultReceiver.getClass().getName() : "-") + "\r\n\t" +
-//				"tempFolderPath: " + this.tempFolder.getPath() + "\r\n\t" +
-//				"tableNames: " + ((this.tableNames != null) ? CollectionUtils.concat(this.tableNames, ", ") : "-") + "\r\n\t" +
-//				"numColumns: " + this.numColumns + " (" + ((this.spillCounts != null) ? String.valueOf(CollectionUtils.countNotN(this.spillCounts, 0)) : "-") + " spilled)\r\n\t" +
-//				"numBucketsPerColumn: " + this.numBucketsPerColumn + "\r\n\t" +
-//				"bucketComparisonOrder: " + ((this.bucketComparisonOrder != null) ? CollectionUtils.concat(this.bucketComparisonOrder, ", ") : "-") + "\r\n\t" +
-//				"memoryCheckFrequency: " + this.memoryCheckFrequency + "\r\n\t" +
-//				"maxMemoryUsagePercentage: " + this.maxMemoryUsagePercentage + "%\r\n\t" +
-//				"availableMemory: " + this.availableMemory + " byte (spilled when exceeding " + this.maxMemoryUsage + " byte)\r\n\t" +
-//				"numBucketsPerColumn: " + this.numBucketsPerColumn + "\r\n\t" +
-//				"memoryCheckFrequency: " + this.memoryCheckFrequency + "\r\n\t" +
-//				"cleanTemp: " + this.cleanTemp + "\r\n\t" +
-//				"detectNary: " + this.detectNary + "\r\n\t" +
-//				"numUnaryINDs: " + this.numUnaryINDs + "\r\n\t" +
-//				"numNaryINDs: " + this.numNaryINDs + "\r\n\t" +
-//			"\r\n" +
-//			"nullValueColumns: " + this.nullValueColumns.toString() +
-//			"\r\n" +
-//			((this.pruningStatistics != null) ? String.valueOf(this.pruningStatistics.getPrunedCombinations()) : "-") + " candidates pruned by statistical pruning\r\n\t" +
-//			"\r\n" +
-//			"columnSizes: " + ((this.columnSizes != null) ? CollectionUtils.concat(this.columnSizes, ", ") : "-") + "\r\n" +
-//			"numEmptyColumns: " + ((this.columnSizes != null) ? String.valueOf(CollectionUtils.countN(this.columnSizes, 0)) : "-") + "\r\n" +
-//			"\r\n" +
-//			"activeAttributesPerBucketLevel: " + ((this.activeAttributesPerBucketLevel != null) ? CollectionUtils.concat(this.activeAttributesPerBucketLevel, ", ") : "-") + "\r\n" +
-//			"naryActiveAttributesPerBucketLevel: " + ((this.naryActiveAttributesPerBucketLevel == null) ? "-" : CollectionUtils.concat(this.naryActiveAttributesPerBucketLevel, ", ")) + "\r\n" +
-//			"\r\n" +
-//			"spillCounts: " + ((this.spillCounts != null) ? CollectionUtils.concat(this.spillCounts, ", ") : "-") + "\r\n" +
-//			"narySpillCounts: " + ((this.narySpillCounts == null) ? "-" : CollectionUtils.concat(this.narySpillCounts, ", ", "\r\n")) + "\r\n" +
-//			"\r\n" +
-//			"refinements: " + ((this.refinements != null) ? CollectionUtils.concat(this.refinements, ", ") : "-") + "\r\n" +
-//			"naryRefinements: " + ((this.naryRefinements == null) ? "-" : CollectionUtils.concat(this.naryRefinements, ", ", "\r\n")) + "\r\n" +
-//			"\r\n" +
-//			"unaryStatisticTime: " + this.unaryStatisticTime + "\r\n" +
-//			"unaryLoadTime: " + this.unaryLoadTime + "\r\n" +
-//			"unaryCompareTime: " + this.unaryCompareTime + "\r\n" +
-//			"naryGenerationTime: " + this.naryGenerationTime + "\r\n" +
-//			"naryLoadTime: " + this.naryLoadTime + "\r\n" +
-//			"naryCompareTime: " + this.naryCompareTime + "\r\n" +
-//			"outputTime: " + this.outputTime;
 	}
 
-
-	protected String getAuthorName() {
+	String getAuthorName() {
 		return "Maxi Fischer, Axel Stebner";
 	}
 
-	protected String getDescriptionText() {
+	String getDescriptionText() {
 		return "Divide and Conquer-based IND discovery";
 	}
 
@@ -176,17 +124,17 @@ public class Binder {
 			// Phase 1: Bucketing (Create and fill the buckets) //
 			//////////////////////////////////////////////////////
 			long unaryLoadTime = System.currentTimeMillis();
-			this.bucketize();
+			int[] bucketComparisonOrder = this.bucketize();
 			unaryLoadTime = System.currentTimeMillis() - unaryLoadTime;
 
 			//////////////////////////////////////////////////////
 			// Phase 2: Checking (Check INDs using the buckets) //
 			//////////////////////////////////////////////////////
 			long unaryCompareTime = System.currentTimeMillis();
-			//this.checkViaHashing();
-			//this.checkViaSorting();
-			//this.checkViaTwoStageIndexAndBitSets();
-			this.checkViaTwoStageIndexAndLists();
+			this.checkViaHashing();
+			this.checkViaSorting(bucketComparisonOrder);
+			this.checkViaTwoStageIndexAndBitSets(bucketComparisonOrder);
+			this.checkViaTwoStageIndexAndLists(bucketComparisonOrder);
 			unaryCompareTime = System.currentTimeMillis() - unaryCompareTime;
 
 			/////////////////////////////////////////////////////////
@@ -194,7 +142,7 @@ public class Binder {
 			/////////////////////////////////////////////////////////
 			if (this.detectNary && (this.maxNaryLevel > 1 || this.maxNaryLevel <= 0))
 				this.detectNaryViaBucketing();
-				//this.detectNaryViaSingleChecks();
+				this.detectNaryViaSingleChecks();
 			
 			//////////////////////////////////////////////////////
 			// Phase 4: Output (Return and/or write the results //
@@ -307,7 +255,7 @@ public class Binder {
 		}
 	}
 	
-	private void bucketize() throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
+	private int[] bucketize() throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		System.out.print("Bucketizing ... ");
 
 		// externalized methods from initialize()
@@ -431,9 +379,8 @@ public class Binder {
 		}
 		
 		// Calculate the bucket comparison order from the emptyBuckets to minimize the influence of sparse-attribute-issue
-		this.calculateBucketComparisonOrder(emptyBuckets);
-		
-		System.out.println();
+		int[] bucketComparisonOrder = this.calculateBucketComparisonOrder(emptyBuckets);
+		return bucketComparisonOrder;
 	}
 		
 	private void checkViaHashing() throws IOException {
@@ -449,26 +396,6 @@ public class Binder {
 		for (int globalColumnIndex = 0; globalColumnIndex < this.numColumns; globalColumnIndex++) {
 			refCounts[globalColumnIndex] = 0;
 			this.dep2ref.put(globalColumnIndex, new IntSingleLinkedList());
-		}
-		
-		for (int c1 = 0; c1 < this.numColumns; c1++) {
-			for (int c2 = c1 + 1; c2 < this.numColumns; c2++) {
-				// Columns of different type cannot be included in each other
-				//if (!DatabaseUtils.matchSameDataTypeClass(this.columnTypes.get(c1), this.columnTypes.get(c2)))
-				//	continue;
-				
-				// c1 > c2 ?
-				//if (this.pruningStatistics.isValid(c2, c1)) {
-				//	refCounts[c1] = refCounts[c1] + 1;
-				//	this.dep2ref.get(c2).add(c1);
-				//}
-				
-				// c2 > c1 ?
-				//if (this.pruningStatistics.isValid(c1, c2)) {
-				//	refCounts[c2] = refCounts[c2] + 1;
-				//	this.dep2ref.get(c1).add(c2);
-				//}
-			}
 		}
 		
 		for (int column = 0; column < this.numColumns; column++)
@@ -520,7 +447,7 @@ public class Binder {
 		}
 	}
 	
-	private void checkViaSorting() throws IOException {
+	private void checkViaSorting(int[] bucketComparisonOrder) throws IOException {
 		/////////////////////////////////////
 		// Phase 2: Pruning and Validation //
 		/////////////////////////////////////
@@ -539,7 +466,7 @@ public class Binder {
 		}
 		
 		// Validate INDs
-		for (int bucketNumber : this.bucketComparisonOrder) {
+		for (int bucketNumber : bucketComparisonOrder) {
 			// Refine the current bucket level if it does not fit into memory at once
 			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, bucketNumber);
 			for (int subBucketNumber : subBucketNumbers) {
@@ -590,7 +517,7 @@ public class Binder {
 		attributeId2attributeObject.values().stream().filter(attribute -> !attribute.getReferenced().isEmpty()).forEach(attribute -> this.dep2ref.put(attribute.getAttributeId(), new IntSingleLinkedList(attribute.getReferenced())));
 	}
 	
-	private void checkViaTwoStageIndexAndBitSets() throws IOException {
+	private void checkViaTwoStageIndexAndBitSets(int[] bucketComparisonOrder) throws IOException {
 		/////////////////////////////////////////////////////////
 		// Phase 2.1: Pruning (Dismiss first candidates early) //
 		/////////////////////////////////////////////////////////
@@ -635,7 +562,7 @@ public class Binder {
 		
 		// Iterate the buckets for all remaining INDs until the end is reached or no more INDs exist
 		BitSet activeAttributes = (BitSet)allAttributes.clone();
-		levelloop : for (int bucketNumber : this.bucketComparisonOrder) { // TODO: Externalize this code into a method and use return instead of break
+		levelloop : for (int bucketNumber : bucketComparisonOrder) { // TODO: Externalize this code into a method and use return instead of break
 			// Refine the current bucket level if it does not fit into memory at once
 			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber);
 			for (int subBucketNumber : subBucketNumbers) {
@@ -696,7 +623,7 @@ public class Binder {
 		}
 	}
 	
-	private void checkViaTwoStageIndexAndLists() throws IOException {
+	private void checkViaTwoStageIndexAndLists(int[] bucketComparisonOrder) throws IOException {
 		System.out.println("Checking ...");
 		
 		/////////////////////////////////////////////////////////
@@ -741,7 +668,7 @@ public class Binder {
 				activeAttributes.set(column);
 		
 		// Iterate the buckets for all remaining INDs until the end is reached or no more INDs exist
-		levelloop : for (int bucketNumber : this.bucketComparisonOrder) { // TODO: Externalize this code into a method and use return instead of break
+		levelloop : for (int bucketNumber : bucketComparisonOrder) { // TODO: Externalize this code into a method and use return instead of break
 			// Refine the current bucket level if it does not fit into memory at once
 			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber);
 			for (int subBucketNumber : subBucketNumbers) {
@@ -872,15 +799,16 @@ public class Binder {
 		return ((Math.abs(value.hashCode() % (this.numBucketsPerColumn * numSubBuckets)) - bucketNumber) / this.numBucketsPerColumn); // range partitioning
 	}
 	
-	private void calculateBucketComparisonOrder(int[] emptyBuckets) {
+	private int[] calculateBucketComparisonOrder(int[] emptyBuckets) {
 		List<Level> levels = new ArrayList<>(this.numColumns);
 		for (int level = 0; level < this.numBucketsPerColumn; level++)
 			levels.add(new Level(level, emptyBuckets[level]));
 		Collections.sort(levels);
 		
-		this.bucketComparisonOrder = new int[this.numBucketsPerColumn];
+		int[] bucketComparisonOrder = new int[this.numBucketsPerColumn];
 		for (int rank = 0; rank < this.numBucketsPerColumn; rank++)
-			this.bucketComparisonOrder[rank] = levels.get(rank).getNumber();
+			bucketComparisonOrder[rank] = levels.get(rank).getNumber();
+		return bucketComparisonOrder;
 	}
 
 	private static long sizeOf64(String s) {
@@ -1136,11 +1064,11 @@ public class Binder {
 			this.naryGenerationTime.add(System.currentTimeMillis() - naryGenerationTimeCurrent);
 			
 			// Read the input dataset again and bucketize all attribute combinations that are refs or deps
-			this.naryBucketize(attributeCombinations, naryOffset, currentNarySpillCounts);
+			int[] bucketComparisonOrder = this.naryBucketize(attributeCombinations, naryOffset, currentNarySpillCounts);
 			
 			// Check the n-ary IND candidates
 			long naryCompareTimeCurrent = System.currentTimeMillis();
-			this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset);
+			this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset, bucketComparisonOrder);
 			
 			this.naryDep2ref.putAll(nPlusOneAryDep2ref);
 			
@@ -1431,7 +1359,7 @@ public class Binder {
 
 	}
 
-	private void naryBucketize(List<AttributeCombination> attributeCombinations, int naryOffset, int[] narySpillCounts) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
+	private int[] naryBucketize(List<AttributeCombination> attributeCombinations, int naryOffset, int[] narySpillCounts) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		// Identify the relevant attribute combinations for the different tables
 		List<IntArrayList> table2attributeCombinationNumbers = new ArrayList<>(this.tableNames.length);
 		for (String ignored : this.tableNames) table2attributeCombinationNumbers.add(new IntArrayList());
@@ -1558,10 +1486,11 @@ public class Binder {
 		}
 		
 		// Calculate the bucket comparison order from the emptyBuckets to minimize the influence of sparse-attribute-issue
-		this.calculateBucketComparisonOrder(emptyBuckets);
+		int[] bucketComparisonOrder = this.calculateBucketComparisonOrder(emptyBuckets);
+		return bucketComparisonOrder;
 	}
 
-	private void naryCheckViaTwoStageIndexAndLists(Map<AttributeCombination, List<AttributeCombination>> naryDep2ref, List<AttributeCombination> attributeCombinations, int naryOffset) throws IOException {
+	private void naryCheckViaTwoStageIndexAndLists(Map<AttributeCombination, List<AttributeCombination>> naryDep2ref, List<AttributeCombination> attributeCombinations, int naryOffset, int[] bucketComparisonOrder) throws IOException {
 		////////////////////////////////////////////////////
 		// Validation (Successively check all candidates) //
 		////////////////////////////////////////////////////
@@ -1572,7 +1501,7 @@ public class Binder {
 		// Iterate the buckets for all remaining INDs until the end is reached or no more INDs exist
 		BitSet activeAttributeCombinations = new BitSet(attributeCombinations.size());
 		activeAttributeCombinations.set(0, attributeCombinations.size());
-		levelloop : for (int bucketNumber : this.bucketComparisonOrder) { // TODO: Externalize this code into a method and use return instead of break
+		levelloop : for (int bucketNumber : bucketComparisonOrder) { // TODO: Externalize this code into a method and use return instead of break
 			// Refine the current bucket level if it does not fit into memory at once
 			int[] subBucketNumbers = this.refineBucketLevel(activeAttributeCombinations, naryOffset, bucketNumber);
 			for (int subBucketNumber : subBucketNumbers) {
