@@ -1,7 +1,6 @@
 package de.metanome.algorithms.mind2;
 
 import com.google.common.collect.ImmutableList;
-import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
@@ -32,8 +31,7 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
     }
 
     @Override
-    public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values)
-            throws AlgorithmConfigurationException {
+    public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values) {
         if (identifier.equals(ConfigurationKey.TABLE.name()) && values.length > 0) {
             configurationBuilder.inputGenerators(ImmutableList.copyOf(values));
         }
@@ -46,17 +44,18 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
 
     @Override
     public void execute() throws AlgorithmExecutionException {
-        Mind2Configuration configuration = configurationBuilder.build();
-        // TODO: Execute algorithm
+        Mind2 mind2 = new Mind2(configurationBuilder.build());
+        mind2.execute();
     }
 
     @Override
     public String getAuthors() {
-        return null;
+        return "Nils Strelow, Fabian Windheuser";
     }
 
     @Override
     public String getDescription() {
-        return null;
+        return "Implementation of 'Detecting Maximum Inclusion Dependencies without Candidate Generation' " +
+                "by Shaabani, Meinel, 2016";
     }
 }
