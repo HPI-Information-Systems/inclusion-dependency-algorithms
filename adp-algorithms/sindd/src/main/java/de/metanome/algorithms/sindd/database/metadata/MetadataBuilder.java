@@ -47,10 +47,10 @@ public class MetadataBuilder {
 
 	private static List<TableInfo> createTables(final Configuration configuration) throws InputGenerationException, AlgorithmConfigurationException {
 		final TableInfoFactory tableInfoFactory = new TableInfoFactory();
-		List<TableInfo> schemaNames = tableInfoFactory
+		List<TableInfo> tableInfos = tableInfoFactory
 				.createFromTableInputs(configuration.getTableInputGenerators());
 		List<TableInfo> tables = new ArrayList<TableInfo>();
-		for (final TableInfo tableInfo : schemaNames) {
+		for (final TableInfo tableInfo : tableInfos) {
 			tables.add(tableInfo);
 		}
 		return tables;

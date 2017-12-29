@@ -62,7 +62,7 @@ public class Attribute {
 
 	//Remove
 	public String getQTableName() {
-		return "";
+		return getTableName();
 	}
 
 	public String getQName() {
