@@ -34,8 +34,7 @@ public class AttributeIterator extends CheckedAbstractIterator<AttributeValuePos
             rowIndex++;
             String value = row.get(columnIndex);
             if (value != null) {
-                AttributeValuePosition attrValue = new AttributeValuePosition(value, rowIndex);
-                return attrValue;
+                return new AttributeValuePosition(value, rowIndex);
             }
         }
         return endOfData();

@@ -4,10 +4,10 @@ import com.google.common.collect.ImmutableList;
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
-import de.metanome.algorithm_integration.algorithm_types.RelationalInputParameterAlgorithm;
+import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementRelationalInput;
-import de.metanome.algorithm_integration.input.RelationalInputGenerator;
+import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithms.mind2.configuration.ConfigurationKey;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
@@ -15,7 +15,7 @@ import de.metanome.algorithms.mind2.configuration.Mind2Configuration.Mind2Config
 
 import java.util.ArrayList;
 
-public class Mind2Algorithm implements InclusionDependencyAlgorithm, RelationalInputParameterAlgorithm {
+public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputParameterAlgorithm {
 
     private final Mind2ConfigurationBuilder configurationBuilder;
 
@@ -32,10 +32,10 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, RelationalI
     }
 
     @Override
-    public void setRelationalInputConfigurationValue(String identifier, RelationalInputGenerator... values)
+    public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values)
             throws AlgorithmConfigurationException {
         if (identifier.equals(ConfigurationKey.TABLE.name()) && values.length > 0) {
-            configurationBuilder.relationalInputGenerators(ImmutableList.copyOf(values));
+            configurationBuilder.inputGenerators(ImmutableList.copyOf(values));
         }
     }
 
