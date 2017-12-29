@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-class Spider {
+public class Spider {
 
 
   private final TableInfoFactory tableInfoFactory;
@@ -29,13 +29,13 @@ class Spider {
   private PriorityQueue<Attribute> priorityQueue;
 
 
-  Spider() {
+  public Spider() {
     tableInfoFactory = new TableInfoFactory();
     externalRepository = new ExternalRepository();
   }
 
 
-  void execute(final SpiderConfiguration configuration) throws AlgorithmExecutionException {
+  public void execute(final SpiderConfiguration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
     final List<TableInfo> table = tableInfoFactory
         .create(configuration.getRelationalInputGenerators(),
@@ -66,7 +66,9 @@ class Spider {
 
       for (final Attribute attribute : attributes) {
         attributeIndex.put(attribute.getId(), attribute);
-        priorityQueue.enqueue(attribute);
+        if (attribute.getReadPointer().hasNext()) {
+          priorityQueue.enqueue(attribute);
+        }
       }
     }
   }
@@ -175,7 +177,6 @@ class Spider {
       for (final Attribute attribute : attributeIndex.values()) {
         attribute.close();
       }
-      externalRepository.close(configuration);
     } catch (final IOException e) {
       throw new AlgorithmExecutionException("failed to close attribute", e);
     }

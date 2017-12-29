@@ -4,11 +4,13 @@ dependencies {
         transitive = false
     }
 
-    extraLibs(project(':demarchi')) {
-        transitive = false
+    extraLibs(project(':validation-strategies')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
     }
 
-    testCompile project(path: ':util', configuration: 'tests')
+    testCompile(project(path: ':util', configuration: 'tests')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
+    }
 }
 
 jar {

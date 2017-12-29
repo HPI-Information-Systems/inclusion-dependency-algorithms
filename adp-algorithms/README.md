@@ -75,14 +75,18 @@ de.metanome.cli.App \
  `hostname:port:database:username:password` (see the
  [docs](https://wiki.postgresql.org/wiki/Pgpass)).
  
+ For running an exemplary algorithm on the _BIOSQL_ dataset refer to [`spider-biosql.sh`](spider-biosql.sh).  
+ Use [`compare-results.py`](compare-results.py) for counting and comparing two different output
+ files of metanome-cli. The input arguments consist of the two paths.
+ 
  ## Dependency Management
  
  Actually the current dependency management is a little wicked.
- At the time of writing the Metanome algorithm integration JAR packages some of Metanome's
- dependencies (fat JAR approach). For instance this means we get Guava for free on our classpath.
+ At the time of writing the Metanome algorithm integration JAR exposes a lot of transitive dependencies.
+ For instance this means we get Guava for free on our classpath.
  However, even during algorithm execution Metanome lacks basic isolation properties.
  For instance, we need to explicitly declare a dependency on "fastutil" to compile (since it is not
- part of the algorithm integration), but we are not required to a package it is part of Metanome's
+ part of the algorithm integration), but we are not required to a package it since it is part of Metanome's
  classpath during execution.  
  This makes reproducible algorithm executions a challenge. In short term there is no fix in sight.
  As a result we should avoid repackaging the algorithm integration package and all hidden

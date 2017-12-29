@@ -11,9 +11,13 @@ class ReadPointer implements Iterator<String> {
   private final BufferedReader reader;
   private String currentValue;
 
-  ReadPointer(final BufferedReader reader) throws IOException {
+  ReadPointer(final BufferedReader reader) {
     this.reader = reader;
     currentValue = "";
+  }
+
+  String getCurrentValue() {
+    return currentValue;
   }
 
   @Override

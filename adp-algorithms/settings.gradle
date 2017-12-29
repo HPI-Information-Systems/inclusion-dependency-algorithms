@@ -1,6 +1,8 @@
 rootProject.name = "adp-seminar"
 
 include 'util'
+include 'validation-strategies'
+include 'ind-input'
 
 include 'spider'
 include 'demarchi'

@@ -47,6 +47,7 @@ class DeMarchiTest {
     columnNames = asList("a", "b", "c");
     columnTypes = asList("str", "int", "int");
     generator = TableInputGeneratorStub.builder()
+        .relationName("Test")
         .columnNames(columnNames)
         .row(Row.of("1", "1", "1"))
         .row(Row.of("1", "1", "3"))
@@ -58,7 +59,7 @@ class DeMarchiTest {
 
   @Test
   void runDeMarchi() throws Exception {
-    given(tableInfoFactory.createFromTableInputs(anyList())).willReturn(tableFixture());
+    given(tableInfoFactory.create(anyList(), anyList())).willReturn(tableFixture());
 
     impl.execute(getConfiguration());
 

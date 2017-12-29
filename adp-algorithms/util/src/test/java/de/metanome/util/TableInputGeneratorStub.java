@@ -21,12 +21,16 @@ import org.mockito.stubbing.Answer;
 
 public class TableInputGeneratorStub implements TableInputGenerator {
 
+  private final String relationName;
   private final List<String> columnNames;
   private final List<Row> rows;
 
   @Builder
-  public TableInputGeneratorStub(@Singular final List<String> columnNames,
-      @Singular final List<Row> rows) {
+  public TableInputGeneratorStub(
+          final String relationName,
+          @Singular final List<String> columnNames,
+          @Singular final List<Row> rows) {
+    this.relationName = relationName;
     this.columnNames = columnNames;
     this.rows = rows;
   }
@@ -78,7 +82,7 @@ public class TableInputGeneratorStub implements TableInputGenerator {
   public RelationalInput generateNewCopy()
       throws InputGenerationException, AlgorithmConfigurationException {
 
-    return new RelationalInputStub(columnNames, rows);
+    return new RelationalInputStub(relationName, columnNames, rows);
   }
 
   @Override

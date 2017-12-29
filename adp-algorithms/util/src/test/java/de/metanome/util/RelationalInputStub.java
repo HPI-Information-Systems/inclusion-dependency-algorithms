@@ -9,44 +9,48 @@ import lombok.Singular;
 
 public class RelationalInputStub implements RelationalInput {
 
-  private final List<String> columnNames;
-  private final Iterator<Row> rows;
+    private final String relationName;
+    private final List<String> columnNames;
+    private final Iterator<Row> rows;
 
-  @Builder
-  RelationalInputStub(@Singular final List<String> columnNames,
-      @Singular final List<Row> rows) {
-    this.columnNames = columnNames;
-    this.rows = rows.iterator();
-  }
+    @Builder
+    RelationalInputStub(
+            final String relationName,
+            @Singular final List<String> columnNames,
+            @Singular final List<Row> rows) {
+        this.relationName = relationName;
+        this.columnNames = columnNames;
+        this.rows = rows.iterator();
+    }
 
-  @Override
-  public boolean hasNext() throws InputIterationException {
-    return rows.hasNext();
-  }
+    @Override
+    public boolean hasNext() throws InputIterationException {
+        return rows.hasNext();
+    }
 
-  @Override
-  public List<String> next() throws InputIterationException {
-    return rows.next().getValues();
-  }
+    @Override
+    public List<String> next() throws InputIterationException {
+        return rows.next().getValues();
+    }
 
-  @Override
-  public int numberOfColumns() {
-    return columnNames.size();
-  }
+    @Override
+    public int numberOfColumns() {
+        return columnNames.size();
+    }
 
-  @Override
-  public String relationName() {
-    return "TEST";
-  }
+    @Override
+    public String relationName() {
+        return relationName;
+    }
 
-  @Override
-  public List<String> columnNames() {
-    return columnNames;
-  }
+    @Override
+    public List<String> columnNames() {
+        return columnNames;
+    }
 
-  @Override
-  public void close() throws Exception {
-    // no-op
-  }
+    @Override
+    public void close() throws Exception {
+        // no-op
+    }
 
 }

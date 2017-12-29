@@ -2,6 +2,7 @@ package de.metanome.algorithms.spider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
 import de.metanome.algorithm_integration.ColumnIdentifier;
@@ -10,6 +11,7 @@ import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.FileGeneratorFake;
 import de.metanome.util.RelationalInputStub;
 import de.metanome.util.Row;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +33,6 @@ class SpiderTest {
   @Captor
   private ArgumentCaptor<InclusionDependency> ind;
 
-
   private RelationalInput input;
   private SpiderConfiguration configuration;
 
@@ -40,6 +41,7 @@ class SpiderTest {
     MockitoAnnotations.initMocks(this);
 
     input = RelationalInputStub.builder()
+        .relationName("Test")
         .columnName(COL_A).columnName(COL_B)
         .row(Row.of("x", "z"))
         .row(Row.of("x", "y"))
@@ -49,7 +51,7 @@ class SpiderTest {
     given(generator.generateNewCopy()).willReturn(input);
 
     configuration = SpiderConfiguration.builder()
-        .clearTemporaryFolder(true)
+        .tempFileGenerator(new FileGeneratorFake())
         .resultReceiver(resultReceiver)
         .inputRowLimit(-1)
         .maxMemoryUsage(1024)
@@ -64,7 +66,7 @@ class SpiderTest {
 
     spider.execute(configuration);
 
-    verify(resultReceiver).receiveResult(ind.capture());
+    verify(resultReceiver, atLeastOnce()).receiveResult(ind.capture());
     assertThat(ind.getAllValues())
         .hasSize(1)
         .first()

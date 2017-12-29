@@ -2,17 +2,14 @@ package de.metanome.algorithms.demarchi;
 
 import com.google.common.annotations.VisibleForTesting;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.ColumnIdentifier;
-import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.input.InputGenerationException;
-import de.metanome.algorithm_integration.input.TableInputGenerator;
+import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -20,13 +17,13 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-class DeMarchi {
+public class DeMarchi {
 
-  private Configuration configuration;
   private final TableInfoFactory tableInfoFactory;
+  private Configuration configuration;
   private Attribute[] attributeIndex;
 
-  DeMarchi() {
+  public DeMarchi() {
     tableInfoFactory = new TableInfoFactory();
   }
 
@@ -35,31 +32,43 @@ class DeMarchi {
     this.tableInfoFactory = tableInfoFactory;
   }
 
-  void execute(final Configuration configuration) throws AlgorithmExecutionException {
+  public void execute(final Configuration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
     final List<TableInfo> tables = tableInfoFactory
-        .createFromTableInputs(configuration.getTableInputGenerators());
+        .create(configuration.getRelationalInputGenerators(),
+            configuration.getTableInputGenerators());
     attributeIndex = new Attribute[getTotalColumnCount(tables)];
 
-    final Map<String, IntSet> attributesByType = groupAttributesByType(tables);
+    fillAttributeIndex(tables);
+    final Map<String, IntSet> attributesByType = groupAttributesByType();
     for (final IntSet attributes : attributesByType.values()) {
       handleDomain(attributes);
     }
   }
 
-  private Map<String, IntSet> groupAttributesByType(final Collection<TableInfo> tables) {
-    final Map<String, IntSet> attributesByType = new HashMap<>();
+  private void fillAttributeIndex(final Collection<TableInfo> tables) {
     int attributeId = 0;
     for (final TableInfo table : tables) {
       for (int index = 0; index < table.getColumnCount(); ++index) {
-        final String name = table.getColumnNames().get(index);
-        final String type = table.getColumnTypes().get(index);
-        final Attribute attribute = new Attribute(attributeId, table.getTableName(), name,
-            table.getTableInputGenerator());
-        attributeIndex[attributeId] = attribute;
-        attributesByType.computeIfAbsent(type, k -> new IntOpenHashSet()).add(attributeId);
+        attributeIndex[attributeId] = Attribute.builder()
+            .id(attributeId)
+            .tableName(table.getTableName())
+            .columnOffset(index)
+            .name(table.getColumnNames().get(index))
+            .type(table.getColumnTypes().get(index))
+            .generator(table.selectInputGenerator())
+            .build();
         ++attributeId;
       }
+    }
+  }
+
+  private Map<String, IntSet> groupAttributesByType() {
+    final Map<String, IntSet> attributesByType = new HashMap<>();
+    for (final Attribute attribute : attributeIndex) {
+      attributesByType
+          .computeIfAbsent(attribute.getType(), k -> new IntOpenHashSet())
+          .add(attribute.getId());
     }
     return attributesByType;
   }
@@ -79,23 +88,37 @@ class DeMarchi {
 
     final Map<String, IntSet> attributesByValue = new HashMap<>();
     for (final int attribute : attributes) {
-      for (final String value : getValues(attribute)) {
+      final Collection<String> values = getValues(attribute);
+
+      if (values.isEmpty()) {
+        handleEmptyAttribute(attribute, attributes);
+      }
+
+      for (final String value : values) {
         attributesByValue.computeIfAbsent(value, k -> new IntOpenHashSet()).add(attribute);
       }
     }
     return attributesByValue;
   }
 
+  private void handleEmptyAttribute(final int attribute, final IntSet attributes)
+      throws AlgorithmExecutionException {
+
+    for (int other : attributes) {
+      if (attribute != other) {
+        receiveIND(attributeIndex[attribute], attributeIndex[other]);
+      }
+    }
+  }
+
   private IntSet[] computeClosures(final Map<String, IntSet> attributesByValue) {
     final IntSet[] closures = new IntSet[attributeIndex.length];
     for (Map.Entry<String, IntSet> entry : attributesByValue.entrySet()) {
-      for (int index = 0; index < attributeIndex.length; ++index) {
-        if (entry.getValue().contains(index)) {
-          if (closures[index] == null) {
-            closures[index] = entry.getValue();
-          } else {
-            closures[index].retainAll(entry.getValue());
-          }
+      for (int attribute : entry.getValue()) {
+        if (closures[attribute] == null) {
+          closures[attribute] = new IntOpenHashSet(entry.getValue());
+        } else {
+          closures[attribute].retainAll(entry.getValue());
         }
       }
     }
@@ -121,10 +144,11 @@ class DeMarchi {
   private void receiveIND(final Attribute lhs, final Attribute rhs)
       throws AlgorithmExecutionException {
 
-    final ColumnIdentifier leftColumn = new ColumnIdentifier(lhs.getTableName(), lhs.getName());
-    final ColumnIdentifier rightColumn = new ColumnIdentifier(rhs.getTableName(), rhs.getName());
-    final InclusionDependency ind = new InclusionDependency(new ColumnPermutation(leftColumn),
-        new ColumnPermutation(rightColumn));
+    final InclusionDependency ind = InclusionDependencyBuilder
+        .dependent().column(lhs.getTableName(), lhs.getName())
+        .referenced().column(rhs.getTableName(), rhs.getName())
+        .build();
+
     configuration.getResultReceiver().receiveResult(ind);
   }
 
@@ -132,19 +156,22 @@ class DeMarchi {
       throws AlgorithmExecutionException {
 
     final Attribute attribute = attributeIndex[attributeId];
-    final TableInputGenerator generator = attribute.getGenerator();
-    try (ResultSet set = generator.sortBy(attribute.getName(), false)) {
-      final SortedSet<String> values = new TreeSet<>();
-      while (set.next()) {
-        final String value = set.getString(attribute.getName());
-        if (value != null) {
-          values.add(value);
+    final int offset = attribute.getColumnOffset();
+    final SortedSet<String> values = new TreeSet<>();
+
+    try (RelationalInput input = attribute.getGenerator().generateNewCopy()) {
+      while (input.hasNext()) {
+        final List<String> read = input.next();
+        if (offset < read.size()) {
+          final String v = read.get(offset);
+          if (v != null) {
+            values.add(v);
+          }
         }
       }
       return values;
-    } catch (final SQLException e) {
+    } catch (final Exception e) {
       throw new InputGenerationException("reading attribute values", e);
     }
   }
-
 }

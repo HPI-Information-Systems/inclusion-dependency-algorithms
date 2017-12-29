@@ -17,20 +17,15 @@ class Attribute {
   private final IntSet dependent;
   private final ReadPointer readPointer;
 
-  private String currentValue;
-
   Attribute(final int id, final String tableName, final String columnName,
       final ReadPointer readPointer) {
+
     this.id = id;
     this.readPointer = readPointer;
     this.tableName = tableName;
     this.columnName = columnName;
     dependent = new IntLinkedOpenHashSet();
     referenced = new IntLinkedOpenHashSet();
-
-    if (readPointer.hasNext()) {
-      currentValue = readPointer.next();
-    }
   }
 
   void addDependent(final IntSet dependent) {
@@ -49,11 +44,13 @@ class Attribute {
     this.referenced.remove(referenced);
   }
 
+  String getCurrentValue() {
+    return readPointer.getCurrentValue();
+  }
+
   void nextValue() {
     if (readPointer.hasNext()) {
-      currentValue = readPointer.next();
-    } else {
-      currentValue = null;
+      readPointer.next();
     }
   }
 
