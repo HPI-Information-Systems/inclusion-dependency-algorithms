@@ -17,13 +17,13 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-class DeMarchi {
+public class DeMarchi {
 
   private final TableInfoFactory tableInfoFactory;
   private Configuration configuration;
   private Attribute[] attributeIndex;
 
-  DeMarchi() {
+  public DeMarchi() {
     tableInfoFactory = new TableInfoFactory();
   }
 
@@ -32,7 +32,7 @@ class DeMarchi {
     this.tableInfoFactory = tableInfoFactory;
   }
 
-  void execute(final Configuration configuration) throws AlgorithmExecutionException {
+  public void execute(final Configuration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
     final List<TableInfo> tables = tableInfoFactory
         .create(configuration.getRelationalInputGenerators(),
