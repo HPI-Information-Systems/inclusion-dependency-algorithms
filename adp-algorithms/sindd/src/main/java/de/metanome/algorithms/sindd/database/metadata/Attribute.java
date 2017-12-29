@@ -8,11 +8,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * 
- * @author Nuhad.Shaabani
- * 
- */
 public class Attribute {
 
 	private static int COUNTER = 0;
@@ -21,7 +16,6 @@ public class Attribute {
 	private String name;
 	private TableInfo table;
 	private Set<Attribute> referencedAttributes;
-
 	private Map<TableInfo, Attribute> refAttPerTable;
 
 	public Attribute(String name, TableInfo table) {
@@ -29,7 +23,6 @@ public class Attribute {
 		this.table = table;
 		this.id = String.valueOf(++COUNTER);
 		referencedAttributes = new HashSet<Attribute>();
-
 		refAttPerTable = new HashMap<TableInfo, Attribute>();
 	}
 
@@ -60,13 +53,8 @@ public class Attribute {
 
 	public String getTableName() { return table.getTableName(); }
 
-	//Remove
-	public String getQTableName() {
-		return getTableName();
-	}
-
 	public String getQName() {
-		return getQTableName() + "." + getName();
+		return getTableName() + "." + getName();
 	}
 
 	public String getName() {

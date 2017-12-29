@@ -1,10 +1,5 @@
 package de.metanome.algorithms.sindd.util;
 
-/**
- * 
- * @author Nuhad.Shaabani
- *
- */
 public class PartitionPerformance {
 
 	private int id;

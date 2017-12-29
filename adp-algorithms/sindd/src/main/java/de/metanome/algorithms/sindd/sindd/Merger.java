@@ -12,11 +12,6 @@ import com.opencsv.CSVWriter;
 import de.metanome.algorithms.sindd.sindd.Partition;
 import de.metanome.algorithms.sindd.util.FileUtil;
 
-/**
- * 
- * @author Nuhad.Shaabani
- * 
- */
 public class Merger {
 
 	private static final String MERGED_FILE_NAME_PREFIX = "merged-";

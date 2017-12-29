@@ -1,10 +1,5 @@
 package de.metanome.algorithms.sindd.util;
 
-/**
- * 
- * @author Nuhad.Shaabani
- *
- */
 public class TimeUtil {
 
 	public static int getMinutes(long ms) {

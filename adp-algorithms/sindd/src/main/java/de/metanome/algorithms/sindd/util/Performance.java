@@ -4,11 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * 
- * @author Nuhad.Shaabani
- * 
- */
 public class Performance implements Iterable<PartitionPerformance> {
 
 	private List<PartitionPerformance> pPerformances = new ArrayList<PartitionPerformance>();

@@ -9,11 +9,6 @@ import java.util.Set;
 
 import de.metanome.algorithms.sindd.database.metadata.Attribute;
 
-/**
- * 
- * @author Nuhad.Shaabani
- *
- */
 public class UnaryINDsGenerator {
 
 	private Map<String, Attribute> id2attMap;

@@ -21,11 +21,6 @@ import com.opencsv.CSVWriter;
 
 import de.metanome.algorithms.sindd.database.metadata.Attribute;
 
-/**
- * 
- * @author Nuhad.Shaabani
- *
- */
 public class Exporter {
 
 	private final static Logger LOGGER = Logger.getLogger("Sindd");

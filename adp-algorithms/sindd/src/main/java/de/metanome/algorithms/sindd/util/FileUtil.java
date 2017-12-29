@@ -10,11 +10,6 @@ import java.io.IOException;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
-/**
- * 
- * @author Nuhad.Shaabani
- *
- */
 public class FileUtil {
 
 	public static CSVWriter createWriter(File outFile) throws IOException {
