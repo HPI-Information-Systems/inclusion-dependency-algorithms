@@ -9,4 +9,3 @@ TODO:
 - cleanup code
 - add metanome tmp files
 - write tests
-- handle multiple tables
