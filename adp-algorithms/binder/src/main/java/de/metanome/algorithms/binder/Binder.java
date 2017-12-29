@@ -84,11 +84,9 @@ class Binder {
 
 	private Int2ObjectOpenHashMap<IntSingleLinkedList> dep2ref = null;
 
-	private Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = null;
-	private int[] column2table = null;
-
 	// candidates for TableInfo class
 	private LongArrayList columnSizes = null;
+	private int[] column2table = null;
 
 
 	@Override
@@ -135,16 +133,18 @@ class Binder {
 
 			/////////////////////////////////////////////////////////
 			// Phase 3: N-ary IND detection (Find INDs of size > 1 //
-			/////////////////////////////////////////////////////////
-			if (this.detectNary && (this.maxNaryLevel > 1 || this.maxNaryLevel <= 0))
-				this.detectNaryViaBucketing();
-				this.detectNaryViaSingleChecks();
-			
+			/////////////////////////////////////////////////////////4
+			Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = null;
+			if (this.detectNary && (this.maxNaryLevel > 1 || this.maxNaryLevel <= 0)) {
+				naryDep2ref = this.detectNaryViaBucketing();
+				//naryDep2ref = this.detectNaryViaSingleChecks();
+			}
+
 			//////////////////////////////////////////////////////
 			// Phase 4: Output (Return and/or write the results //
 			//////////////////////////////////////////////////////
 			long outputTime = System.currentTimeMillis();
-			this.output();
+			this.output(naryDep2ref);
 			outputTime = System.currentTimeMillis() - outputTime;
 			
 			System.out.println(this.toString());
@@ -998,7 +998,7 @@ class Binder {
 		return subBucketNumbers;
 	}
 	
-	private void detectNaryViaBucketing() throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
+	private Map<AttributeCombination, List<AttributeCombination>> detectNaryViaBucketing() throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		System.out.print("N-ary IND detection ...");
 		
 		// Clean temp
@@ -1017,7 +1017,7 @@ class Binder {
 			ElementIterator refIterator = this.dep2ref.get(dep).elementIterator();
 			while (refIterator.hasNext()) {
 				int ref = refIterator.next();
-				refAttributeCombinations.add(new AttributeCombination(this.column2table[ref], ref));
+				refAttributeCombinations.add(new AttributeCombination(this.column2table[dep], ref));
 			}
 			nPlusOneAryDep2ref.put(depAttributeCombination, refAttributeCombinations);
 		}
@@ -1025,7 +1025,7 @@ class Binder {
 		int naryLevel = 1;
 		
 		// Generate, bucketize and test the n-ary INDs level-wise
-		this.naryDep2ref = new HashMap<>();
+		Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = new HashMap<>();
 		LongArrayList naryGenerationTime = new LongArrayList();
 		LongArrayList naryCompareTime = new LongArrayList();
 		while (++naryLevel <= this.maxNaryLevel || this.maxNaryLevel <= 0) {
@@ -1061,7 +1061,7 @@ class Binder {
 			long naryCompareTimeCurrent = System.currentTimeMillis();
 			this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset, bucketComparisonOrder);
 			
-			this.naryDep2ref.putAll(nPlusOneAryDep2ref);
+			naryDep2ref.putAll(nPlusOneAryDep2ref);
 			
 			// Add the number of created buckets for n-ary INDs of this level to the naryOffset
 			naryOffset = naryOffset + attributeCombinations.size();
@@ -1070,9 +1070,10 @@ class Binder {
 			System.out.print("(" + (System.currentTimeMillis() - naryGenerationTimeCurrent) + " ms)");
 		}
 		System.out.println();
+		return nPlusOneAryDep2ref;
 	}
 	
-	private void detectNaryViaSingleChecks() throws InputGenerationException, AlgorithmConfigurationException {
+	private Map<AttributeCombination, List<AttributeCombination>> detectNaryViaSingleChecks() throws InputGenerationException, AlgorithmConfigurationException {
 		if (this.databaseConnectionGenerator == null)
 			throw new InputGenerationException("n-ary IND detection using De Marchi's MIND algorithm only possible on databases");
 		
@@ -1095,7 +1096,7 @@ class Binder {
 		}
 		
 		// Generate, bucketize and test the n-ary INDs level-wise
-		this.naryDep2ref = new HashMap<>();
+		Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = new HashMap<>();
 		LongArrayList naryGenerationTime = new LongArrayList();
 		LongArrayList naryCompareTime = new LongArrayList();
 		while (true) {
@@ -1160,10 +1161,11 @@ class Binder {
 					depIterator.remove();
 			}
 			
-			this.naryDep2ref.putAll(nPlusOneAryDep2ref);
+			naryDep2ref.putAll(nPlusOneAryDep2ref);
 			
 			naryCompareTime.add(System.currentTimeMillis() - naryCompareTimeCurrent);
 		}
+		return nPlusOneAryDep2ref;
 	}
 /**/
 	private Map<AttributeCombination, List<AttributeCombination>> generateNPlusOneAryCandidates(Map<AttributeCombination, List<AttributeCombination>> naryDep2ref) {
@@ -1570,7 +1572,7 @@ class Binder {
 		attributeCombinationGroup.stream().filter(naryDep2ref::containsKey).forEach(attributeCombination -> naryDep2ref.get(attributeCombination).retainAll(attributeCombinationGroup));
 	}
 	
-	private void output() throws CouldNotReceiveResultException, ColumnNameMismatchException {
+	private void output(Map<AttributeCombination, List<AttributeCombination>> naryDep2ref) throws CouldNotReceiveResultException, ColumnNameMismatchException {
 		System.out.println("Generating output ...");
 		
 		// Output unary INDs
@@ -1591,12 +1593,12 @@ class Binder {
 		}
 		
 		// Output n-ary INDs
-		if (this.naryDep2ref == null)
+		if (naryDep2ref == null)
 			return;
-		for (AttributeCombination depAttributeCombination : this.naryDep2ref.keySet()) {
+		for (AttributeCombination depAttributeCombination : naryDep2ref.keySet()) {
 			ColumnPermutation dep = this.buildColumnPermutationFor(depAttributeCombination);
 			
-			for (AttributeCombination refAttributeCombination : this.naryDep2ref.get(depAttributeCombination)) {
+			for (AttributeCombination refAttributeCombination : naryDep2ref.get(depAttributeCombination)) {
 				ColumnPermutation ref = this.buildColumnPermutationFor(refAttributeCombination);
 				
 				this.resultReceiver.receiveResult(new InclusionDependency(dep, ref));
