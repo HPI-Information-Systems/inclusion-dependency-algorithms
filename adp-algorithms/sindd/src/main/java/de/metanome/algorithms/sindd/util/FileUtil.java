@@ -12,13 +12,13 @@ import com.opencsv.CSVWriter;
 
 public class FileUtil {
 
-	public static CSVWriter createWriter(File outFile) throws IOException {
-		CSVWriter writer = new CSVWriter(new BufferedWriter(new FileWriter(outFile)), ',', '"');
-		return writer;
-	}
+  public static CSVWriter createWriter(File outFile) throws IOException {
+    CSVWriter writer = new CSVWriter(new BufferedWriter(new FileWriter(outFile)), ',', '"');
+    return writer;
+  }
 
-	public static CSVReader createReader(File inFile) throws IOException {
-		CSVReader reader = new CSVReader(new BufferedReader(new FileReader(inFile)), ',', '"');
-		return reader;
-	}
+  public static CSVReader createReader(File inFile) throws IOException {
+    CSVReader reader = new CSVReader(new BufferedReader(new FileReader(inFile)), ',', '"');
+    return reader;
+  }
 }

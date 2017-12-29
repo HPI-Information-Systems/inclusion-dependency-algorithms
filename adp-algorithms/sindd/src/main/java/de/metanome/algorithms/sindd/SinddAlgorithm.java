@@ -13,6 +13,7 @@ import de.metanome.algorithm_integration.configuration.ConfigurationRequirementT
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+
 import java.util.ArrayList;
 
 import static java.util.Arrays.asList;
@@ -33,7 +34,7 @@ public class SinddAlgorithm implements InclusionDependencyAlgorithm,
     final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
     requirements.add(tableInput());
     requirements.add(new ConfigurationRequirementDatabaseConnection(
-            ConfigurationKey.DATABASE_IDENTIFIER.name()));
+        ConfigurationKey.DATABASE_IDENTIFIER.name()));
 
     requirements.add(new ConfigurationRequirementInteger(ConfigurationKey.OPEN_FILE_NR.name()));
     requirements.add(new ConfigurationRequirementInteger(ConfigurationKey.PARTITION_NR.name()));
@@ -43,8 +44,8 @@ public class SinddAlgorithm implements InclusionDependencyAlgorithm,
 
   private ConfigurationRequirement<?> tableInput() {
     return new ConfigurationRequirementTableInput(
-            ConfigurationKey.TABLE.name(),
-            ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES);
+        ConfigurationKey.TABLE.name(),
+        ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES);
   }
 
   @Override
@@ -80,6 +81,7 @@ public class SinddAlgorithm implements InclusionDependencyAlgorithm,
       builder.databaseConnectionGenerator(values[0]);
     }
   }
+
   @Override
   public void execute() throws AlgorithmExecutionException {
     final Configuration configuration = builder.build();
