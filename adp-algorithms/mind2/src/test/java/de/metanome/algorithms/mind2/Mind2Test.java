@@ -7,6 +7,7 @@ import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.algorithm_execution.FileGenerator;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
+import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
 import de.metanome.util.FileGeneratorFake;
@@ -21,6 +22,9 @@ import org.junit.runner.RunWith;
 import javax.inject.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(JukitoRunner.class)
@@ -50,7 +54,8 @@ public class Mind2Test {
         ColumnIdentifier b3 = new ColumnIdentifier("S", "B3");
         ColumnIdentifier b4 = new ColumnIdentifier("S", "B4");
         ColumnIdentifier b5 = new ColumnIdentifier("S", "B5");
-
+        TableInputGenerator tableRGenerator = mock(TableInputGenerator.class);
+        TableInputGenerator tableSGenerator = mock(TableInputGenerator.class);
         RelationalInputGenerator tableR = RelationalInputGeneratorStub.builder()
                 .relationName("R")
                 .columnNames(ImmutableList.of("A1", "A2", "A3", "A4", "A5"))
@@ -75,8 +80,12 @@ public class Mind2Test {
                 new InclusionDependency(new ColumnPermutation(a1, a2, a4), new ColumnPermutation(b1, b2, b4)),
                 new InclusionDependency(new ColumnPermutation(a4, a5), new ColumnPermutation(b4, b5)));
 
-        when(config.getRelationalInputGenerators()).thenReturn(ImmutableList.of(tableR, tableS));
+        when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
         when(config.getUnaryInds()).thenReturn(unaryInds);
+        when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
+        when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
+        when(config.getSortedRelationalInput(same(tableRGenerator), any())).then(in -> tableR.generateNewCopy());
+        when(config.getSortedRelationalInput(same(tableSGenerator), any())).then(in -> tableS.generateNewCopy());
 
         // WHEN
         mind2.execute();

@@ -10,12 +10,12 @@ import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.algorithm_execution.FileCreationException;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.input.RelationalInput;
-import de.metanome.algorithm_integration.input.RelationalInputGenerator;
+import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
-import de.metanome.algorithms.mind2.utils.AttributeIterator;
 import de.metanome.algorithms.mind2.model.AttributeValuePosition;
 import de.metanome.algorithms.mind2.model.UindCoordinates;
+import de.metanome.algorithms.mind2.utils.AttributeIterator;
 import de.metanome.algorithms.mind2.utils.UindCoordinatesReader;
 
 import java.io.IOException;
@@ -32,6 +32,11 @@ import static java.lang.String.format;
 public class CoordinatesRepository {
 
     private final Map<InclusionDependency, Path> uindToPath = new HashMap<>();
+    private final Mind2Configuration config;
+
+    public CoordinatesRepository(Mind2Configuration config) {
+        this.config = config;
+    }
 
     public UindCoordinatesReader getReader(InclusionDependency uind) throws AlgorithmExecutionException {
         if (!uindToPath.containsKey(uind)) {
@@ -46,10 +51,9 @@ public class CoordinatesRepository {
         }
     }
 
-    public void storeUindCoordinates(Mind2Configuration config) throws AlgorithmExecutionException {
-        // TODO(fwindheuser): Use TableInput to sort values
-        ImmutableMap<ColumnIdentifier, RelationalInputGenerator> attributes =
-                getRelationalInputMap(config.getRelationalInputGenerators());
+    public void storeUindCoordinates() throws AlgorithmExecutionException {
+        ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes =
+                getRelationalInputMap(config.getInputGenerators());
 
         for (InclusionDependency uind : config.getUnaryInds()) {
             SetMultimap<Integer, Integer> uindCoordinates = generateCoordinates(uind, attributes);
@@ -60,7 +64,7 @@ public class CoordinatesRepository {
             for (Integer index : lhsCoordinates) {
                 UindCoordinates coordinates = new UindCoordinates(uind, index, uindCoordinates.get(index));
                 sb.append(format("%s\n", coordinates.toLine()));
-                Path path = getPath(config);
+                Path path = getPath();
                 try {
                     writeToFile(path, sb.toString());
                     uindToPath.put(uind, path);
@@ -73,13 +77,13 @@ public class CoordinatesRepository {
     }
 
     private SetMultimap<Integer, Integer> generateCoordinates(
-            InclusionDependency unaryInd, ImmutableMap<ColumnIdentifier, RelationalInputGenerator> attributes)
+            InclusionDependency unaryInd, ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes)
             throws AlgorithmExecutionException {
         SetMultimap<Integer, Integer> uindCoordinates = MultimapBuilder.hashKeys().hashSetValues().build();
         ColumnIdentifier lhs = getUnaryIdentifier(unaryInd.getDependant());
         ColumnIdentifier rhs = getUnaryIdentifier(unaryInd.getReferenced());
-        AttributeIterator cursorA =  new AttributeIterator(attributes.get(lhs).generateNewCopy(), lhs);
-        AttributeIterator cursorB = new AttributeIterator(attributes.get(rhs).generateNewCopy(), rhs);
+        AttributeIterator cursorA =  new AttributeIterator(config.getSortedRelationalInput(attributes.get(lhs), lhs), lhs);
+        AttributeIterator cursorB = new AttributeIterator(config.getSortedRelationalInput(attributes.get(rhs), rhs), rhs);
         cursorA.next();
         cursorB.next();
 
@@ -124,15 +128,13 @@ public class CoordinatesRepository {
         return uindCoordinates;
     }
 
-    private ImmutableMap<ColumnIdentifier, RelationalInputGenerator> getRelationalInputMap(
-            ImmutableList<RelationalInputGenerator> inputGenerators) throws InputGenerationException {
-        Map<ColumnIdentifier, RelationalInputGenerator> relationalInputs = new HashMap<>();
-        for (RelationalInputGenerator generator : inputGenerators) {
-            try {
-                RelationalInput input = generator.generateNewCopy();
+    private ImmutableMap<ColumnIdentifier, TableInputGenerator> getRelationalInputMap(
+            ImmutableList<TableInputGenerator> inputGenerators) throws InputGenerationException {
+        Map<ColumnIdentifier, TableInputGenerator> relationalInputs = new HashMap<>();
+        for (TableInputGenerator generator : inputGenerators) {
+            try (RelationalInput input = generator.generateNewCopy()) {
                 input.columnNames().forEach(columnName -> relationalInputs.put(
                         new ColumnIdentifier(input.relationName(), columnName), generator));
-                input.close();
             } catch (Exception e) {
                 throw new InputGenerationException(format("Error getting copy of %s", generator), e);
             }
@@ -144,9 +146,8 @@ public class CoordinatesRepository {
         Files.write(path, content.getBytes());
     }
 
-    private Path getPath(final Mind2Configuration configuration)
-            throws FileCreationException {
-        return configuration.getTempFileGenerator().getTemporaryFile().toPath();
+    private Path getPath() throws FileCreationException {
+        return config.getTempFileGenerator().getTemporaryFile().toPath();
     }
 
     private ColumnIdentifier getUnaryIdentifier(ColumnPermutation columnPermutation) {

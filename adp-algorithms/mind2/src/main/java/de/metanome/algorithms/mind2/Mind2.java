@@ -28,28 +28,28 @@ import static java.util.stream.Collectors.toList;
 
 public class Mind2 {
 
-    private final CoordinatesRepository repository = new CoordinatesRepository();
-    private final Mind2Configuration configuration;
+    private final Mind2Configuration config;
+    private CoordinatesRepository repository;
 
     @Inject
-    public Mind2(Mind2Configuration configuration) {
-        this.configuration = configuration;
+    public Mind2(Mind2Configuration config) {
+        this.config = config;
     }
 
     public void execute() throws AlgorithmExecutionException {
-        repository.storeUindCoordinates(configuration);
+        repository = new CoordinatesRepository(config);
+        repository.storeUindCoordinates();
         Set<Set<InclusionDependency>> maxInds = generateMaxInds();
-
         collectInds(maxInds);
     }
 
     private Set<Set<InclusionDependency>> generateMaxInds() throws AlgorithmExecutionException {
         Queue<UindCoordinatesReader> coordinatesQueue = new PriorityQueue<>(new UindCoordinatesReaderComparator());
-        for (InclusionDependency uind : configuration.getUnaryInds()) {
+        for (InclusionDependency uind : config.getUnaryInds()) {
             coordinatesQueue.add(repository.getReader(uind));
         }
 
-        Set<Set<InclusionDependency>> maxInds = new HashSet<>(ImmutableSet.of(configuration.getUnaryInds()));
+        Set<Set<InclusionDependency>> maxInds = new HashSet<>(ImmutableSet.of(config.getUnaryInds()));
         while (!coordinatesQueue.isEmpty()) {
             Set<UindCoordinates> L = new HashSet<>();
             Set<UindCoordinatesReader> readers = new HashSet<>();
@@ -73,13 +73,13 @@ public class Mind2 {
             Set<Set<InclusionDependency>> subMaxInd = generateSubMaxInds(L, maxInds);
             maxInds = removeSubsets(generateIntersections(maxInds, subMaxInd));
 
-            for (InclusionDependency uind : configuration.getUnaryInds()) {
+            for (InclusionDependency uind : config.getUnaryInds()) {
                 if (maxInds.contains(ImmutableSet.of(uind))) {
                     maxInds.remove(ImmutableSet.of(uind));
                 }
             }
             if (maxInds.isEmpty()) {
-                return new HashSet<>(ImmutableSet.of(configuration.getUnaryInds()));
+                return new HashSet<>(ImmutableSet.of(config.getUnaryInds()));
             }
 
             Set<InclusionDependency> activeU = new HashSet<>();
@@ -171,7 +171,7 @@ public class Mind2 {
     }
 
     private void collectInds(Set<Set<InclusionDependency>> maxInds) throws AlgorithmExecutionException {
-        InclusionDependencyResultReceiver resultReceiver = configuration.getResultReceiver();
+        InclusionDependencyResultReceiver resultReceiver = config.getResultReceiver();
         for (Set<InclusionDependency> maxInd : maxInds) {
             List<ColumnIdentifier> referencedIds = maxInd.stream()
                     .map(InclusionDependency::getReferenced)
