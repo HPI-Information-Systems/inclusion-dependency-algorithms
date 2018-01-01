@@ -9,6 +9,5 @@ public class Hypergraph {
 
   public Hypergraph(List<InclusionDependency> uINDs) {
     this.uINDs = uINDs;
-    generate(uINDs);
   }
 }
