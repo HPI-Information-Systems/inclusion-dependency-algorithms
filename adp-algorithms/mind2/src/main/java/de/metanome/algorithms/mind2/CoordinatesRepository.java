@@ -18,6 +18,7 @@ import de.metanome.algorithms.mind2.model.UindCoordinates;
 import de.metanome.algorithms.mind2.utils.AttributeIterator;
 import de.metanome.algorithms.mind2.utils.UindCoordinatesReader;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,9 +32,10 @@ import static java.lang.String.format;
 
 public class CoordinatesRepository {
 
-    private final Map<InclusionDependency, Path> uindToPath = new HashMap<>();
     private final Mind2Configuration config;
+    private final Map<InclusionDependency, Path> uindToPath = new HashMap<>();
 
+    @Inject
     public CoordinatesRepository(Mind2Configuration config) {
         this.config = config;
     }
@@ -42,12 +44,10 @@ public class CoordinatesRepository {
         if (!uindToPath.containsKey(uind)) {
             throw new AlgorithmExecutionException(format("No coordinates file found for uind %s", uind));
         }
-        Path path = uindToPath.get(uind);
         try {
-            return new UindCoordinatesReader(uind, Files.newBufferedReader(path));
+            return new UindCoordinatesReader(uind, Files.newBufferedReader(uindToPath.get(uind)));
         } catch (IOException e) {
-            throw new AlgorithmExecutionException(
-                    format("Error reading coordinates file for uind %s with path %s", uind, path), e);
+            throw new AlgorithmExecutionException(format("Error reading coordinates file for uind %s", uind), e);
         }
     }
 
@@ -98,14 +98,18 @@ public class CoordinatesRepository {
                 AttributeValuePosition nextValA = cursorA.current();
                 while (nextValA.getValue().equals(valA.getValue())) {
                     positionsA.add(nextValA.getPosition());
-                    if (!cursorA.hasNext()) break;
+                    if (!cursorA.hasNext()) {
+                        break;
+                    }
                     nextValA = cursorA.next();
                 }
 
                 AttributeValuePosition nextValB = cursorB.current();
                 while (nextValB.getValue().equals(valB.getValue())) {
                     positionsB.add(nextValB.getPosition());
-                    if (!cursorB.hasNext()) break;
+                    if (!cursorB.hasNext()) {
+                        break;
+                    }
                     nextValB = cursorB.next();
                 }
 
@@ -113,10 +117,14 @@ public class CoordinatesRepository {
                     positionsA.forEach(indexA -> uindCoordinates.putAll(indexA, positionsB));
                 }
             } else if (valA.getValue().compareTo(valB.getValue()) < 0) {
-                if (!cursorA.hasNext()) break;
+                if (!cursorA.hasNext()) {
+                    break;
+                }
                 cursorA.next();
             } else {
-                if (!cursorB.hasNext()) break;
+                if (!cursorB.hasNext()) {
+                    break;
+                }
                 cursorB.next();
             }
         }

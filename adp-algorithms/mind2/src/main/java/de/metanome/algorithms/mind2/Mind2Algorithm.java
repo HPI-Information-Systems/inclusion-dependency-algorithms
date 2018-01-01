@@ -2,8 +2,10 @@ package de.metanome.algorithms.mind2;
 
 import com.google.common.collect.ImmutableList;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
+import de.metanome.algorithm_integration.algorithm_execution.FileGenerator;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
+import de.metanome.algorithm_integration.algorithm_types.TempFileAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementRelationalInput;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
@@ -14,7 +16,7 @@ import de.metanome.algorithms.mind2.configuration.Mind2Configuration.Mind2Config
 
 import java.util.ArrayList;
 
-public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputParameterAlgorithm {
+public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputParameterAlgorithm, TempFileAlgorithm {
 
     private final Mind2ConfigurationBuilder configurationBuilder;
 
@@ -38,12 +40,18 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
     }
 
     @Override
+    public void setTempFileGenerator(FileGenerator tempFileGenerator) {
+        configurationBuilder.tempFileGenerator(tempFileGenerator);
+    }
+
+    @Override
     public void setResultReceiver(InclusionDependencyResultReceiver resultReceiver) {
         configurationBuilder.resultReceiver(resultReceiver);
     }
 
     @Override
     public void execute() throws AlgorithmExecutionException {
+        // TODO(fwindheuser): Add uind input parameter
         Mind2 mind2 = new Mind2(configurationBuilder.build());
         mind2.execute();
     }

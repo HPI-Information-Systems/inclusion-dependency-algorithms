@@ -24,7 +24,6 @@ import java.util.Set;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static de.metanome.algorithms.mind2.utils.IndComparators.RhsComrapator;
 import static de.metanome.algorithms.mind2.utils.IndComparators.UindCoordinatesReaderComparator;
-import static java.util.stream.Collectors.toList;
 
 public class Mind2 {
 
@@ -51,26 +50,26 @@ public class Mind2 {
 
         Set<Set<InclusionDependency>> maxInds = new HashSet<>(ImmutableSet.of(config.getUnaryInds()));
         while (!coordinatesQueue.isEmpty()) {
-            Set<UindCoordinates> L = new HashSet<>();
+            Set<UindCoordinates> sameIndexCoords = new HashSet<>();
             Set<UindCoordinatesReader> readers = new HashSet<>();
             UindCoordinatesReader reader = coordinatesQueue.remove();
             readers.add(reader);
 
-            UindCoordinates current = reader.current();
-            L.add(current);
+            UindCoordinates currentCoords = reader.current();
+            sameIndexCoords.add(currentCoords);
             while (!coordinatesQueue.isEmpty()) {
-                UindCoordinatesReader reader2 = coordinatesQueue.peek();
-                UindCoordinates current2 = reader2.current();
-                if (!current.getLhsIndex().equals(current2.getLhsIndex())) {
+                UindCoordinatesReader nextReader = coordinatesQueue.peek();
+                UindCoordinates nextCoords = nextReader.current();
+                if (!currentCoords.getLhsIndex().equals(nextCoords.getLhsIndex())) {
                     break;
                 }
                 reader = coordinatesQueue.remove();
                 readers.add(reader);
-                current = reader.current();
-                L.add(current);
+                currentCoords = reader.current();
+                sameIndexCoords.add(currentCoords);
             }
 
-            Set<Set<InclusionDependency>> subMaxInd = generateSubMaxInds(L, maxInds);
+            Set<Set<InclusionDependency>> subMaxInd = generateSubMaxInds(sameIndexCoords, maxInds);
             maxInds = removeSubsets(generateIntersections(maxInds, subMaxInd));
 
             for (InclusionDependency uind : config.getUnaryInds()) {
@@ -94,9 +93,10 @@ public class Mind2 {
         return maxInds;
     }
 
-    private Set<Set<InclusionDependency>> generateSubMaxInds(Set<UindCoordinates> L, Set<Set<InclusionDependency>> currentMaxInds) {
+    private Set<Set<InclusionDependency>> generateSubMaxInds(
+            Set<UindCoordinates> sameIndexCoords, Set<Set<InclusionDependency>> currentMaxInds) {
         Queue<CurrentIterator<RhsPosition>> positionsQueue = new PriorityQueue<>(new RhsComrapator());
-        for (UindCoordinates coords : L) {
+        for (UindCoordinates coords : sameIndexCoords) {
             ImmutableList<RhsPosition> positions = coords.getRhsIndices().stream()
                     .map(rhsIndex -> new RhsPosition(coords.getUind(), rhsIndex))
                     .collect(toImmutableList());
@@ -104,36 +104,36 @@ public class Mind2 {
         }
 
         Set<Set<InclusionDependency>> maxInds = new HashSet<>();
-        Set<Set<InclusionDependency>> UB = new HashSet<>();
+        Set<Set<InclusionDependency>> maxIndSubsets = new HashSet<>();
         while (!positionsQueue.isEmpty()) {
             Set<CurrentIterator<RhsPosition>> readers = new HashSet<>();
             CurrentIterator<RhsPosition> reader = positionsQueue.remove();
             readers.add(reader);
-            RhsPosition current = reader.current();
-            Set<InclusionDependency> Mj = new HashSet<>(ImmutableSet.of(current.getUind()));
+            RhsPosition currentRhsPosition = reader.current();
+            Set<InclusionDependency> subMaxInds = new HashSet<>(ImmutableSet.of(currentRhsPosition.getUind()));
 
             while (!positionsQueue.isEmpty()) {
-                CurrentIterator<RhsPosition> reader2 = positionsQueue.peek();
-                RhsPosition current2 = reader2.current();
-                if (!current.getRhs().equals(current2.getRhs())) {
+                CurrentIterator<RhsPosition> nextReader = positionsQueue.peek();
+                RhsPosition nextRhsPosition = nextReader.current();
+                if (!currentRhsPosition.getRhs().equals(nextRhsPosition.getRhs())) {
                     break;
                 }
                 reader = positionsQueue.remove();
                 readers.add(reader);
-                current = reader.current();
-                Mj.add(current.getUind());
+                currentRhsPosition = reader.current();
+                subMaxInds.add(currentRhsPosition.getUind());
             }
 
-            for (Set<InclusionDependency> M : currentMaxInds) {
-                if (Mj.containsAll(M)) {
-                    UB.add(M);
+            for (Set<InclusionDependency> maxInd : currentMaxInds) {
+                if (subMaxInds.containsAll(maxInd)) {
+                    maxIndSubsets.add(maxInd);
                 }
             }
-            if (UB.equals(currentMaxInds)) {
+            if (maxIndSubsets.equals(currentMaxInds)) {
                 maxInds = currentMaxInds;
                 break;
             }
-            maxInds.add(Mj);
+            maxInds.add(subMaxInds);
             for (CurrentIterator<RhsPosition> nextReader : readers) {
                 if (nextReader.hasNext()) {
                     nextReader.next();
@@ -157,7 +157,8 @@ public class Mind2 {
     }
 
     // psi Operator
-    private Set<Set<InclusionDependency>> generateIntersections(Set<Set<InclusionDependency>> indsA, Set<Set<InclusionDependency>> indsB) {
+    private Set<Set<InclusionDependency>> generateIntersections(
+            Set<Set<InclusionDependency>> indsA, Set<Set<InclusionDependency>> indsB) {
         Set<Set<InclusionDependency>> intersections = new HashSet<>();
         Sets.cartesianProduct(ImmutableList.of(indsA, indsB)).forEach(indPair -> {
             Set<InclusionDependency> s1 = indPair.get(0);
@@ -173,22 +174,21 @@ public class Mind2 {
     private void collectInds(Set<Set<InclusionDependency>> maxInds) throws AlgorithmExecutionException {
         InclusionDependencyResultReceiver resultReceiver = config.getResultReceiver();
         for (Set<InclusionDependency> maxInd : maxInds) {
-            List<ColumnIdentifier> referencedIds = maxInd.stream()
+            ImmutableList<ColumnIdentifier> referencedIds = maxInd.stream()
                     .map(InclusionDependency::getReferenced)
                     .map(ColumnPermutation::getColumnIdentifiers)
                     .flatMap(List::stream)
-                    .collect(toList());
+                    .collect(toImmutableList());
             ColumnPermutation referenced = new ColumnPermutation();
             referenced.setColumnIdentifiers(referencedIds);
-            List<ColumnIdentifier> dependantIds = maxInd.stream()
+            ImmutableList<ColumnIdentifier> dependantIds = maxInd.stream()
                     .map(InclusionDependency::getDependant)
                     .map(ColumnPermutation::getColumnIdentifiers)
                     .flatMap(List::stream)
-                    .collect(toList());
+                    .collect(toImmutableList());
             ColumnPermutation dependant = new ColumnPermutation();
             dependant.setColumnIdentifiers(dependantIds);
-            InclusionDependency ind = new InclusionDependency(dependant, referenced);
-            resultReceiver.receiveResult(ind);
+            resultReceiver.receiveResult(new InclusionDependency(dependant, referenced));
         }
     }
 }
