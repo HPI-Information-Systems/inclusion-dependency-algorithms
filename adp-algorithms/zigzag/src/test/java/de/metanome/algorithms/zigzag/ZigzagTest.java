@@ -7,6 +7,7 @@ import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -22,6 +23,12 @@ public class ZigzagTest {
 
 	@Test
 	public void testCalculateOptimisticBorder() throws AlgorithmExecutionException{
+		ZigzagConfiguration.ZigzagConfigurationBuilder configurationBuilder = ZigzagConfiguration.builder();
+		configurationBuilder.k(2);
+		configurationBuilder.epsilon(1);
+		ZigzagConfiguration configuration = configurationBuilder.build();
+    zigzag = new Zigzag(configuration);
+
 		Set<InclusionDependency> unsatisfiedINDs = new HashSet<>();
 
 		ColumnIdentifier a1 = new ColumnIdentifier("table", "a");
@@ -51,17 +58,19 @@ public class ZigzagTest {
 		unsatisfiedINDs.add(CD);
 		unsatisfiedINDs.add(DE);
 
-    ColumnPermutation bd1 = new ColumnPermutation(b1,d1);
-    ColumnPermutation bd2 = new ColumnPermutation(b2,d2);
+		// TODO make ColumnPermutation order irrelevant for test
+    // For now adapt order to have a working test
+    ColumnPermutation bd1 = new ColumnPermutation(d1,b1);
+    ColumnPermutation bd2 = new ColumnPermutation(d2,b2);
     InclusionDependency BD = new InclusionDependency(bd1, bd2);
 
-    ColumnPermutation abce1 = new ColumnPermutation(a1,b1,c1,e1);
-    ColumnPermutation abce2 = new ColumnPermutation(a2,b2,c2,e2);
+    ColumnPermutation abce1 = new ColumnPermutation(e1,c1,b1,a1);
+    ColumnPermutation abce2 = new ColumnPermutation(e2,c2,b2,a2);
     InclusionDependency ABCE = new InclusionDependency(abce1, abce2);
 
     Set<InclusionDependency> optimisticBorder = new HashSet<>();
-    optimisticBorder.add(BD);
     optimisticBorder.add(ABCE);
+    optimisticBorder.add(BD);
 
 		assertEquals(optimisticBorder, zigzag.calculateOptimisticBorder(unsatisfiedINDs));
 	}

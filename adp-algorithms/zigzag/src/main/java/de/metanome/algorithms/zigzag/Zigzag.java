@@ -7,8 +7,6 @@ import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
-import de.metanome.util.InclusionDependencyBuilder;
-import it.unimi.dsi.fastutil.Hash;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -91,7 +89,7 @@ public class Zigzag {
     return optimisticBorder.isEmpty();
   }
 
-  private Set<InclusionDependency> calculateOptimisticBorder(Set<InclusionDependency> unsatisfiedINDs) {
+  public Set<InclusionDependency> calculateOptimisticBorder(Set<InclusionDependency> unsatisfiedINDs) {
     Map<ColumnIdentifier, ColumnIdentifier> dependantToReferenced = convertUnaryINDsToMap(calculateUnaryInclusionDependencies());
     Set<InclusionDependency> solution = new HashSet<>();
     for (InclusionDependency head : unsatisfiedINDs) {
