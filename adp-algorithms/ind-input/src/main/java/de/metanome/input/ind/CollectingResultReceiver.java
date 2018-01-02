@@ -1,4 +1,4 @@
-package de.metanome.discovery.ind;
+package de.metanome.input.ind;
 
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;

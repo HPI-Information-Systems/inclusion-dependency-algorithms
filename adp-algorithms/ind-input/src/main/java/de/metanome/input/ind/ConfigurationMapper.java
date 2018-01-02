@@ -1,4 +1,4 @@
-package de.metanome.discovery.ind;
+package de.metanome.input.ind;
 
 import com.google.common.base.Splitter;
 import java.lang.reflect.InvocationTargetException;

@@ -1,4 +1,4 @@
-package de.metanome.discovery.ind;
+package de.metanome.input.ind;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;

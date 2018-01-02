@@ -13,7 +13,7 @@ target/
 output/
 io/
 temp/
-input/
+/input
 data/
 datasets/
 .DS_Store
