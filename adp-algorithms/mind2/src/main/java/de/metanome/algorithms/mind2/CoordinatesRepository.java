@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static de.metanome.util.Collectors.toImmutableList;
 import static java.lang.String.format;
 
 public class CoordinatesRepository {
@@ -60,7 +61,7 @@ public class CoordinatesRepository {
 
             StringBuilder sb = new StringBuilder();
             ImmutableList<Integer> lhsCoordinates = uindCoordinates.keySet().stream()
-                    .sorted().collect(ImmutableList.toImmutableList());
+                    .sorted().collect(toImmutableList());
             for (Integer index : lhsCoordinates) {
                 UindCoordinates coordinates = new UindCoordinates(uind, index, uindCoordinates.get(index));
                 sb.append(format("%s\n", coordinates.toLine()));

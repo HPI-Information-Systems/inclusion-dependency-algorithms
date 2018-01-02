@@ -3,13 +3,13 @@ package de.metanome.algorithms.mind2.model;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import lombok.Data;
 
 import java.util.Collection;
+import java.util.stream.StreamSupport;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
+import static de.metanome.util.Collectors.toImmutableList;
 
 @Data
 public class UindCoordinates {
@@ -20,7 +20,8 @@ public class UindCoordinates {
     public static UindCoordinates fromLine(InclusionDependency uind, String data) {
         ImmutableList<String> parts = ImmutableList.copyOf(Splitter.on(FIELD_SEPERATOR).trimResults().split(data));
         int lhsIndex = Integer.valueOf(parts.get(0));
-        ImmutableList<Integer> rhsIndices = Streams.stream(Splitter.on(ELEM_SEPERATOR).trimResults().split(parts.get(1)))
+        ImmutableList<Integer> rhsIndices = StreamSupport.stream(
+                Splitter.on(ELEM_SEPERATOR).trimResults().split(parts.get(1)).spliterator(), false)
                 .map(Integer::valueOf).collect(toImmutableList());
         return new UindCoordinates(uind, lhsIndex, rhsIndices);
     }
