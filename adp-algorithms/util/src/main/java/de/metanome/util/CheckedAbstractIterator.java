@@ -1,13 +1,10 @@
 package de.metanome.util;
 
-import static com.google.common.base.Preconditions.checkState;
-
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.input.InputIterationException;
 
 import java.util.NoSuchElementException;
-import javax.annotation.Nullable;
+
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Checked version of the {@link com.google.common.base.AbstractIterator}.
@@ -31,8 +28,6 @@ public abstract class CheckedAbstractIterator<T> {
 
     protected abstract T computeNext() throws AlgorithmExecutionException;
 
-    @Nullable
-    @CanIgnoreReturnValue
     protected final T endOfData() {
         state = State.DONE;
         return null;

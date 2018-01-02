@@ -21,9 +21,9 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static de.metanome.algorithms.mind2.utils.IndComparators.RhsComrapator;
 import static de.metanome.algorithms.mind2.utils.IndComparators.UindCoordinatesReaderComparator;
+import static de.metanome.util.Collectors.toImmutableList;
 
 public class Mind2 {
 
