@@ -4,7 +4,6 @@ package de.metanome.algorithms.zigzag;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
-import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
 import java.util.ArrayList;
@@ -33,7 +32,6 @@ public class Zigzag {
   public void execute() throws AlgorithmExecutionException {
     initialCandidateCheck(configuration.getK());
 
-    // TODO when borders are updated always reduce to the most specialized/generalized INDs
     Set<InclusionDependency> positiveBorder = satisfiedINDs; // Bd+(I)
     Set<InclusionDependency> negativeBorder = unsatisfiedINDs; // Bd-(I)
 
@@ -46,10 +44,14 @@ public class Zigzag {
       for(InclusionDependency ind : optimisticBorder) {
         int g3Val = g3(ind);
         if(g3Val == 0) {
+          System.out.println(positiveBorder);
           positiveBorder.add(ind);
+          System.out.println(positiveBorder);
+          positiveBorder = removeGeneralizations(positiveBorder);
+          System.out.println(positiveBorder);
         } else {
           negativeBorder.add(ind);
-          if(g3Val <= configuration.getEpsilon()) {
+          if(g3Val <= configuration.getEpsilon() /* TODO && |ind| > k+1 */) {
             possibleSmallerIND.add(ind);
           } else {
             pessDI.add(ind);
@@ -57,10 +59,12 @@ public class Zigzag {
         }
       }
       while(!possibleSmallerIND.isEmpty()) {
-        Set<InclusionDependency> candidates = possibleSmallerIND;
+        // TODO INDs which generalize possibleSmallerINDs one level below
+        Set<InclusionDependency> candidates = generalizeSet(possibleSmallerIND);
         for(InclusionDependency ind : candidates) {
           if(isIND(ind)) {
             positiveBorder.add(ind);
+            positiveBorder = removeGeneralizations(positiveBorder);
             candidates.remove(ind);
           } else {
             negativeBorder.add(ind);
@@ -68,20 +72,33 @@ public class Zigzag {
         }
         possibleSmallerIND = candidates;
       }
-      // TODO check INDs which generalize pessDI
+      // TODO check INDs which generalize pessDI on k+1 level
       Set<InclusionDependency> C = pessDI;
       for(InclusionDependency ind : C) {
         if(positiveBorder.contains(ind) || isIND(ind)) {
           positiveBorder.add(ind);
+          positiveBorder = removeGeneralizations(positiveBorder);
         } else {
           negativeBorder.add(ind);
+          negativeBorder = removeSpecializations(negativeBorder);
         }
       }
 
       currentLevel += 1;
       optimisticBorder = calculateOptimisticBorder(new HashSet<>(unsatisfiedINDs));
     }
+  }
 
+  private Set<InclusionDependency> generalizeSet(Set<InclusionDependency> possibleSmallerIND) {
+    Set<InclusionDependency> generalizedINDs = new HashSet<>();
+    for(InclusionDependency ind : possibleSmallerIND) {
+      // TODO in the Hypergraph use BFS to find adjacent INDs which generalize this one
+    }
+    return generalizedINDs;
+  }
+
+  private int cardinalityOfIND(InclusionDependency ind) {
+    return ind.getDependant().getColumnIdentifiers().size();
   }
 
   private boolean isOptimisticBorderFinal(Set<InclusionDependency> optimisticBorder, Set<InclusionDependency> positiveBorder) {
@@ -113,7 +130,7 @@ public class Zigzag {
             }
           }
         }
-        solution = removeNonMinimalSets(newSolution);
+        solution = removeSpecializations(newSolution);
       }
     }
     return solution.stream().map(this::invertIND).collect(Collectors.toSet());
@@ -130,7 +147,7 @@ public class Zigzag {
   }
 
   // Zigzag only needs to check one side for this, so use dependant
-  private Set<InclusionDependency> removeNonMinimalSets(Set<InclusionDependency> solution) {
+  private Set<InclusionDependency> removeSpecializations(Set<InclusionDependency> solution) {
     Set<InclusionDependency> minimalSolution = new HashSet<>(solution);
     for (InclusionDependency ind1 : solution) {
       for (InclusionDependency ind2 : solution) {
@@ -142,9 +159,20 @@ public class Zigzag {
     return minimalSolution;
   }
 
+  private Set<InclusionDependency> removeGeneralizations(Set<InclusionDependency> solution) {
+    Set<InclusionDependency> maximalSolution = new HashSet<>(solution);
+    for (InclusionDependency ind1 : solution) {
+      for (InclusionDependency ind2 : solution) {
+        if(isGeneralization(ind1.getDependant(), ind2.getDependant())) {
+          maximalSolution.remove(ind1);
+        }
+      }
+    }
+    return maximalSolution;
+  }
+
   private InclusionDependency invertIND(InclusionDependency ind) {
     Map<ColumnIdentifier, ColumnIdentifier> dependantToReferenced = convertUnaryINDsToMap(calculateUnaryInclusionDependencies());
-    System.out.println(dependantToReferenced);
     Set<ColumnIdentifier> uinds = new HashSet<>(dependantToReferenced.keySet());
     for(ColumnIdentifier depId : ind.getDependant().getColumnIdentifiers()) {
       uinds.remove(depId);
@@ -152,7 +180,6 @@ public class Zigzag {
     List<ColumnIdentifier> depList = new ArrayList<>();
     List<ColumnIdentifier> refList = new ArrayList<>();
     for (ColumnIdentifier depId : uinds) {
-      System.out.println(depId);
       depList.add(depId);
       refList.add(dependantToReferenced.get(depId));
     }
@@ -165,6 +192,12 @@ public class Zigzag {
 
   private boolean isSpecialization(ColumnPermutation specialization, ColumnPermutation generalization) {
     if(specialization.getColumnIdentifiers().size() <= generalization.getColumnIdentifiers().size())
+      return false;
+    return specialization.getColumnIdentifiers().containsAll(generalization.getColumnIdentifiers());
+  }
+
+  private boolean isGeneralization(ColumnPermutation generalization, ColumnPermutation specialization) {
+    if(generalization.getColumnIdentifiers().size() >= specialization.getColumnIdentifiers().size())
       return false;
     return specialization.getColumnIdentifiers().containsAll(generalization.getColumnIdentifiers());
   }
@@ -232,7 +265,6 @@ public class Zigzag {
     unaryINDs.add(makeUnaryIND(c1,c2));
     unaryINDs.add(makeUnaryIND(d1,d2));
     unaryINDs.add(makeUnaryIND(e1,e2));
-    System.out.println(unaryINDs);
     return unaryINDs;
   }
 
