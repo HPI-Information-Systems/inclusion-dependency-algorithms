@@ -1,21 +1,19 @@
 package de.metanome.algorithms.sindd.database.metadata;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithms.sindd.Configuration;
 import de.metanome.algorithms.sindd.util.CommonObjects;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class MetadataBuilder {
 
-  public static void build(final Configuration configuration) throws SQLException {
+  public static void build(final Configuration configuration) {
 
     try {
 
@@ -45,10 +43,12 @@ public class MetadataBuilder {
     return id2attMap;
   }
 
-  private static List<TableInfo> createTables(final Configuration configuration) throws InputGenerationException, AlgorithmConfigurationException {
+  private static List<TableInfo> createTables(final Configuration configuration)
+      throws InputGenerationException, AlgorithmConfigurationException {
     final TableInfoFactory tableInfoFactory = new TableInfoFactory();
     List<TableInfo> tableInfos = tableInfoFactory
-        .createFromTableInputs(configuration.getTableInputGenerators());
+        .create(configuration.getRelationalInputGenerators(),
+            configuration.getTableInputGenerators());
     List<TableInfo> tables = new ArrayList<TableInfo>();
     for (final TableInfo tableInfo : tableInfos) {
       tables.add(tableInfo);
@@ -56,7 +56,7 @@ public class MetadataBuilder {
     return tables;
   }
 
-  private static List<Attribute> createAttributes(List<TableInfo> tables) throws SQLException {
+  private static List<Attribute> createAttributes(List<TableInfo> tables) {
     List<Attribute> attributes = new ArrayList<Attribute>();
 
     for (final TableInfo table : tables) {

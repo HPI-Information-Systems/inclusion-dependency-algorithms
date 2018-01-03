@@ -1,6 +1,5 @@
 package de.metanome.algorithms.sindd;
 
-import com.google.common.annotations.VisibleForTesting;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
@@ -14,11 +13,8 @@ import de.metanome.algorithms.sindd.sindd.UnaryINDsGenerator;
 import de.metanome.algorithms.sindd.util.CommonObjects;
 import de.metanome.algorithms.sindd.util.PartitionPerformance;
 import de.metanome.algorithms.sindd.util.Performance;
-import de.metanome.util.TableInfoFactory;
-
 import java.io.File;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,16 +24,8 @@ import java.util.logging.Logger;
 
 class Sindd {
 
-  private final TableInfoFactory tableInfoFactory;
   private Configuration configuration;
   private final static Logger LOGGER = Logger.getLogger("Sindd");
-
-  Sindd() { tableInfoFactory = new TableInfoFactory();}
-
-  @VisibleForTesting
-  Sindd(final TableInfoFactory tableInfoFactory) {
-    this.tableInfoFactory = tableInfoFactory;
-  }
 
   void execute(final Configuration configuration) throws AlgorithmExecutionException {
 
@@ -53,7 +41,7 @@ class Sindd {
 
       printUnaryINDs();
 
-    } catch (Exception e){
+    } catch (Exception e) {
       throw new AlgorithmExecutionException("Failed to execute Sindd", e);
 
     }
@@ -79,7 +67,7 @@ class Sindd {
       Set<Attribute> refAtts = att.getRefAttributes();
       if (refAtts.size() > 1) {
         for (Attribute refAtt : refAtts) {
-          if(refAtt.equals(att)){
+          if (refAtt.equals(att)) {
             continue;
           }
           receiveIND(att, refAtt);
@@ -111,13 +99,13 @@ class Sindd {
       computeUinds(uindsGenerator, partition, partitionPerformance);
       performance.addPartitionPerformance(partitionPerformance);
 
-      LOGGER.info( "needed time: " + partitionPerformance);
+      LOGGER.info("needed time: " + partitionPerformance);
     }
     LOGGER.info("total needed time: " + performance.toStringWithoutExport() + "\n");
   }
 
   private void merge(Merger merger, Partition partition, PartitionPerformance partitionPerformance)
-          throws IOException, InterruptedException {
+      throws IOException, InterruptedException {
     long st = System.currentTimeMillis();
 
     merger.merge(partition);
@@ -127,7 +115,7 @@ class Sindd {
   }
 
   private void computeUinds(UnaryINDsGenerator generator, Partition partition,
-                                   PartitionPerformance partitionPerformance) throws IOException {
+      PartitionPerformance partitionPerformance) throws IOException {
     long st = System.currentTimeMillis();
 
     generator.generateFrom(partition);
@@ -136,11 +124,11 @@ class Sindd {
     partitionPerformance.setUindsGenTime(st, et);
   }
 
-  private void exportData() throws SQLException, IOException {
+  private void exportData() throws IOException {
     Exporter.export(configuration);
   }
 
-  private void createMetadata() throws SQLException {
+  private void createMetadata() {
     MetadataBuilder.build(configuration);
   }
 
@@ -164,7 +152,7 @@ class Sindd {
   }
 
   private static void createDirectory(File dirFile) {
-    dirFile.mkdir();
+    dirFile.mkdirs();
   }
 
   private static void createPerformanceObject() {

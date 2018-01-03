@@ -1,80 +1,92 @@
 package de.metanome.algorithms.sindd.database;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-
-import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
-import de.metanome.algorithm_integration.input.TableInputGenerator;
+import com.opencsv.CSVWriter;
+import de.metanome.algorithm_integration.input.RelationalInput;
+import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithms.sindd.Configuration;
+import de.metanome.algorithms.sindd.database.metadata.Attribute;
 import de.metanome.algorithms.sindd.sindd.Partition;
 import de.metanome.algorithms.sindd.util.CommonObjects;
 import de.metanome.algorithms.sindd.util.FileUtil;
 import de.metanome.algorithms.sindd.util.Performance;
 import de.metanome.algorithms.sindd.util.TimeUtil;
+import de.metanome.util.TPMMS;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.log4j.Logger;
-
-import com.opencsv.CSVWriter;
-
-import de.metanome.algorithms.sindd.database.metadata.Attribute;
 
 public class Exporter {
 
   private final static Logger LOGGER = Logger.getLogger("Sindd");
 
-  public static void export(Configuration configuration) throws SQLException, IOException {
+  public static void export(final Configuration configuration) throws IOException {
 
     LOGGER.info("exporting ....");
     long st = System.currentTimeMillis();
 
-    ResultSet resultSet = null;
-
     List<Attribute> attributes = CommonObjects.getAttributes();
 
-    try {
-      for (Attribute attribute : attributes) {
+    for (Attribute attribute : attributes) {
 
-        LOGGER.info("column: " + attribute.getQName());
-        //sqlQuery = createSqlQuery(attribute);
-        resultSet = getValues(attribute, configuration);
-        exportAttValues(attribute, resultSet);
-
-      }
-
-      long et = System.currentTimeMillis();
-      Performance performance = CommonObjects.getPerformance();
-      performance.addExportTime(et - st);
-      LOGGER.info(" needed time " + TimeUtil.toString(et - st) + "\n");
-
-    } catch (AlgorithmExecutionException e) {
-      e.printStackTrace();
+      LOGGER.info("column: " + attribute.getQName());
+      final BufferedReader values = getValues(attribute, configuration);
+      exportAttValues(attribute, values);
+      values.close();
     }
+
+    long et = System.currentTimeMillis();
+    Performance performance = CommonObjects.getPerformance();
+    performance.addExportTime(et - st);
+    LOGGER.info(" needed time " + TimeUtil.toString(et - st) + "\n");
   }
 
-  private static ResultSet getValues(Attribute attribute, Configuration configuration)
-      throws AlgorithmExecutionException {
+  private static BufferedReader getValues(Attribute attribute, Configuration configuration)
+      throws IOException {
 
-    StringBuffer sql = new StringBuffer();
-    sql.append("select distinct t." + attribute.getName() + " from " + attribute.getTableName() + " t where t." + attribute.getName()
-        + " is not null order by cast(t." + attribute.getName() + " as binary)");
-    DatabaseConnectionGenerator gen = configuration.getDatabaseConnectionGenerator();
-    ResultSet result = gen.generateResultSetFromSql(sql.toString());
-    //final TableInputGenerator generator = attribute.getTable().getTableInputGenerator();
+    final RelationalInputGenerator generator = attribute.getTable().selectInputGenerator();
+    final int index = attribute.getTable().getColumnNames().indexOf(attribute.getName());
+    final File file = new File("tmp" + File.separator + "swap");
 
-    return result; //generator.sortBy(attribute.getName(), true);
+    try (RelationalInput input = generator.generateNewCopy()) {
+      try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
+        while (input.hasNext()) {
+          final String read = input.next().get(index);
+          if (read != null) {
+            writer.write(read.replace('\n', '\0'));
+            writer.newLine();
+          }
+        }
+      }
+    } catch (final Exception e) {
+      throw new IOException(e);
+    }
+
+    final TPMMS tpmms = TPMMS.builder()
+        .inputRowLimit(configuration.getInputRowLimit())
+        .maxMemoryUsage(configuration.getMaxMemoryUsage())
+        .memoryCheckInterval(configuration.getMemoryCheckInterval())
+        .build();
+
+    tpmms.uniqueAndSort(file.toPath());
+    return new BufferedReader(new FileReader(file));
   }
 
-  private static void exportAttValues(Attribute attribute, ResultSet resultSet) throws IOException, SQLException {
+  private static void exportAttValues(Attribute attribute, BufferedReader values)
+      throws IOException {
+
     List<CSVWriter> writers = createWriters(attribute);
     int partitionNr = writers.size();
     try {
       if (partitionNr == 1) {
-        exportWithoutPartitioning(attribute, resultSet, writers.get(0));
+        exportWithoutPartitioning(attribute, values, writers.get(0));
       } else {
-        exportWithPartitioning(attribute, resultSet, writers);
+        exportWithPartitioning(attribute, values, writers);
       }
     } finally {
       for (CSVWriter writer : writers) {
@@ -85,13 +97,12 @@ public class Exporter {
     }
   }
 
-  private static void exportWithPartitioning(Attribute attribute, ResultSet resultSet, List<CSVWriter> writers)
-      throws SQLException {
+  private static void exportWithPartitioning(Attribute attribute, BufferedReader values,
+      List<CSVWriter> writers) throws IOException {
 
     int partitionNr = writers.size();
-
-    while (resultSet.next()) {
-      String value = resultSet.getString(1);
+    String value;
+    while ((value = values.readLine()) != null) {
       int writerIndex = getWriterIndex(value, partitionNr);
       CSVWriter writer = writers.get(writerIndex);
       writer.writeNext(new String[]{value, attribute.getId()});
@@ -103,11 +114,11 @@ public class Exporter {
     return hc % partitionNr;
   }
 
-  private static void exportWithoutPartitioning(Attribute attribute, ResultSet resultSet, CSVWriter writer)
-      throws SQLException {
+  private static void exportWithoutPartitioning(Attribute attribute, BufferedReader values,
+      CSVWriter writer) throws IOException {
 
-    while (resultSet.next()) {
-      String value = resultSet.getString(1);
+    String value;
+    while ((value = values.readLine()) != null) {
       writer.writeNext(new String[]{value, attribute.getId()});
     }
   }
