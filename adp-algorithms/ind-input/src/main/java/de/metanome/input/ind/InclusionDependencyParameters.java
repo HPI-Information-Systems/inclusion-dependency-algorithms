@@ -1,4 +1,4 @@
-package de.metanome.discovery.ind;
+package de.metanome.input.ind;
 
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;

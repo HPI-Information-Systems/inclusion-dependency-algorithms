@@ -1,4 +1,4 @@
-package de.metanome.discovery.ind;
+package de.metanome.input.ind;
 
 public enum AlgorithmType {
   SPIDER,
