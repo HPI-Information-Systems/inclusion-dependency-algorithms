@@ -5,12 +5,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
-import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
 import de.metanome.algorithms.bellbrockhausen.accessors.TableInfo;
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration;
 import de.metanome.algorithms.bellbrockhausen.models.Attribute;
+import de.metanome.util.InclusionDependencyResultReceiverStub;
 import org.jukito.JukitoRunner;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,32 +19,33 @@ import org.junit.runner.RunWith;
 
 import javax.inject.Inject;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @RunWith(JukitoRunner.class)
-public class BellBrockhausenTest extends IndBaseTest {
+public class BellBrockhausenTest {
 
-    private static final String dummyTableName = "table";
+    private static final String TABLE_NAME = "table";
 
-    private InclusionDependencyResultReceiver resultReceiver;
-    @Inject public BellBrockhausen bellBrockhausen;
+    private InclusionDependencyResultReceiverStub resultReceiver;
+    @Inject private BellBrockhausen bellBrockhausen;
 
     @Before
     public void setupMocks(BellBrockhausenConfiguration config) {
-        resultReceiver = getResultReciever();
+        resultReceiver = new InclusionDependencyResultReceiverStub();
         when(config.getResultReceiver()).thenReturn(resultReceiver);
-        when(config.getTableName()).thenReturn(dummyTableName);
+        when(config.getTableName()).thenReturn(TABLE_NAME);
     }
 
     @Test
     public void testTableWithTwoInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
         // GIVEN
-        Attribute attributeA = new Attribute(new ColumnIdentifier(dummyTableName, "a"), Range.open(1, 3));
-        Attribute attributeB = new Attribute(new ColumnIdentifier(dummyTableName, "b"), Range.open(2, 4));
-        Attribute attributeC = new Attribute(new ColumnIdentifier(dummyTableName, "c"), Range.open(1, 4));
+        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.open(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.open(2, 4));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.open(1, 4));
         ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC);
-        TableInfo tableInfo = new TableInfo(dummyTableName, attributes);
+        TableInfo tableInfo = new TableInfo(TABLE_NAME, attributes);
         InclusionDependency indAC = toInd(attributeA.getColumnIdentifier(), attributeC.getColumnIdentifier());
         InclusionDependency indBC = toInd(attributeB.getColumnIdentifier(), attributeC.getColumnIdentifier());
         ImmutableSet<InclusionDependency> validInds = ImmutableSet.of(indAC, indBC);
@@ -52,42 +54,41 @@ public class BellBrockhausenTest extends IndBaseTest {
                 .thenAnswer(invocation -> validInds.contains(invocation.<InclusionDependency>getArgument(0)));
 
         // WHEN
-        when(dataAccessObject.getTableInfo(dummyTableName)).thenReturn(tableInfo);
+        when(dataAccessObject.getTableInfo(TABLE_NAME)).thenReturn(tableInfo);
         bellBrockhausen.execute();
 
         // THEN
-        recievedAllValidInds(resultReceiver, attributes, validInds);
+        assertThat(resultReceiver.getReceivedResults()).isEqualTo(validInds);
     }
 
     @Test
     public void testTableWithNoInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
         // GIVEN
-        Attribute attributeA = new Attribute(new ColumnIdentifier(dummyTableName, "a"), Range.open(1, 3));
-        Attribute attributeB = new Attribute(new ColumnIdentifier(dummyTableName, "b"), Range.open(2, 4));
-        Attribute attributeC = new Attribute(new ColumnIdentifier(dummyTableName, "c"), Range.open(1, 4));
-        ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC);
-        TableInfo tableInfo = new TableInfo(dummyTableName, ImmutableList.of(attributeA, attributeB, attributeC));
+        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.open(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.open(2, 4));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.open(1, 4));
+        TableInfo tableInfo = new TableInfo(TABLE_NAME, ImmutableList.of(attributeA, attributeB, attributeC));
         ImmutableSet<InclusionDependency> validInds = ImmutableSet.of();
 
         when(dataAccessObject.isValidUIND(any(InclusionDependency.class))).thenReturn(false);
 
         // WHEN
-        when(dataAccessObject.getTableInfo(dummyTableName)).thenReturn(tableInfo);
+        when(dataAccessObject.getTableInfo(TABLE_NAME)).thenReturn(tableInfo);
         bellBrockhausen.execute();
 
         // THEN
-        recievedAllValidInds(resultReceiver, attributes, validInds);
+        assertThat(resultReceiver.getReceivedResults()).isEqualTo(validInds);
     }
 
     @Test
     public void testTableWithTransitiveInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
         // GIVEN
-        Attribute attributeA = new Attribute(new ColumnIdentifier(dummyTableName, "a"), Range.open(1, 3));
-        Attribute attributeB = new Attribute(new ColumnIdentifier(dummyTableName, "b"), Range.open(3, 4));
-        Attribute attributeC = new Attribute(new ColumnIdentifier(dummyTableName, "c"), Range.open(1, 3));
-        Attribute attributeD = new Attribute(new ColumnIdentifier(dummyTableName, "d"), Range.open(1, 4));
+        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.open(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.open(3, 4));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.open(1, 3));
+        Attribute attributeD = new Attribute(new ColumnIdentifier(TABLE_NAME, "d"), Range.open(1, 4));
         ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC, attributeD);
-        TableInfo tableInfo = new TableInfo(dummyTableName, attributes);
+        TableInfo tableInfo = new TableInfo(TABLE_NAME, attributes);
         InclusionDependency indAC = toInd(attributeA.getColumnIdentifier(), attributeC.getColumnIdentifier());
         InclusionDependency indAD = toInd(attributeA.getColumnIdentifier(), attributeD.getColumnIdentifier());
         InclusionDependency indCA = toInd(attributeC.getColumnIdentifier(), attributeA.getColumnIdentifier());
@@ -99,10 +100,42 @@ public class BellBrockhausenTest extends IndBaseTest {
                 .thenAnswer(invocation -> validInds.contains(invocation.<InclusionDependency>getArgument(0)));
 
         // WHEN
-        when(dataAccessObject.getTableInfo(dummyTableName)).thenReturn(tableInfo);
+        when(dataAccessObject.getTableInfo(TABLE_NAME)).thenReturn(tableInfo);
         bellBrockhausen.execute();
 
         // THEN
-        recievedAllValidInds(resultReceiver, attributes, validInds);
+        assertThat(resultReceiver.getReceivedResults()).isEqualTo(validInds);
+    }
+
+
+    @Test
+    public void testTableWithSameValues(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
+        // GIVEN
+        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.open(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.open(1, 3));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.open(1, 3));
+        ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC);
+        TableInfo tableInfo = new TableInfo(TABLE_NAME, attributes);
+        InclusionDependency indAB = toInd(attributeA.getColumnIdentifier(), attributeB.getColumnIdentifier());
+        InclusionDependency indBA = toInd(attributeB.getColumnIdentifier(), attributeA.getColumnIdentifier());
+        InclusionDependency indAC = toInd(attributeA.getColumnIdentifier(), attributeC.getColumnIdentifier());
+        InclusionDependency indCA = toInd(attributeC.getColumnIdentifier(), attributeA.getColumnIdentifier());
+        InclusionDependency indBC = toInd(attributeB.getColumnIdentifier(), attributeC.getColumnIdentifier());
+        InclusionDependency indCB = toInd(attributeC.getColumnIdentifier(), attributeB.getColumnIdentifier());
+        ImmutableSet<InclusionDependency> validInds = ImmutableSet.of(indAB, indBA, indAC, indCA, indBC, indCB);
+
+        when(dataAccessObject.isValidUIND(any(InclusionDependency.class)))
+                .thenAnswer(invocation -> validInds.contains(invocation.<InclusionDependency>getArgument(0)));
+
+        // WHEN
+        when(dataAccessObject.getTableInfo(TABLE_NAME)).thenReturn(tableInfo);
+        bellBrockhausen.execute();
+
+        // THEN
+        assertThat(resultReceiver.getReceivedResults()).isEqualTo(validInds);
+    }
+
+    private InclusionDependency toInd(ColumnIdentifier dependant, ColumnIdentifier referenced) {
+        return new InclusionDependency(new ColumnPermutation(dependant), new ColumnPermutation(referenced));
     }
 }
