@@ -5,6 +5,8 @@ import com.google.common.collect.Sets;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
+import de.metanome.algorithm_integration.result_receiver.ColumnNameMismatchException;
+import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
 import java.util.ArrayList;
@@ -95,6 +97,17 @@ public class Zigzag {
       currentLevel += 1;
       optimisticBorder = calculateOptimisticBorder(new HashSet<>(unsatisfiedINDs));
     }
+    satisfiedINDs = positiveBorder.stream()
+        .flatMap(ind -> Sets.powerSet(ind).stream())
+        .map(this::nodeToInd)
+        .collect(Collectors.toSet());
+    collectResults();
+  }
+
+  private void collectResults() throws CouldNotReceiveResultException, ColumnNameMismatchException {
+    for (InclusionDependency ind : satisfiedINDs) {
+      configuration.getResultReceiver().receiveResult(ind);
+    }
   }
 
   private boolean isSatisfiedByBorder(Set<ColumnIdentifier> ind,
@@ -126,10 +139,6 @@ public class Zigzag {
       generalizedINDs.addAll(powerSet);
     }
     return generalizedINDs;
-  }
-
-  private int cardinalityOfIND(InclusionDependency ind) {
-    return ind.getDependant().getColumnIdentifiers().size();
   }
 
   private boolean isOptimisticBorderFinal(Set<Set<ColumnIdentifier>> optimisticBorder, Set<Set<ColumnIdentifier>> positiveBorder) {
