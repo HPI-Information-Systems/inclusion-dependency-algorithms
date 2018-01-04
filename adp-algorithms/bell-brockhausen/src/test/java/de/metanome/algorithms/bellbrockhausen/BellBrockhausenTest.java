@@ -41,9 +41,9 @@ public class BellBrockhausenTest {
     @Test
     public void testTableWithTwoInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
         // GIVEN
-        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.open(1, 3));
-        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.open(2, 4));
-        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.open(1, 4));
+        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.closed(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.closed(2, 4));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.closed(1, 4));
         ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC);
         TableInfo tableInfo = new TableInfo(TABLE_NAME, attributes);
         InclusionDependency indAC = toInd(attributeA.getColumnIdentifier(), attributeC.getColumnIdentifier());
@@ -64,9 +64,9 @@ public class BellBrockhausenTest {
     @Test
     public void testTableWithNoInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
         // GIVEN
-        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.open(1, 3));
-        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.open(2, 4));
-        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.open(1, 4));
+        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.closed(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.closed(2, 4));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.closed(1, 4));
         TableInfo tableInfo = new TableInfo(TABLE_NAME, ImmutableList.of(attributeA, attributeB, attributeC));
         ImmutableSet<InclusionDependency> validInds = ImmutableSet.of();
 
@@ -83,10 +83,10 @@ public class BellBrockhausenTest {
     @Test
     public void testTableWithTransitiveInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
         // GIVEN
-        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.open(1, 3));
-        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.open(3, 4));
-        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.open(1, 3));
-        Attribute attributeD = new Attribute(new ColumnIdentifier(TABLE_NAME, "d"), Range.open(1, 4));
+        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.closed(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.closed(3, 4));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.closed(1, 3));
+        Attribute attributeD = new Attribute(new ColumnIdentifier(TABLE_NAME, "d"), Range.closed(1, 4));
         ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC, attributeD);
         TableInfo tableInfo = new TableInfo(TABLE_NAME, attributes);
         InclusionDependency indAC = toInd(attributeA.getColumnIdentifier(), attributeC.getColumnIdentifier());
@@ -111,9 +111,9 @@ public class BellBrockhausenTest {
     @Test
     public void testTableWithEqualValues(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
         // GIVEN
-        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.open(1, 3));
-        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.open(1, 3));
-        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.open(1, 3));
+        Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.closed(1, 3));
+        Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.closed(1, 3));
+        Attribute attributeC = new Attribute(new ColumnIdentifier(TABLE_NAME, "c"), Range.closed(1, 3));
         ImmutableList<Attribute> attributes = ImmutableList.of(attributeA, attributeB, attributeC);
         TableInfo tableInfo = new TableInfo(TABLE_NAME, attributes);
         InclusionDependency indAB = toInd(attributeA.getColumnIdentifier(), attributeB.getColumnIdentifier());

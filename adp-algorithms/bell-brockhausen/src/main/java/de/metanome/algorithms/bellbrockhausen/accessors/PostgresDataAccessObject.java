@@ -80,7 +80,7 @@ public class PostgresDataAccessObject implements DataAccessObject {
         ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query);
         try {
             resultSet.next();
-            Range<Integer> valueRange = Range.open(resultSet.getInt("minVal"), resultSet.getInt("maxVal"));
+            Range<Integer> valueRange = Range.closed(resultSet.getInt("minVal"), resultSet.getInt("maxVal"));
             return new Attribute(columnIdentifier, valueRange);
         } catch (SQLException e) {
             throw new InputGenerationException(

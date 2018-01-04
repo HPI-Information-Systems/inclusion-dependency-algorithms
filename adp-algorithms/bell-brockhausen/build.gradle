@@ -4,3 +4,11 @@ dependencies {
     }
     testCompile project(path: ':util', configuration: 'tests')
 }
+
+jar {
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.bellbrockhausen.BellBrockhausenAlgorithm'
+    }
+    classifier 'file'
+}
