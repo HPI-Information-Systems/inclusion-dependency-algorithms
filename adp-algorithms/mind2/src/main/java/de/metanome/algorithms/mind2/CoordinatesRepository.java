@@ -58,21 +58,13 @@ public class CoordinatesRepository {
 
         for (InclusionDependency uind : config.getUnaryInds()) {
             SetMultimap<Integer, Integer> uindCoordinates = generateCoordinates(uind, attributes);
-
-            StringBuilder sb = new StringBuilder();
-            ImmutableList<Integer> lhsCoordinates = uindCoordinates.keySet().stream()
-                    .sorted().collect(toImmutableList());
-            for (Integer index : lhsCoordinates) {
-                UindCoordinates coordinates = new UindCoordinates(uind, index, uindCoordinates.get(index));
-                sb.append(format("%s\n", coordinates.toLine()));
-                Path path = getPath();
-                try {
-                    writeToFile(path, sb.toString());
-                    uindToPath.put(uind, path);
-                } catch (IOException e) {
-                    throw new AlgorithmExecutionException(
-                            format("Error writing uind coordinates for uind %s to file %s", uind, path), e);
-                }
+            Path path = getPath();
+            try {
+                writeToFile(path, serializeCoordinates(uind, uindCoordinates));
+                uindToPath.put(uind, path);
+            } catch (IOException e) {
+                throw new AlgorithmExecutionException(
+                        format("Error writing uind coordinates for uind %s to file %s", uind, path), e);
             }
         }
     }
@@ -161,5 +153,16 @@ public class CoordinatesRepository {
 
     private ColumnIdentifier getUnaryIdentifier(ColumnPermutation columnPermutation) {
         return getOnlyElement(columnPermutation.getColumnIdentifiers());
+    }
+
+    private String serializeCoordinates(InclusionDependency uind, SetMultimap<Integer, Integer> uindCoordinates) {
+        ImmutableList<Integer> lhsCoordinates = uindCoordinates.keySet().stream()
+                .sorted().collect(toImmutableList());
+        StringBuilder sb = new StringBuilder();
+        for (Integer index : lhsCoordinates) {
+            UindCoordinates coordinates = new UindCoordinates(uind, index, uindCoordinates.get(index));
+            sb.append(format("%s\n", coordinates.toLine()));
+        }
+        return sb.toString();
     }
 }
