@@ -1,6 +1,8 @@
 package de.metanome.algorithms.bellbrockhausen;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
@@ -14,11 +16,16 @@ import de.metanome.algorithms.bellbrockhausen.models.IndTest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.function.Function;
 
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.util.Collectors.toImmutableList;
+import static de.metanome.util.Collectors.toImmutableSet;
 import static java.util.stream.Collectors.toMap;
 
 public class IndGraph {
@@ -91,13 +98,9 @@ public class IndGraph {
         int referencedIndex = getCandidateIndex(getReferenced(ind));
         if (getCandidateIndex(getDependant(ind)) < getCandidateIndex(getReferenced(ind))) {
             // Find all nodes A_k, k > i with path to node A_i
-            ImmutableList<ColumnIdentifier> toDependant = toEdges.get(getDependant(ind)).stream()
-                    .filter(column -> getCandidateIndex(column) > dependantIndex)
-                    .collect(toImmutableList());
+            ImmutableSet<ColumnIdentifier> toDependant = collectNodesWithPathTo(getDependant(ind), dependantIndex);
             // Find all nodes A_l, l > i reachable from node A_j
-            ImmutableList<ColumnIdentifier> fromReferenced = fromEdges.get(getReferenced(ind)).stream()
-                    .filter(column -> getCandidateIndex(column) > dependantIndex)
-                    .collect(toImmutableList());
+            ImmutableSet<ColumnIdentifier> fromReferenced = collectNodesWithPathFrom(getReferenced(ind), dependantIndex);
 
             // Delete tests A_i -> A_l with l > i in list A_i
             tests.get(getDependant(ind)).forEach(indTest -> {
@@ -110,13 +113,9 @@ public class IndGraph {
             deleteTests(toDependant, fromReferenced);
         } else {
             // Find all nodes A_k, k > j with path to node A_i
-            ImmutableList<ColumnIdentifier> toDependant = toEdges.get(getDependant(ind)).stream()
-                    .filter(column -> getCandidateIndex(column) > referencedIndex)
-                    .collect(toImmutableList());
+            ImmutableSet<ColumnIdentifier> toDependant = collectNodesWithPathTo(getDependant(ind), referencedIndex);
             // Find all nodes A_l, l > j reachable from node A_j
-            ImmutableList<ColumnIdentifier> fromReferenced = fromEdges.get(getReferenced(ind)).stream()
-                    .filter(column -> getCandidateIndex(column) > referencedIndex)
-                    .collect(toImmutableList());
+            ImmutableSet<ColumnIdentifier> fromReferenced = collectNodesWithPathFrom(getReferenced(ind), referencedIndex);
 
             // Delete tests A_k -> A_j with k > i in list A_j
             tests.get(getReferenced(ind)).forEach(indTest -> {
@@ -130,7 +129,7 @@ public class IndGraph {
         }
     }
 
-    private void deleteTests(ImmutableList<ColumnIdentifier> toDependant, ImmutableList<ColumnIdentifier> fromReferenced) {
+    private void deleteTests(ImmutableSet<ColumnIdentifier> toDependant, ImmutableSet<ColumnIdentifier> fromReferenced) {
         // Delete tests A_k -> A_l with k < l in lists A_k
         for (ColumnIdentifier node : toDependant) {
             if (!tests.containsKey(node)) continue;
@@ -156,6 +155,32 @@ public class IndGraph {
         }
     }
 
+    private ImmutableSet<ColumnIdentifier> collectNodesWithPathTo(ColumnIdentifier node, int nodeIndex) {
+        // Find all nodes A_k, k > i with path to node A_i
+        return collectNodes(node, nodeIndex, toEdges::get);
+    }
+
+    private ImmutableSet<ColumnIdentifier> collectNodesWithPathFrom(ColumnIdentifier node, int nodeIndex) {
+        // Find all nodes A_l, l > i reachable from node A_j
+        return collectNodes(node, nodeIndex, fromEdges::get);
+    }
+
+    private ImmutableSet<ColumnIdentifier> collectNodes(
+            ColumnIdentifier node, int nodeIndex,Function<ColumnIdentifier, Set<ColumnIdentifier>> getSuccessor) {
+        Set<ColumnIdentifier> results = new HashSet<>();
+        Queue<ColumnIdentifier> queue = new LinkedList<>();
+        queue.add(node);
+        while (!queue.isEmpty()) {
+            ColumnIdentifier nextNode = queue.remove();
+            ImmutableSet<ColumnIdentifier> nodes = getSuccessor.apply(nextNode).stream()
+                    .filter(column -> getCandidateIndex(column) > nodeIndex)
+                    .collect(toImmutableSet());
+            queue.addAll(Sets.difference(nodes, results));
+            results.addAll(nodes);
+        }
+        return ImmutableSet.copyOf(results);
+    }
+
     private void insertEdge(final ColumnIdentifier dependant, final ColumnIdentifier referenced)
             throws ColumnNameMismatchException, CouldNotReceiveResultException {
         fromEdges.get(dependant).add(referenced);
@@ -177,10 +202,10 @@ public class IndGraph {
     }
 
     private ColumnIdentifier getReferenced(final InclusionDependency ind) {
-        return ind.getReferenced().getColumnIdentifiers().get(0);
+        return getOnlyElement(ind.getReferenced().getColumnIdentifiers());
     }
 
     private ColumnIdentifier getDependant(final InclusionDependency ind) {
-        return ind.getDependant().getColumnIdentifiers().get(0);
+        return getOnlyElement(ind.getDependant().getColumnIdentifiers());
     }
 }

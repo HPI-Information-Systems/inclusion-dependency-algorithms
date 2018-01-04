@@ -109,7 +109,7 @@ public class BellBrockhausenTest {
 
 
     @Test
-    public void testTableWithSameValues(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
+    public void testTableWithEqualValues(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
         // GIVEN
         Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.open(1, 3));
         Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.open(1, 3));
