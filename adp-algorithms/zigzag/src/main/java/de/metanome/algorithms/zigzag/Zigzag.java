@@ -47,55 +47,75 @@ public class Zigzag {
     Set<Set<ColumnIdentifier>> optimisticBorder = calculateOptimisticBorder(new HashSet<>(unsatisfiedINDs)); // Bd+(I opt)
 
     while(!isOptimisticBorderFinal(optimisticBorder, positiveBorder)) {
-      Set<Set<ColumnIdentifier>> possibleSmallerIND = new HashSet<>(); // optDI, all g3' < epsilon
+      Set<Set<ColumnIdentifier>> possibleSmallerINDs = new HashSet<>(); // optDI, all g3' < epsilon
       Set<Set<ColumnIdentifier>> pessDI = new HashSet<>(); // pessDI, all g3' > epsilon
 
       for(Set<ColumnIdentifier> ind : optimisticBorder) {
         int g3Val = g3(nodeToInd(ind));
         if(g3Val == 0) {
-          System.out.println(positiveBorder);
           positiveBorder.add(ind);
-          System.out.println(positiveBorder);
-          positiveBorder = removeGeneralizations(positiveBorder);
-          System.out.println(positiveBorder);
         } else {
           negativeBorder.add(ind);
           if(g3Val <= configuration.getEpsilon() && ind.size() > currentLevel + 1) {
-            possibleSmallerIND.add(ind);
+            possibleSmallerINDs.add(ind);
           } else {
             pessDI.add(ind);
           }
         }
       }
-      while(!possibleSmallerIND.isEmpty()) {
-        // TODO INDs which generalize possibleSmallerINDs one level below
-        Set<Set<ColumnIdentifier>> candidates = generalizeSet(possibleSmallerIND);
-        for(Set<ColumnIdentifier> indNode : candidates) {
+      while(!possibleSmallerINDs.isEmpty()) {
+        Set<Set<ColumnIdentifier>> candidatesBelowOptimisticBorder = generalizeSet(possibleSmallerINDs);
+        for(Set<ColumnIdentifier> indNode : candidatesBelowOptimisticBorder) {
           if(isIND(nodeToInd(indNode))) {
             positiveBorder.add(indNode);
-            positiveBorder = removeGeneralizations(positiveBorder);
-            candidates.remove(indNode);
+            candidatesBelowOptimisticBorder.remove(indNode);
           } else {
             negativeBorder.add(indNode);
           }
         }
-        possibleSmallerIND = candidates;
+        possibleSmallerINDs = candidatesBelowOptimisticBorder;
       }
-      // TODO check INDs which generalize pessDI on k+1 level
-      Set<Set<ColumnIdentifier>> C = pessDI;
-      for(Set<ColumnIdentifier> ind : C) {
-        if(positiveBorder.contains(ind) || isIND(nodeToInd(ind))) {
+      System.out.println(positiveBorder);
+      positiveBorder = removeGeneralizations(positiveBorder);
+      System.out.println(positiveBorder);
+
+      Set<Set<ColumnIdentifier>> candidatesOnNextLevel = getCandidatesOnNextLevel(pessDI); // C(k+1)
+      for(Set<ColumnIdentifier> ind : candidatesOnNextLevel) {
+        // check if positiveBorder already satisfies ind before calling the database
+        if(isSatisfiedByBorder(ind, positiveBorder) || isIND(nodeToInd(ind))) {
           positiveBorder.add(ind);
-          positiveBorder = removeGeneralizations(positiveBorder);
         } else {
           negativeBorder.add(ind);
-          negativeBorder = removeSpecializations(negativeBorder);
         }
       }
+      // remove unnecessary generalizations/specializations
+      positiveBorder = removeGeneralizations(positiveBorder);
+      negativeBorder = removeSpecializations(negativeBorder);
 
       currentLevel += 1;
       optimisticBorder = calculateOptimisticBorder(new HashSet<>(unsatisfiedINDs));
     }
+  }
+
+  private boolean isSatisfiedByBorder(Set<ColumnIdentifier> ind,
+      Set<Set<ColumnIdentifier>> positiveBorder) {
+    for (Set<ColumnIdentifier> borderInds : positiveBorder) {
+      if (borderInds.containsAll(ind)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private Set<Set<ColumnIdentifier>> getCandidatesOnNextLevel(Set<Set<ColumnIdentifier>> pessDI) {
+    int nextLevel = currentLevel + 1;
+    Set<Set<ColumnIdentifier>> generalizedINDs = new HashSet<>();
+    for(Set<ColumnIdentifier> indNode : pessDI) {
+      Set<Set<ColumnIdentifier>> powerSet = Sets.powerSet(indNode);
+      powerSet.removeIf(x -> x.size() != nextLevel);
+      generalizedINDs.addAll(powerSet);
+    }
+    return generalizedINDs;
   }
 
   private Set<Set<ColumnIdentifier>> generalizeSet(Set<Set<ColumnIdentifier>> possibleSmallerIND) {
@@ -215,7 +235,7 @@ public class Zigzag {
 
   private int g3(InclusionDependency toCheck) {
     // TODO implement g3 on database
-    return 1;
+    return 0;
   }
 
   // equivalent to d |= i
