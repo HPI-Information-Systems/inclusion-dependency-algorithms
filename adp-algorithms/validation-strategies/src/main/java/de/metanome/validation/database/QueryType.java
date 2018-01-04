@@ -4,5 +4,6 @@ public enum QueryType {
   NOT_IN,
   NOT_EXISTS,
   LEFT_OUTER_JOIN,
-  EXCEPT
+  EXCEPT,
+  ERROR_MARGIN
 }
