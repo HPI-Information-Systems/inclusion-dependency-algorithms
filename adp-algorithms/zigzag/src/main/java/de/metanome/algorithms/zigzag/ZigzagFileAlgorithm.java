@@ -10,6 +10,7 @@ import de.metanome.algorithm_integration.configuration.ConfigurationRequirementR
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration.ZigzagConfigurationBuilder;
+import de.metanome.input.ind.InclusionDependencyInputConfigurationRequirements;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +42,8 @@ public class ZigzagFileAlgorithm extends ZigzagAlgorithm implements
       RelationalInputGenerator... values) throws AlgorithmConfigurationException {
     if (identifier.equals(TABLE.name())) {
       configurationBuilder.relationalInputGenerators(asList(values));
+      InclusionDependencyInputConfigurationRequirements
+          .acceptRelationalInputGenerators(values, unaryIndParams);
     }
   }
 }

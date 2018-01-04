@@ -9,6 +9,7 @@ import de.metanome.algorithm_integration.configuration.ConfigurationRequirementT
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration.ZigzagConfigurationBuilder;
+import de.metanome.input.ind.InclusionDependencyInputConfigurationRequirements;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +41,8 @@ public class ZigzagDatabaseAlgorithm extends ZigzagAlgorithm implements
       throws AlgorithmConfigurationException {
     if (identifier.equals(TABLE.name())) {
       configurationBuilder.tableInputGenerator(values[0]);
+      InclusionDependencyInputConfigurationRequirements
+          .acceptTableInputGenerator(values, unaryIndParams);
     }
   }
 }

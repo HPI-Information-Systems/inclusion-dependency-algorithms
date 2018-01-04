@@ -1,6 +1,6 @@
 
 dependencies {
-    extraLibs(project(':util')) {
+    extraLibs(project(':util', ':ind-input')) {
         transitive = false
     }
     testCompile project(path: ':util', configuration: 'tests')
