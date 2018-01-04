@@ -96,6 +96,7 @@ public class IndGraph {
         insertEdge(getDependant(ind), getReferenced(ind));
         int dependantIndex = getCandidateIndex(getDependant(ind));
         int referencedIndex = getCandidateIndex(getReferenced(ind));
+
         if (getCandidateIndex(getDependant(ind)) < getCandidateIndex(getReferenced(ind))) {
             // Find all nodes A_k, k > i with path to node A_i
             ImmutableSet<ColumnIdentifier> toDependant = collectNodesWithPathTo(getDependant(ind), dependantIndex);
@@ -130,25 +131,25 @@ public class IndGraph {
     }
 
     private void deleteTests(ImmutableSet<ColumnIdentifier> toDependant, ImmutableSet<ColumnIdentifier> fromReferenced) {
-        // Delete tests A_k -> A_l with k < l in lists A_k
+        // Delete tests __A_l__ with k < l in lists A_k
         for (ColumnIdentifier node : toDependant) {
             if (!tests.containsKey(node)) continue;
             int nodeIndex = getCandidateIndex(node);
             tests.get(node).forEach(indTest -> {
-                if (node.equals(getDependant(indTest.getTest())) &&
+                if (fromReferenced.contains(getReferenced(indTest.getTest())) &&
                         nodeIndex < getCandidateIndex(getReferenced(indTest.getTest()))) {
                     indTest.setDeleted(true);
                 }
             });
         }
 
-        // Delete tests A_k -> A_l with k > l in lists A_l
+        // Delete tests ''A_k'' with k > l in lists A_l
         for (ColumnIdentifier node : fromReferenced) {
             if (!tests.containsKey(node)) continue;
             int nodeIndex = getCandidateIndex(node);
             tests.get(node).forEach(indTest -> {
-                if (node.equals(getDependant(indTest.getTest())) &&
-                        nodeIndex > getCandidateIndex(getReferenced(indTest.getTest()))) {
+                if (toDependant.contains(getDependant(indTest.getTest())) &&
+                         getCandidateIndex(getReferenced(indTest.getTest())) > nodeIndex) {
                     indTest.setDeleted(true);
                 }
             });
