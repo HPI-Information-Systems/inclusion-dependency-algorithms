@@ -86,6 +86,13 @@ public class IndGraph {
                 .noneMatch(node -> getCandidateIndex(node) < dependantIndex && !hasEdge(dependant, node))) {
             if (dataAccessObject.isValidUIND(test)) {
                 updateGraph(test);
+                // TODO(fwindheuser): Check value ranges first
+                // Only run test when A[min, max] subset B[min, max]
+                // Only run = test when A[min, max] = B[min, max]
+                InclusionDependency reversedTest = reverseInd(test);
+                if (dataAccessObject.isValidUIND(reversedTest)) {
+                    updateGraph(reversedTest);
+                }
             }
         }
     }
@@ -208,5 +215,9 @@ public class IndGraph {
 
     private ColumnIdentifier getDependant(final InclusionDependency ind) {
         return getOnlyElement(ind.getDependant().getColumnIdentifiers());
+    }
+
+    private InclusionDependency reverseInd(final InclusionDependency ind) {
+        return new InclusionDependency(ind.getReferenced(), ind.getDependant());
     }
 }

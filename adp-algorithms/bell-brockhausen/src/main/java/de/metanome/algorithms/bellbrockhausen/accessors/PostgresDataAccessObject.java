@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static java.lang.String.format;
 
 public class PostgresDataAccessObject implements DataAccessObject {
@@ -33,6 +34,7 @@ public class PostgresDataAccessObject implements DataAccessObject {
         }
         return new TableInfo(tableName, ImmutableList.copyOf(attributes));
     }
+
     @Override
     public boolean isValidUIND(InclusionDependency candidate) throws AlgorithmExecutionException {
         if (candidate.getDependant().getColumnIdentifiers().size() != 1 ||
@@ -40,10 +42,10 @@ public class PostgresDataAccessObject implements DataAccessObject {
             throw new AlgorithmExecutionException(format("Algorithm can only handle UINDs. Got nIND: %s", candidate));
         }
         // TODO: Optimize this by combining checks for A \subseteq B and B \subseteq A
-        int dependantCount = getDistinctValues(candidate.getDependant().getColumnIdentifiers().get(0));
+        int dependantCount = getDistinctValues(getOnlyElement(candidate.getDependant().getColumnIdentifiers()));
         int sharedCount = getDistinctValues(
-                candidate.getDependant().getColumnIdentifiers().get(0),
-                candidate.getReferenced().getColumnIdentifiers().get(0));
+                getOnlyElement(candidate.getDependant().getColumnIdentifiers()),
+                getOnlyElement(candidate.getReferenced().getColumnIdentifiers()));
         return dependantCount == sharedCount;
     }
 
