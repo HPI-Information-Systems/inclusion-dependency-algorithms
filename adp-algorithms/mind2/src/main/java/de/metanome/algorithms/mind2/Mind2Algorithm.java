@@ -15,6 +15,7 @@ import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.configuration.ConfigurationKey;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration.Mind2ConfigurationBuilder;
+import de.metanome.input.ind.AlgorithmType;
 import de.metanome.input.ind.InclusionDependencyInput;
 import de.metanome.input.ind.InclusionDependencyInputConfigurationRequirements;
 import de.metanome.input.ind.InclusionDependencyInputGenerator;
@@ -27,7 +28,7 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
         InclusionDependencyInputParameterAlgorithm{
 
     private final Mind2ConfigurationBuilder configurationBuilder;
-    private final InclusionDependencyParameters uindParams = new InclusionDependencyParameters();
+    private final InclusionDependencyParameters indInputParams = new InclusionDependencyParameters();
 
     public Mind2Algorithm() {
        configurationBuilder = Mind2Configuration.builder();
@@ -47,7 +48,7 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
         if (identifier.equals(ConfigurationKey.TABLE.name()) && values.length > 0) {
             configurationBuilder.inputGenerators(ImmutableList.copyOf(values));
             InclusionDependencyInputConfigurationRequirements
-                    .acceptTableInputGenerator(values, uindParams);
+                    .acceptTableInputGenerator(values, indInputParams);
         }
     }
 
@@ -63,17 +64,18 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
 
     @Override
     public void setListBoxConfigurationValue(String identifier, String... selectedValues) {
-        InclusionDependencyInputConfigurationRequirements.acceptListBox(identifier, selectedValues, uindParams);
+        InclusionDependencyInputConfigurationRequirements.acceptListBox(identifier, selectedValues, indInputParams);
     }
 
     @Override
     public void setStringConfigurationValue(String identifier, String... values) {
-        InclusionDependencyInputConfigurationRequirements.acceptString(identifier, values, uindParams);
+        InclusionDependencyInputConfigurationRequirements.acceptString(identifier, values, indInputParams);
     }
 
     @Override
     public void execute() throws AlgorithmExecutionException {
-        InclusionDependencyInput uindInput = new InclusionDependencyInputGenerator().get(uindParams);
+        indInputParams.setAlgorithmType(AlgorithmType.DE_MARCHI);
+        InclusionDependencyInput uindInput = new InclusionDependencyInputGenerator().get(indInputParams);
         ImmutableSet<InclusionDependency> uinds = ImmutableSet.copyOf(uindInput.execute());
         Mind2Configuration conifg = configurationBuilder.unaryInds(uinds).build();
         new Mind2(conifg).execute();

@@ -1,6 +1,16 @@
 dependencies {
-    extraLibs(projects(':util', ':ind-input')) {
+    extraLibs(project(':util')) {
         transitive = false
     }
+    extraLibs(project(':ind-input')) {
+    }
     testCompile project(path: ':util', configuration: 'tests')
+}
+
+jar {
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.mind2.Mind2Algorithm'
+    }
+    classifier 'file'
 }
