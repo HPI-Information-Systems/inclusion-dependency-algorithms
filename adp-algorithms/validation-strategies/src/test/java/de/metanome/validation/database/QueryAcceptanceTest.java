@@ -6,6 +6,7 @@ import static org.jooq.impl.DSL.table;
 
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.InclusionDependencyBuilder;
+import de.metanome.validation.ErrorMarginValidationResult;
 import de.metanome.validation.ValidationResult;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +15,7 @@ import java.sql.DriverManager;
 import org.jooq.DSLContext;
 import org.jooq.LoaderFieldMapper.LoaderFieldContext;
 import org.jooq.impl.SQLDataType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,11 +30,31 @@ class QueryAcceptanceTest {
   void setUp() throws Exception {
     final Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:myDb");
     context = contextFactory.create(connection);
+    createPersonRelation();
+  }
+
+  @AfterEach
+  private void tearDown() {
+    context.dropTableIfExists(name("person")).execute();
+  }
+
+  @Test
+  void errorMarginQuery_containsCorrelatedSubquery() throws Exception {
+    final InclusionDependency toRefute = InclusionDependencyBuilder
+        .dependent().column("person", "name")
+        .referenced().column("person", "second_name")
+        .build();
+
+    final DatabaseValidation validation = new DatabaseValidation(context,
+        queries.get(QueryType.ERROR_MARGIN));
+
+    final ErrorMarginValidationResult result = (ErrorMarginValidationResult) validation.validate(toRefute);
+    assertThat(result.getErrorMargin()).isEqualTo(0.25);
+    assertThat(result.isValid()).isFalse();
   }
 
   @Test
   void notExistsQuery_containsCorrelatedSubquery() throws Exception {
-    createPersonRelation();
     final InclusionDependency toRefute = InclusionDependencyBuilder
         .dependent().column("person", "name")
         .referenced().column("person", "second_name")
