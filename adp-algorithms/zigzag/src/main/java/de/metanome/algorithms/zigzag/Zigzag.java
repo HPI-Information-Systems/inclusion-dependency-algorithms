@@ -9,6 +9,9 @@ import de.metanome.algorithm_integration.result_receiver.ColumnNameMismatchExcep
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
+import de.metanome.validation.ErrorMarginValidationResult;
+import de.metanome.validation.ValidationStrategy;
+import de.metanome.validation.ValidationStrategyFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,27 +24,32 @@ import javafx.util.Pair;
 public class Zigzag {
 
   private final ZigzagConfiguration configuration;
+  private ValidationStrategy validationStrategy;
+  private final ValidationStrategyFactory validationStrategyFactory;
+
   private int currentLevel;
   private Set<InclusionDependency> satisfiedINDs;
   private Set<InclusionDependency> unsatisfiedINDs;
-  private Set<InclusionDependency> unaryINDs;
 
   /* Keeps track of dependant-referenced relationship of the unary INDs
-   * In the hypergraph only dependant ColumnIdentifier is used to express an IND
+   * Only the dependant ColumnIdentifiers are used to express an IND
    * And are stored as Set<ColumnIdentifier>
   */
-  Map<ColumnIdentifier, ColumnIdentifier> dependantToReferenced;
+  private Map<ColumnIdentifier, ColumnIdentifier> dependantToReferenced;
 
   public Zigzag(ZigzagConfiguration configuration) {
     this.configuration = configuration;
-    unaryINDs = calculateUnaryInclusionDependencies();
     currentLevel = configuration.getK();
+    validationStrategyFactory = new ValidationStrategyFactory();
   }
 
   public void execute() throws AlgorithmExecutionException {
+    validationStrategy = validationStrategyFactory
+        .forDatabase(configuration.getValidationParameters());
+
     initialCandidateCheck(configuration.getK());
 
-    dependantToReferenced = convertUnaryINDsToMap(calculateUnaryInclusionDependencies());
+    dependantToReferenced = convertUnaryINDsToMap(configuration.getUnaryInds());
 
     Set<Set<ColumnIdentifier>> positiveBorder = indToNodes(satisfiedINDs); // Bd+(I)
     Set<Set<ColumnIdentifier>> negativeBorder = indToNodes(unsatisfiedINDs); // Bd-(I)
@@ -53,12 +61,12 @@ public class Zigzag {
       Set<Set<ColumnIdentifier>> pessDI = new HashSet<>(); // pessDI, all g3' > epsilon
 
       for(Set<ColumnIdentifier> ind : optimisticBorder) {
-        int g3Val = g3(nodeToInd(ind));
-        if(g3Val == 0) {
+        double errorMargin = g3(nodeToInd(ind));
+        if(errorMargin == 0.0) {
           positiveBorder.add(ind);
         } else {
           negativeBorder.add(ind);
-          if(g3Val <= configuration.getEpsilon() && ind.size() > currentLevel + 1) {
+          if(errorMargin <= configuration.getEpsilon() && ind.size() > currentLevel + 1) {
             possibleSmallerINDs.add(ind);
           } else {
             pessDI.add(ind);
@@ -102,6 +110,8 @@ public class Zigzag {
         .map(this::nodeToInd)
         .collect(Collectors.toSet());
     collectResults();
+
+    validationStrategy.close();
   }
 
   private void collectResults() throws CouldNotReceiveResultException, ColumnNameMismatchException {
@@ -224,7 +234,7 @@ public class Zigzag {
   }
 
   private Set<ColumnIdentifier> invertIND(Set<ColumnIdentifier> ind) {
-    dependantToReferenced = convertUnaryINDsToMap(calculateUnaryInclusionDependencies());
+    dependantToReferenced = convertUnaryINDsToMap(configuration.getUnaryInds());
     Set<ColumnIdentifier> invertedIND = new HashSet<>(dependantToReferenced.keySet());
     for(ColumnIdentifier depId : ind) {
       invertedIND.remove(depId);
@@ -242,14 +252,13 @@ public class Zigzag {
         && specialization.containsAll(generalization);
   }
 
-  private int g3(InclusionDependency toCheck) {
-    // TODO implement g3 on database
-    return 0;
+  private double g3(InclusionDependency ind) {
+    return ((ErrorMarginValidationResult) validationStrategy.validate(ind)).getErrorMargin();
   }
 
   // equivalent to d |= i
   private boolean isIND(InclusionDependency ind) {
-    return true; // TODO check if IND using other algorithm
+    return validationStrategy.validate(ind).isValid();
   }
 
   private void initialCandidateCheck(int k) {
@@ -267,31 +276,5 @@ public class Zigzag {
   private Pair<InclusionDependency, Boolean> checkCandidatesForLevel(int i) {
     // TODO candidate check with other algorithm
     return new Pair<>(new InclusionDependency(null, null), true);
-  }
-
-  private Set<InclusionDependency> calculateUnaryInclusionDependencies() {
-    // TODO calculate UINDs with other algorithm
-    ColumnIdentifier a1 = new ColumnIdentifier("table", "a");
-    ColumnIdentifier a2 = new ColumnIdentifier("table", "a2");
-    ColumnIdentifier b1 = new ColumnIdentifier("table", "b");
-    ColumnIdentifier b2 = new ColumnIdentifier("table", "b2");
-    ColumnIdentifier c1 = new ColumnIdentifier("table", "c");
-    ColumnIdentifier c2 = new ColumnIdentifier("table", "c2");
-    ColumnIdentifier d1 = new ColumnIdentifier("table", "d");
-    ColumnIdentifier d2 = new ColumnIdentifier("table", "d2");
-    ColumnIdentifier e1 = new ColumnIdentifier("table", "e");
-    ColumnIdentifier e2 = new ColumnIdentifier("table", "e2");
-
-    Set<InclusionDependency> unaryINDs = new HashSet<>();
-    unaryINDs.add(makeUnaryIND(a1,a2));
-    unaryINDs.add(makeUnaryIND(b1,b2));
-    unaryINDs.add(makeUnaryIND(c1,c2));
-    unaryINDs.add(makeUnaryIND(d1,d2));
-    unaryINDs.add(makeUnaryIND(e1,e2));
-    return unaryINDs;
-  }
-
-  private InclusionDependency makeUnaryIND(ColumnIdentifier dep, ColumnIdentifier ref) {
-    return new InclusionDependency(new ColumnPermutation(dep), new ColumnPermutation(ref));
   }
 }

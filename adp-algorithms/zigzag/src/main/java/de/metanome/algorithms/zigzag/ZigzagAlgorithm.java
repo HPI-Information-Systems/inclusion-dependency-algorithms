@@ -18,19 +18,27 @@ import de.metanome.input.ind.InclusionDependencyInputConfigurationRequirements;
 import de.metanome.input.ind.InclusionDependencyInputGenerator;
 import de.metanome.input.ind.InclusionDependencyInputParameterAlgorithm;
 import de.metanome.input.ind.InclusionDependencyParameters;
+import de.metanome.validation.InclusionDependencyValidationAlgorithm;
+import de.metanome.validation.ValidationConfigurationRequirements;
+import de.metanome.validation.ValidationParameters;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public abstract class ZigzagAlgorithm implements InclusionDependencyAlgorithm,
-    IntegerParameterAlgorithm, InclusionDependencyInputParameterAlgorithm {
+    IntegerParameterAlgorithm,
+    InclusionDependencyInputParameterAlgorithm,
+    InclusionDependencyValidationAlgorithm {
 
   private final ZigzagConfigurationBuilder configurationBuilder;
+  // TODO ValidationParameters need a database connection since they are SQL based checks
+  final ValidationParameters validationParameters;
   final InclusionDependencyParameters unaryIndParams = new InclusionDependencyParameters();
 
   public ZigzagAlgorithm() {
     configurationBuilder = ZigzagConfiguration.builder();
+    validationParameters = new ValidationParameters();
   }
 
   List<ConfigurationRequirement<?>> common() {
@@ -38,6 +46,7 @@ public abstract class ZigzagAlgorithm implements InclusionDependencyAlgorithm,
     requirements.add(new ConfigurationRequirementInteger(K.name()));
     requirements.add(new ConfigurationRequirementInteger(EPSILON.name()));
     requirements.addAll(InclusionDependencyInputConfigurationRequirements.indInput());
+    requirements.addAll(ValidationConfigurationRequirements.validationStrategy());
     return requirements;
   }
 
@@ -55,6 +64,8 @@ public abstract class ZigzagAlgorithm implements InclusionDependencyAlgorithm,
   public void setListBoxConfigurationValue(String identifier, String... selectedValues)
       throws AlgorithmConfigurationException {
     InclusionDependencyInputConfigurationRequirements.acceptListBox(identifier, selectedValues, unaryIndParams);
+    ValidationConfigurationRequirements
+        .acceptListBox(identifier, selectedValues, validationParameters);
   }
 
   @Override
@@ -72,10 +83,12 @@ public abstract class ZigzagAlgorithm implements InclusionDependencyAlgorithm,
   public void execute() throws AlgorithmExecutionException {
     InclusionDependencyInput uindInput = new InclusionDependencyInputGenerator().get(unaryIndParams);
     Set<InclusionDependency> uinds = new HashSet<>(uindInput.execute());
-    ZigzagConfiguration configuration = configurationBuilder.unaryInds(uinds).build();
+    ZigzagConfiguration configuration = configurationBuilder
+        .unaryInds(uinds)
+        .validationParameters(validationParameters)
+        .build();
     new Zigzag(configuration).execute();
   }
-
 
   @Override
   public String getAuthors() {

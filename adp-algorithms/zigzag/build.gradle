@@ -1,8 +1,17 @@
 
 dependencies {
-    extraLibs(project(':util', ':ind-input')) {
+    extraLibs(project(':util')) {
         transitive = false
     }
+
+    extraLibs(project(':ind-input')) {
+        transitive = false
+    }
+
+    extraLibs(project(':validation-strategies')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
+    }
+
     testCompile project(path: ':util', configuration: 'tests')
 }
 

@@ -1,6 +1,7 @@
 package de.metanome.algorithms.zigzag;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
@@ -9,23 +10,32 @@ import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
+import de.metanome.util.InclusionDependencyResultReceiverStub;
 import java.util.HashSet;
 import java.util.Set;
+import org.jukito.JukitoRunner;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(JukitoRunner.class)
 public class ZigzagTest {
 
-  @Inject
-  private Zigzag zigzag;
+  private InclusionDependencyResultReceiverStub resultReceiver;
+  @Inject private Zigzag zigzag;
+
+  @Before
+  public void setupMocks(ZigzagConfiguration config) {
+    resultReceiver = new InclusionDependencyResultReceiverStub();
+    when(config.getResultReceiver()).thenReturn(resultReceiver);
+    when(config.getK()).thenReturn(2);
+    when(config.getEpsilon()).thenReturn(1);
+    when(config.getUnaryInds()).thenReturn(calculateUnaryInds());
+  }
 
   @Test
-  public void testCalculateOptimisticBorder() throws AlgorithmExecutionException {
-    ZigzagConfiguration.ZigzagConfigurationBuilder configurationBuilder = ZigzagConfiguration
-        .builder();
-    configurationBuilder.k(2);
-    configurationBuilder.epsilon(1);
-    ZigzagConfiguration configuration = configurationBuilder.build();
-    zigzag = new Zigzag(configuration);
+  public void testCalculateOptimisticBorder(ZigzagConfiguration config) throws AlgorithmExecutionException {
+    zigzag = new Zigzag(config);
 
     Set<InclusionDependency> unsatisfiedINDs = new HashSet<>();
 
@@ -63,7 +73,28 @@ public class ZigzagTest {
     assertEquals(optimisticBorder, zigzag.calculateOptimisticBorder(unsatisfiedINDs));
   }
 
-  private InclusionDependency makeUnaryIND(ColumnIdentifier dep, ColumnIdentifier ref) {
+  private Set<InclusionDependency> calculateUnaryInds() {
+    ColumnIdentifier a1 = new ColumnIdentifier("table", "a");
+    ColumnIdentifier a2 = new ColumnIdentifier("table", "a2");
+    ColumnIdentifier b1 = new ColumnIdentifier("table", "b");
+    ColumnIdentifier b2 = new ColumnIdentifier("table", "b2");
+    ColumnIdentifier c1 = new ColumnIdentifier("table", "c");
+    ColumnIdentifier c2 = new ColumnIdentifier("table", "c2");
+    ColumnIdentifier d1 = new ColumnIdentifier("table", "d");
+    ColumnIdentifier d2 = new ColumnIdentifier("table", "d2");
+    ColumnIdentifier e1 = new ColumnIdentifier("table", "e");
+    ColumnIdentifier e2 = new ColumnIdentifier("table", "e2");
+
+    Set<InclusionDependency> unaryINDs = new HashSet<>();
+    unaryINDs.add(toInd(a1,a2));
+    unaryINDs.add(toInd(b1,b2));
+    unaryINDs.add(toInd(c1,c2));
+    unaryINDs.add(toInd(d1,d2));
+    unaryINDs.add(toInd(e1,e2));
+    return unaryINDs;
+  }
+
+  private InclusionDependency toInd(ColumnIdentifier dep, ColumnIdentifier ref) {
     return new InclusionDependency(new ColumnPermutation(dep), new ColumnPermutation(ref));
   }
 }
