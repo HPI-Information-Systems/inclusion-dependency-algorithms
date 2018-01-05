@@ -21,6 +21,8 @@ import org.junit.runner.RunWith;
 
 import javax.inject.Inject;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
@@ -91,10 +93,14 @@ public class Mind2Test {
         mind2.execute();
 
         // THEN
-        assertThat(resultReceiver.getReceivedResults()).containsAll(maximumInds);
+        assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(maximumInds));
     }
 
     private InclusionDependency toInd(ColumnIdentifier dependant, ColumnIdentifier referenced) {
         return new InclusionDependency(new ColumnPermutation(dependant), new ColumnPermutation(referenced));
+    }
+
+    private InclusionDependency[] toArray(Set<InclusionDependency> inds) {
+        return inds.stream().toArray(InclusionDependency[]::new);
     }
 }

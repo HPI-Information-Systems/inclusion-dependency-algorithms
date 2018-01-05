@@ -3,12 +3,12 @@ package de.metanome.util;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class InclusionDependencyResultReceiverStub implements InclusionDependencyResultReceiver {
 
-    private final Set<InclusionDependency> inds = new HashSet<>();
+    private final List<InclusionDependency> inds = new ArrayList<>();
 
     @Override
     public void receiveResult(InclusionDependency inclusionDependency) {
@@ -24,7 +24,7 @@ public class InclusionDependencyResultReceiverStub implements InclusionDependenc
         return inds.contains(inclusionDependency);
     }
 
-    public Set<InclusionDependency> getReceivedResults() {
+    public List<InclusionDependency> getReceivedResults() {
         return inds;
     }
 }

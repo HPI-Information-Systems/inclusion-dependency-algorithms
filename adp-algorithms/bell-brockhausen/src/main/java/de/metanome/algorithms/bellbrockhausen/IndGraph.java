@@ -100,6 +100,9 @@ public class IndGraph {
     private void updateGraph(final InclusionDependency ind)
             throws ColumnNameMismatchException, CouldNotReceiveResultException {
         // A_i -> A_j
+        if (hasEdge(getDependant(ind), getReferenced(ind))) {
+            return;
+        }
         insertEdge(getDependant(ind), getReferenced(ind));
         int dependantIndex = getCandidateIndex(getDependant(ind));
         int referencedIndex = getCandidateIndex(getReferenced(ind));

@@ -19,6 +19,9 @@ import org.junit.runner.RunWith;
 
 import javax.inject.Inject;
 
+import java.util.List;
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -58,7 +61,7 @@ public class BellBrockhausenTest {
         bellBrockhausen.execute();
 
         // THEN
-        assertThat(resultReceiver.getReceivedResults()).isEqualTo(validInds);
+        assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(validInds));
     }
 
     @Test
@@ -77,7 +80,7 @@ public class BellBrockhausenTest {
         bellBrockhausen.execute();
 
         // THEN
-        assertThat(resultReceiver.getReceivedResults()).isEqualTo(validInds);
+        assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(validInds));
     }
 
     @Test
@@ -104,7 +107,7 @@ public class BellBrockhausenTest {
         bellBrockhausen.execute();
 
         // THEN
-        assertThat(resultReceiver.getReceivedResults()).isEqualTo(validInds);
+        assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(validInds));
     }
 
 
@@ -132,10 +135,14 @@ public class BellBrockhausenTest {
         bellBrockhausen.execute();
 
         // THEN
-        assertThat(resultReceiver.getReceivedResults()).isEqualTo(validInds);
+        assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(validInds));
     }
 
     private InclusionDependency toInd(ColumnIdentifier dependant, ColumnIdentifier referenced) {
         return new InclusionDependency(new ColumnPermutation(dependant), new ColumnPermutation(referenced));
+    }
+
+    private InclusionDependency[] toArray(Set<InclusionDependency> inds) {
+        return inds.stream().toArray(InclusionDependency[]::new);
     }
 }
