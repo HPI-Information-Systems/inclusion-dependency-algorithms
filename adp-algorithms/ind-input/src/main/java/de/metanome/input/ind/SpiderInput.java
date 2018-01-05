@@ -1,10 +1,12 @@
 package de.metanome.input.ind;
 
+import com.google.common.collect.ImmutableList;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.spider.Spider;
 import de.metanome.algorithms.spider.SpiderConfiguration;
 import java.util.List;
+import java.util.Optional;
 
 class SpiderInput {
 
@@ -24,8 +26,10 @@ class SpiderInput {
   private SpiderConfiguration prepareConfiguration(final InclusionDependencyParameters parameters) {
     final SpiderConfiguration configuration = SpiderConfiguration.withDefaults();
     ConfigurationMapper.applyFrom(parameters.getConfigurationString(), configuration);
-    configuration.setRelationalInputGenerators(parameters.getRelationalInputGenerators());
-    configuration.setTableInputGenerators(parameters.getTableInputGenerators());
+    configuration.setRelationalInputGenerators(
+            Optional.ofNullable(parameters.getRelationalInputGenerators()).orElse(ImmutableList.of()));
+    configuration.setTableInputGenerators(
+            Optional.ofNullable(parameters.getTableInputGenerators()).orElse(ImmutableList.of()));
     return configuration;
   }
 }

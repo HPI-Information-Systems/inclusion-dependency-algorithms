@@ -1,10 +1,12 @@
 package de.metanome.input.ind;
 
+import com.google.common.collect.ImmutableList;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.demarchi.Configuration;
 import de.metanome.algorithms.demarchi.DeMarchi;
 import java.util.List;
+import java.util.Optional;
 
 class DeMarchiInput {
 
@@ -24,8 +26,10 @@ class DeMarchiInput {
   private Configuration prepareConfiguration(final InclusionDependencyParameters parameters) {
     final Configuration configuration = Configuration.withDefaults();
     ConfigurationMapper.applyFrom(parameters.getConfigurationString(), configuration);
-    configuration.setRelationalInputGenerators(parameters.getRelationalInputGenerators());
-    configuration.setTableInputGenerators(parameters.getTableInputGenerators());
+    configuration.setRelationalInputGenerators(
+            Optional.ofNullable(parameters.getRelationalInputGenerators()).orElse(ImmutableList.of()));
+    configuration.setTableInputGenerators(
+            Optional.ofNullable(parameters.getTableInputGenerators()).orElse(ImmutableList.of()));
     return configuration;
   }
 }
