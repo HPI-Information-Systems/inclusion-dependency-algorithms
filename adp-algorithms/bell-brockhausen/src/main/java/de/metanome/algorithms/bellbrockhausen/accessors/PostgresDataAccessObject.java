@@ -8,6 +8,7 @@ import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.bellbrockhausen.models.Attribute;
+import de.metanome.algorithms.bellbrockhausen.models.DataType;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -71,20 +72,32 @@ public class PostgresDataAccessObject implements DataAccessObject {
         return ImmutableList.copyOf(columnNames);
     }
 
-    // TODO(fwindheuser): Handle String columns
     private Attribute getValueRange(final DatabaseConnectionGenerator connectionGenerator, final ColumnIdentifier columnIdentifier)
             throws AlgorithmExecutionException {
         String columnName = columnIdentifier.getColumnIdentifier();
         String tableName = columnIdentifier.getTableIdentifier();
-        String query = format("SELECT MIN(%s) as minVal, MAX(%s) as maxVal FROM %s", columnName, columnName, tableName);
+        String query = format("SELECT MIN(%s) as minVal, MAX(%s) as maxVal, PG_TYPEOF(MAX(%s)) as type FROM %s",
+                columnName, columnName, columnName, tableName);
         ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query);
         try {
             resultSet.next();
-            Range<Integer> valueRange = Range.closed(resultSet.getInt("minVal"), resultSet.getInt("maxVal"));
-            return new Attribute(columnIdentifier, valueRange);
+            DataType type = DataType.fromString(resultSet.getString("type"));
+            Range<Comparable> valueRange;
+            switch (type) {
+                case TEXT:
+                    valueRange = Range.closed(resultSet.getString("minVal"), resultSet.getString("maxVal"));
+                    break;
+                case INTEGER:
+                    valueRange = Range.closed(resultSet.getInt("minVal"), resultSet.getInt("maxVal"));
+                    break;
+                default:
+                    throw new AlgorithmExecutionException(
+                            format("Invalid data type %s for column %s", type, columnIdentifier));
+            }
+            return new Attribute(columnIdentifier, valueRange, type);
         } catch (SQLException e) {
             throw new InputGenerationException(
-                    format("Error calculating value range for column %s of table %s", columnName, tableName), e);
+                    format("Error calculating value range for column %s", columnIdentifier), e);
         }
     }
 

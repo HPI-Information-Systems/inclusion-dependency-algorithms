@@ -1,6 +1,7 @@
 package de.metanome.algorithms.bellbrockhausen;
 
-import de.metanome.algorithm_integration.AlgorithmConfigurationException;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_types.DatabaseConnectionParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
@@ -16,6 +17,7 @@ import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfi
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration.BellBrockhausenConfigurationBuilder;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static de.metanome.algorithms.bellbrockhausen.configuration.ConfigurationKey.DATABASE;
 import static de.metanome.algorithms.bellbrockhausen.configuration.ConfigurationKey.TABLE;
@@ -39,14 +41,14 @@ public class BellBrockhausenAlgorithm implements InclusionDependencyAlgorithm,
 
     @Override
     public void setDatabaseConnectionGeneratorConfigurationValue(
-            String identifier, DatabaseConnectionGenerator... values) throws AlgorithmConfigurationException {
+            String identifier, DatabaseConnectionGenerator... values) {
         if (identifier.equals(DATABASE.name())) {
             configurationBuilder.connectionGenerator(values[0]);
         }
     }
 
     @Override
-    public void setStringConfigurationValue(String identifier, String... values) throws AlgorithmConfigurationException {
+    public void setStringConfigurationValue(String identifier, String... values) {
         if (identifier.equals(TABLE.name())) {
             configurationBuilder.tableName(values[0]);
         }
