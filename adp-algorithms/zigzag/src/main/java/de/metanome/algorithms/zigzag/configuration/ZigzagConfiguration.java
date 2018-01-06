@@ -26,7 +26,4 @@ public class ZigzagConfiguration {
   private final List<TableInputGenerator> tableInputGenerators;
   @Singular
   private final List<RelationalInputGenerator> relationalInputGenerators;
-
-  private final DatabaseConnectionGenerator databaseConnectionGenerator;
-
 }
