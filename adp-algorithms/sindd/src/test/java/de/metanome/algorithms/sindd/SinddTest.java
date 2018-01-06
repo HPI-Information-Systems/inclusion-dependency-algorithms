@@ -66,8 +66,8 @@ class SinddTest {
     return Configuration.builder()
         .relationalInputGenerator(generator)
         .resultReceiver(resultReceiver)
-        .openFileNr(5)
-        .partitionNr(1)
+        .openFileNr(3)
+        .partitionNr(2)
         .build();
   }
 
