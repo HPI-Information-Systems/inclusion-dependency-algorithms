@@ -5,7 +5,6 @@ dependencies {
     }
 
     extraLibs(project(':ind-input')) {
-        transitive = false
     }
 
     extraLibs(project(':validation-strategies')) {

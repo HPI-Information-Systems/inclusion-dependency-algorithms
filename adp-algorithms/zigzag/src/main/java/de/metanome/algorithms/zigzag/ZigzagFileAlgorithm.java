@@ -43,7 +43,7 @@ public class ZigzagFileAlgorithm extends ZigzagAlgorithm implements
     if (identifier.equals(TABLE.name())) {
       configurationBuilder.relationalInputGenerators(asList(values));
       InclusionDependencyInputConfigurationRequirements
-          .acceptRelationalInputGenerators(values, unaryIndParams);
+          .acceptRelationalInputGenerators(values, indInputParams);
     }
   }
 }

@@ -44,7 +44,7 @@ public class ZigzagDatabaseAlgorithm extends ZigzagAlgorithm implements
     if (identifier.equals(TABLE.name())) {
       configurationBuilder.tableInputGenerator(values[0]);
       InclusionDependencyInputConfigurationRequirements
-          .acceptTableInputGenerator(values, unaryIndParams);
+          .acceptTableInputGenerator(values, indInputParams);
       DatabaseConnectionGenerator[] databaseConnectionGenerators = {values[0].getDatabaseConnectionGenerator()};
       ValidationConfigurationRequirements
           .acceptDatabaseConnectionGenerator(databaseConnectionGenerators, validationParameters);
