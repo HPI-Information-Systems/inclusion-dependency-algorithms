@@ -52,15 +52,7 @@ class QueryAcceptanceTest {
         .column("second_name", SQLDataType.VARCHAR(5))
         .execute();
 
-    loadCsv("person.csv", "person");
+    Helper.loadCsv(context, "person.csv", "person");
   }
 
-  private void loadCsv(final String fileName, final String tableName) throws IOException {
-    try (InputStream in = getClass().getResourceAsStream(fileName)) {
-      context.loadInto(table(name(tableName)))
-          .loadCSV(in)
-          .fields(LoaderFieldContext::field)
-          .execute();
-    }
-  }
 }
