@@ -22,6 +22,7 @@ import de.metanome.input.ind.InclusionDependencyParameters;
 import de.metanome.validation.InclusionDependencyValidationAlgorithm;
 import de.metanome.validation.ValidationConfigurationRequirements;
 import de.metanome.validation.ValidationParameters;
+import de.metanome.validation.database.QueryType;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -83,7 +84,10 @@ public abstract class ZigzagAlgorithm implements InclusionDependencyAlgorithm,
 
   @Override
   public void execute() throws AlgorithmExecutionException {
+    // Hardcode for now until this works with metanome-cli
     indInputParams.setAlgorithmType(AlgorithmType.DE_MARCHI);
+    validationParameters.setQueryType(QueryType.ERROR_MARGIN);
+
     InclusionDependencyInput uindInput = new InclusionDependencyInputGenerator().get(indInputParams);
     Set<InclusionDependency> uinds = new HashSet<>(uindInput.execute());
     ZigzagConfiguration configuration = configurationBuilder
