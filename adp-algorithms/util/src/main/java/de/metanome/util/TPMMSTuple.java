@@ -1,4 +1,4 @@
-package de.metanome.algorithms.spider.tpmms;
+package de.metanome.util;
 
 import lombok.Getter;
 import lombok.Setter;

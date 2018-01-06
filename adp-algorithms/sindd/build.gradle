@@ -1,0 +1,22 @@
+
+configurations {
+    extraLibs
+}
+
+dependencies {
+    extraLibs(project(':util')) {
+        transitive = false
+    }
+    configurations.compile.extendsFrom configurations.extraLibs
+
+    extraLibs 'com.opencsv:opencsv:3.7'
+    extraLibs 'log4j:log4j:1.2.17'
+    testCompile project(path: ':util', configuration: 'tests')
+}
+
+jar {
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.sindd.SinddAlgorithm'
+    }
+}

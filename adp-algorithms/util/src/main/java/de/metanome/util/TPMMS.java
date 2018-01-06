@@ -1,4 +1,4 @@
-package de.metanome.algorithms.spider.tpmms;
+package de.metanome.util;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import it.unimi.dsi.fastutil.PriorityQueue;
@@ -43,7 +43,7 @@ public class TPMMS {
     }
   }
 
-  private void uniqueAndSort(final Path path) throws IOException, AlgorithmExecutionException {
+  public void uniqueAndSort(final Path path) throws IOException {
     int totalValues = 0;
     int valuesSinceLastMemoryCheck = 0;
     final List<String> spilledFiles = new ArrayList<>();
