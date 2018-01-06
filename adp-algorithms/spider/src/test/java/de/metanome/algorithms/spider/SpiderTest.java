@@ -14,6 +14,7 @@ import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.FileGeneratorFake;
 import de.metanome.util.RelationalInputStub;
 import de.metanome.util.Row;
+import de.metanome.util.TPMMSConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -53,10 +54,8 @@ class SpiderTest {
     configuration = SpiderConfiguration.builder()
         .tempFileGenerator(new FileGeneratorFake())
         .resultReceiver(resultReceiver)
-        .inputRowLimit(-1)
-        .maxMemoryUsage(1024)
-        .memoryCheckInterval(5)
         .relationalInputGenerator(generator)
+        .tpmmsConfiguration(TPMMSConfiguration.withDefaults())
         .build();
   }
 

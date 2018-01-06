@@ -3,6 +3,7 @@ package de.metanome.algorithms.sindd;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+import de.metanome.util.TPMMSConfiguration;
 import java.util.Collections;
 import java.util.List;
 import lombok.Builder;
@@ -23,9 +24,7 @@ public class Configuration {
   private final int openFileNr;
   private final int partitionNr;
 
-  private final int inputRowLimit;
-  private final int maxMemoryUsage;
-  private final int memoryCheckInterval;
+  private final TPMMSConfiguration tpmmsConfiguration;
 
   public static Configuration withDefaults() {
     return builder()
@@ -34,9 +33,7 @@ public class Configuration {
         .tableInputGenerators(Collections.emptyList())
         .openFileNr(100)
         .partitionNr(1)
-        .inputRowLimit(-1)
-        .maxMemoryUsage(2048 * 10214)
-        .memoryCheckInterval(500)
+        .tpmmsConfiguration(TPMMSConfiguration.withDefaults())
         .build();
   }
 }

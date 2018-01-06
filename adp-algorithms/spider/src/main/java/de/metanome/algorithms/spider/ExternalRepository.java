@@ -19,7 +19,7 @@ class ExternalRepository {
       throws AlgorithmExecutionException {
 
     final Path[] paths = store(configuration, table);
-    final TPMMS tpmms = getTpmms(configuration);
+    final TPMMS tpmms = new TPMMS(configuration.getTpmmsConfiguration());
     tpmms.uniqueAndSort(paths);
     return open(paths);
   }
@@ -76,14 +76,6 @@ class ExternalRepository {
     } catch (final IOException e) {
       throw new AlgorithmExecutionException("cannot close", e);
     }
-  }
-
-  private TPMMS getTpmms(final SpiderConfiguration configuration) {
-    return TPMMS.builder()
-        .inputRowLimit(configuration.getInputRowLimit())
-        .maxMemoryUsage(configuration.getMaxMemoryUsage())
-        .memoryCheckInterval(configuration.getMemoryCheckInterval())
-        .build();
   }
 
   private ReadPointer[] open(final Path[] paths)

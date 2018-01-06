@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import lombok.Builder;
 
 public class TPMMS {
 
@@ -26,11 +25,15 @@ public class TPMMS {
   private final long maxMemoryUsage;
   private final int memoryCheckInterval;
 
-  @Builder
-  TPMMS(final int inputRowLimit, final long maxMemoryUsage, final int memoryCheckInterval) {
-    this.inputRowLimit = inputRowLimit;
-    this.maxMemoryUsage = maxMemoryUsage;
-    this.memoryCheckInterval = memoryCheckInterval;
+  public TPMMS(final TPMMSConfiguration configuration) {
+    this.inputRowLimit = configuration.getInputRowLimit();
+    this.maxMemoryUsage = getMaxMemoryUsage(configuration);
+    this.memoryCheckInterval = configuration.getMemoryCheckInterval();
+  }
+
+  private static long getMaxMemoryUsage(final TPMMSConfiguration configuration) {
+    final long available = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
+    return (long) (available * (configuration.getMaxMemoryUsagePercentage() / 100.0d));
   }
 
   public void uniqueAndSort(final Path[] paths) throws AlgorithmExecutionException {

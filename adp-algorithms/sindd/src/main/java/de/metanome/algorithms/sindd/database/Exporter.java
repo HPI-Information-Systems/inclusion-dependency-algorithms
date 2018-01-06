@@ -67,12 +67,7 @@ public class Exporter {
       throw new IOException(e);
     }
 
-    final TPMMS tpmms = TPMMS.builder()
-        .inputRowLimit(configuration.getInputRowLimit())
-        .maxMemoryUsage(configuration.getMaxMemoryUsage())
-        .memoryCheckInterval(configuration.getMemoryCheckInterval())
-        .build();
-
+    final TPMMS tpmms = new TPMMS(configuration.getTpmmsConfiguration());
     tpmms.uniqueAndSort(file.toPath());
     return new BufferedReader(new FileReader(file));
   }

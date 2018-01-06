@@ -10,6 +10,7 @@ import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResu
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.util.Row;
+import de.metanome.util.TPMMSConfiguration;
 import de.metanome.util.TableInputGeneratorStub;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +69,7 @@ class SinddTest {
         .resultReceiver(resultReceiver)
         .openFileNr(3)
         .partitionNr(2)
+        .tpmmsConfiguration(TPMMSConfiguration.withDefaults())
         .build();
   }
 
