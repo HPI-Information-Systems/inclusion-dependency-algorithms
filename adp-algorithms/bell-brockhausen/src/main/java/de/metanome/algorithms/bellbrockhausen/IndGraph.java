@@ -11,6 +11,7 @@ import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultEx
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
+import de.metanome.algorithms.bellbrockhausen.models.Attribute;
 import de.metanome.algorithms.bellbrockhausen.models.IndTest;
 
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.util.Collectors.toImmutableList;
@@ -40,18 +42,17 @@ public class IndGraph {
     public IndGraph(
             InclusionDependencyResultReceiver resultReceiver,
             DataAccessObject dataAccessObject,
-            ImmutableList<ColumnIdentifier> candidates) {
+            ImmutableList<Attribute> attributes) {
         this.resultReceiver = resultReceiver;
         this.dataAccessObject = dataAccessObject;
-        this.candidates = candidates;
+        this.candidates = attributes.stream().map(Attribute::getColumnIdentifier).collect(toImmutableList());
         fromEdges = candidates.stream().collect(toMap(c -> c, c -> new HashSet<>()));
         toEdges = candidates.stream().collect(toMap(c -> c, c -> new HashSet<>()));
         tests = new HashMap<>();
+        buildTests(attributes);
     }
 
     public void testCandidates() throws AlgorithmExecutionException {
-        buildTests();
-
         for (int i = 0; i < candidates.size() - 1; i++) {
             ColumnIdentifier testGroupIndex = candidates.get(i);
             List<IndTest> testGroup = tests.get(testGroupIndex);
@@ -63,16 +64,16 @@ public class IndGraph {
         }
     }
 
-    private void buildTests() {
+    private void buildTests(ImmutableList<Attribute> candidates) {
         for (int i = 0; i < candidates.size(); i++) {
-            ColumnIdentifier candidateA = candidates.get(i);
+            Attribute candidateA = candidates.get(i);
             for (int j = i + 1; j < candidates.size(); j++) {
-                ColumnIdentifier candidateB = candidates.get(j);
-                if (!tests.containsKey(candidateA)) {
-                    tests.put(candidateA, new ArrayList<>());
+                Attribute candidateB = candidates.get(j);
+                if (!tests.containsKey(candidateA.getColumnIdentifier())) {
+                    tests.put(candidateA.getColumnIdentifier(), new ArrayList<>());
                 }
-                tests.get(candidateA).add(new IndTest(toInd(candidateA, candidateB)));
-                tests.get(candidateA).add(new IndTest(toInd(candidateB, candidateA)));
+                tests.get(candidateA.getColumnIdentifier()).add(IndTest.fromAttributes(candidateA, candidateB));
+                tests.get(candidateA.getColumnIdentifier()).add(IndTest.fromAttributes(candidateB, candidateA));
             }
         }
     }
@@ -86,9 +87,6 @@ public class IndGraph {
                 .noneMatch(node -> getCandidateIndex(node) < dependantIndex && !hasEdge(dependant, node))) {
             if (dataAccessObject.isValidUIND(test)) {
                 updateGraph(test);
-                // TODO(fwindheuser): Check value ranges first
-                // Only run test when A[min, max] subset B[min, max]
-                // Only run = test when A[min, max] = B[min, max]
                 InclusionDependency reversedTest = reverseInd(test);
                 if (dataAccessObject.isValidUIND(reversedTest)) {
                     updateGraph(reversedTest);
