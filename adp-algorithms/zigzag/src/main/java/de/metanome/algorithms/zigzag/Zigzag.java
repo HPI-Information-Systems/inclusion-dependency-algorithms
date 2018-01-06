@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
 
 public class Zigzag {
 
@@ -35,11 +34,13 @@ public class Zigzag {
    * Only the dependant ColumnIdentifiers are used to express an IND
    * And are stored as Set<ColumnIdentifier>
   */
-  private Map<ColumnIdentifier, ColumnIdentifier> dependantToReferenced;
+  private Map<ColumnIdentifier, ColumnIdentifier> unaryIndMap;
 
   public Zigzag(ZigzagConfiguration configuration) {
     this.configuration = configuration;
     currentLevel = configuration.getK();
+    satisfiedINDs = new HashSet<>();
+    unsatisfiedINDs = new HashSet<>();
     validationStrategyFactory = new ValidationStrategyFactory();
   }
 
@@ -49,7 +50,7 @@ public class Zigzag {
 
     initialCandidateCheck(configuration.getK());
 
-    dependantToReferenced = convertUnaryINDsToMap(configuration.getUnaryInds());
+    unaryIndMap = convertUnaryINDsToMap(configuration.getUnaryInds());
 
     Set<Set<ColumnIdentifier>> positiveBorder = indToNodes(satisfiedINDs); // Bd+(I)
     Set<Set<ColumnIdentifier>> negativeBorder = indToNodes(unsatisfiedINDs); // Bd-(I)
@@ -164,8 +165,7 @@ public class Zigzag {
       if(solution.size() == 0) {
         solution = unpackedHead;
       } else {
-        Set<Set<ColumnIdentifier>> newSolution = new HashSet<>();
-        newSolution = unpackCartesianProduct(Sets.cartesianProduct(solution,unpackedHead));
+        Set<Set<ColumnIdentifier>> newSolution = unpackCartesianProduct(Sets.cartesianProduct(solution,unpackedHead));
         solution = removeSpecializations(newSolution);
       }
     }
@@ -189,7 +189,7 @@ public class Zigzag {
     List<ColumnIdentifier> refList = new ArrayList<>();
     for (ColumnIdentifier depId : indNode) {
       depList.add(depId);
-      refList.add(dependantToReferenced.get(depId));
+      refList.add(unaryIndMap.get(depId));
     }
     ColumnPermutation dep = new ColumnPermutation();
     dep.setColumnIdentifiers(depList);
@@ -234,8 +234,8 @@ public class Zigzag {
   }
 
   private Set<ColumnIdentifier> invertIND(Set<ColumnIdentifier> ind) {
-    dependantToReferenced = convertUnaryINDsToMap(configuration.getUnaryInds());
-    Set<ColumnIdentifier> invertedIND = new HashSet<>(dependantToReferenced.keySet());
+    unaryIndMap = convertUnaryINDsToMap(configuration.getUnaryInds());
+    Set<ColumnIdentifier> invertedIND = new HashSet<>(unaryIndMap.keySet());
     for(ColumnIdentifier depId : ind) {
       invertedIND.remove(depId);
     }
@@ -262,19 +262,20 @@ public class Zigzag {
   }
 
   private void initialCandidateCheck(int k) {
-    Pair<InclusionDependency, Boolean> checkedIND;
-    for(int i = 0; i < k; i++) {
-      checkedIND = checkCandidatesForLevel(i);
-      if(checkedIND.getValue()) {
-        satisfiedINDs.add(checkedIND.getKey());
-      } else {
-        unsatisfiedINDs.add(checkedIND.getKey());
+    for(int i = 1; i < k; i++) {
+      for(InclusionDependency ind : generateCandidatesForLevel(i)) {
+        if(isIND(ind)) {
+          satisfiedINDs.add(ind);
+        } else {
+          unsatisfiedINDs.add(ind);
+        }
       }
     }
   }
 
-  private Pair<InclusionDependency, Boolean> checkCandidatesForLevel(int i) {
-    // TODO candidate check with other algorithm
-    return new Pair<>(new InclusionDependency(null, null), true);
+  private Set<InclusionDependency> generateCandidatesForLevel(int i) {
+    return Sets.combinations(unaryIndMap.keySet(),i).stream()
+        .map(this::nodeToInd)
+        .collect(Collectors.toSet());
   }
 }
