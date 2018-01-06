@@ -110,7 +110,7 @@ public class Exporter {
   }
 
   private static int getWriterIndex(String value, int partitionNr) {
-    int hc = value.hashCode();
+    int hc = Math.abs(value.hashCode());
     return hc % partitionNr;
   }
 
