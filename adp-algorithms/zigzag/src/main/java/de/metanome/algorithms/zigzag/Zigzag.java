@@ -41,6 +41,7 @@ public class Zigzag {
     currentLevel = configuration.getK();
     satisfiedINDs = new HashSet<>();
     unsatisfiedINDs = new HashSet<>();
+    unaryIndMap = convertUnaryINDsToMap(configuration.getUnaryInds());
     validationStrategyFactory = new ValidationStrategyFactory();
   }
 
@@ -49,8 +50,6 @@ public class Zigzag {
         .forDatabase(configuration.getValidationParameters());
 
     initialCandidateCheck(configuration.getK());
-
-    unaryIndMap = convertUnaryINDsToMap(configuration.getUnaryInds());
 
     Set<Set<ColumnIdentifier>> positiveBorder = indToNodes(satisfiedINDs); // Bd+(I)
     Set<Set<ColumnIdentifier>> negativeBorder = indToNodes(unsatisfiedINDs); // Bd-(I)
