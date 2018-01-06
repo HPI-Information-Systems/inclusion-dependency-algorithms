@@ -43,9 +43,9 @@ class SinddTest {
     generator = TableInputGeneratorStub.builder()
         .relationName(TABLE_NAME)
         .columnNames(columnNames)
-        .row(Row.of("1", "1", "1"))
-        .row(Row.of("1", "1", "3"))
-        .row(Row.of(null, "2", "2"))
+        .row(Row.of(null, "11", "11"))
+        .row(Row.of(null, "11", "33"))
+        .row(Row.of(null, "22", "22"))
         .build();
 
     impl = new Sindd();

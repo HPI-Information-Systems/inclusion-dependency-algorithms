@@ -34,11 +34,7 @@ public class UnaryINDsGenerator {
   private void updateReferencedAttributes(Set<String> attSet) {
     Set<Attribute> attObjects = getAttObjects(attSet);
     for (Attribute attObj : attObjects) {
-      if (attObj.isRefAttsInitialized()) {
-        attObj.updateRefAttributes(attObjects);
-      } else {
-        attObj.initRefAttributes(attObjects);
-      }
+      attObj.updateRefAttributes(attObjects);
     }
   }
 

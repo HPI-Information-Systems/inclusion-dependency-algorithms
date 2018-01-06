@@ -37,6 +37,7 @@ class Sindd {
       createMetadata();
 
       exportData();
+
       discoverUnaryINDs();
 
       printUnaryINDs();
@@ -47,7 +48,14 @@ class Sindd {
     }
   }
 
-
+  private void initAttributes(){
+    List<Attribute> attributes = CommonObjects.getAttributes();
+    attributes.get(0).getRefAttributes();
+    for(Attribute att : attributes){
+      att.initRefAttributes(attributes);
+    }
+  }
+  
   private void receiveIND(final Attribute lhs, final Attribute rhs)
       throws AlgorithmExecutionException {
 
@@ -82,6 +90,8 @@ class Sindd {
 
   private void discoverUnaryINDs() throws IOException, InterruptedException {
     LOGGER.info("......discoverying ... ");
+
+    initAttributes();
 
     int openFileNumber = configuration.getOpenFileNr();
     Merger merger = new Merger(openFileNumber);
