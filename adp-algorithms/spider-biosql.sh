@@ -1,5 +1,3 @@
-# excluded: BIOSQLSP/SG_COMMENT.csv
-
 ./gradlew :spider:assemble
 java \
 -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 \
@@ -9,6 +7,7 @@ de.metanome.cli.App \
 --algorithm de.metanome.algorithms.spider.SpiderFileAlgorithm \
 --file-key TABLE \
 --files \
+BIOSQLSP/SG_COMMENT.csv \
 BIOSQLSP/SG_BIODATABASE.csv \
 BIOSQLSP/SG_BIOSEQUENCE.csv \
 BIOSQLSP/SG_SEQFEATURE.csv \
@@ -38,6 +37,7 @@ BIOSQLSP/SG_BIOENTRY_REF_ASSOC.csv \
 BIOSQLSP/SG_REFERENCE.csv \
 BIOSQLSP/SG_TAXON_NAME.csv \
 --escape \\ \
---algorithm-config   INPUT_ROW_LIMIT:-1,MAX_MEMORY_USAGE:2097152,MEMORY_CHECK_INTERVAL:10000 \
+--algorithm-config   INPUT_ROW_LIMIT:-1,MAX_MEMORY_USAGE_PERCENTAGE:50,MEMORY_CHECK_INTERVAL:10000 \
 --output file \
---temp /some/temp/directory
+--temp /some/temp/directory \
+--clearTempFilesByPrefix
