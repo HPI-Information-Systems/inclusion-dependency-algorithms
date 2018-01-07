@@ -14,14 +14,6 @@ dependencies {
     testCompile project(path: ':util', configuration: 'tests')
 }
 
-jar {
-    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
-    manifest {
-        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.zigzag.ZigzagFileAlgorithm'
-    }
-    classifier 'file'
-}
-
 task zigzagDatabase(type: Jar) {
     from sourceSets.main.output
     from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }

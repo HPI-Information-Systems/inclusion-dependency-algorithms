@@ -17,6 +17,9 @@ import java.util.List;
 public class ZigzagFileAlgorithm extends ZigzagAlgorithm implements
     RelationalInputParameterAlgorithm {
 
+  // DISCLAIMER Not working, since Zigzag uses validation-strategy, which only works for databases
+  // TODO Adapt validation-strategy to work with RelationalInput
+
   private final ZigzagConfigurationBuilder configurationBuilder;
 
   public ZigzagFileAlgorithm() {
