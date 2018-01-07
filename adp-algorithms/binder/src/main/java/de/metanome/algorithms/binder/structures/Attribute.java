@@ -19,12 +19,12 @@ public class Attribute implements Comparable<Attribute> {
 	private IntLinkedOpenHashSet referenced;
 	private IntLinkedOpenHashSet dependents;
 
-	public Attribute(int attributeId, List<String> attributeTypes, List<String> values, PruningStatistics pruningStatistics) {
-		this(attributeId, attributeTypes); // , pruningStatistics
+	public Attribute(int attributeId, List<String> attributeTypes, List<String> values) {
+		this(attributeId, attributeTypes);
 		this.setValues(values);
 	}
 	
-	public Attribute(int attributeId, List<String> attributeTypes) {//PruningStatistics pruningStatistics) {
+	public Attribute(int attributeId, List<String> attributeTypes) {
 		this.attributeId = attributeId;
 		
 		int numAttributes = attributeTypes.size();
@@ -33,9 +33,7 @@ public class Attribute implements Comparable<Attribute> {
 		
 		for (int i = 0; i < numAttributes; i++) {
 			if ((i != this.attributeId) && (DatabaseUtils.matchSameDataTypeClass(attributeTypes.get(i), attributeTypes.get(this.attributeId)))) {
-				//if (pruningStatistics.isValid(i, this.attributeId))
 					this.dependents.add(i);
-				//if (pruningStatistics.isValid(this.attributeId, i))
 					this.referenced.add(i);
 			}
 		}
@@ -76,11 +74,12 @@ public class Attribute implements Comparable<Attribute> {
 		IntListIterator referencedIterator = this.referenced.iterator();
 		while (referencedIterator.hasNext()) {
 			int referenced = referencedIterator.nextInt();
-			
+			System.out.println(referenced);
 			if (referencedAttributes.contains(referenced))
 				continue;
 			
 			referencedIterator.remove();
+			System.out.println(referencedIterator);
 			attributeMap.get(referenced).removeDependent(this.attributeId);
 		}
 	}
