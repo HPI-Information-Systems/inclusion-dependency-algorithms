@@ -35,11 +35,13 @@ public class TableInfoFactory {
       throws InputGenerationException, AlgorithmConfigurationException {
 
     final List<TableInfo> result = new ArrayList<>();
-    for (final RelationalInputGenerator generator : generators) {
-      try (RelationalInput input = generator.generateNewCopy()) {
-        result.add(createFrom(generator, input));
-      } catch (final Exception e) {
-        throw new InputGenerationException("relational input", e);
+    if (generators != null) {
+      for (final RelationalInputGenerator generator : generators) {
+        try (RelationalInput input = generator.generateNewCopy()) {
+          result.add(createFrom(generator, input));
+        } catch (final Exception e) {
+          throw new InputGenerationException("relational input", e);
+        }
       }
     }
     return result;
@@ -66,8 +68,10 @@ public class TableInfoFactory {
       throws InputGenerationException, AlgorithmConfigurationException {
 
     final List<TableInfo> result = new ArrayList<>();
-    for (final TableInputGenerator generator : generators) {
-      result.add(createFrom(generator));
+    if (generators != null) {
+      for (final TableInputGenerator generator : generators) {
+        result.add(createFrom(generator));
+      }
     }
     return result;
   }
