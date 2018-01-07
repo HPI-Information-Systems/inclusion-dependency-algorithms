@@ -41,7 +41,7 @@ public class BellBrockhausenTest {
     public void setupMocks(BellBrockhausenConfiguration config) {
         resultReceiver = new InclusionDependencyResultReceiverStub();
         when(config.getResultReceiver()).thenReturn(resultReceiver);
-        when(config.getTableName()).thenReturn(TABLE_NAME);
+        when(config.getTableNames()).thenReturn(ImmutableList.of(TABLE_NAME));
     }
 
     @Test

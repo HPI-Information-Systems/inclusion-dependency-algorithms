@@ -3,9 +3,8 @@ package de.metanome.algorithms.bellbrockhausen;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.ColumnIdentifier;
-import de.metanome.algorithms.bellbrockhausen.accessors.TableInfo;
 import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
+import de.metanome.algorithms.bellbrockhausen.accessors.TableInfo;
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration;
 import de.metanome.algorithms.bellbrockhausen.models.Attribute;
 
@@ -14,11 +13,14 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
-import static de.metanome.util.Collectors.toImmutableList;
 import static de.metanome.util.Collectors.toImmutableSet;
+import static java.lang.String.format;
 
 public class BellBrockhausen {
+
+    private static final Logger log = Logger.getLogger(BellBrockhausen.class.getName());
 
     private final BellBrockhausenConfiguration configuration;
     private final DataAccessObject dataAccessObject;
@@ -39,6 +41,7 @@ public class BellBrockhausen {
                 ImmutableList.copyOf(candidates));
 
         indGraph.testCandidates();
+        log.info(format("#DB tests: %d", indGraph.getDBTests()));
     }
 
     private Set<Attribute> generateCandidates(ImmutableSet<Attribute> attributes) {

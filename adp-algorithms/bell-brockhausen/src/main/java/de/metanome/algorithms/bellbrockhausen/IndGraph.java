@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.util.Collectors.toImmutableList;
@@ -35,9 +34,12 @@ public class IndGraph {
     private final InclusionDependencyResultReceiver resultReceiver;
     private final DataAccessObject dataAccessObject;
     private final ImmutableList<ColumnIdentifier> candidates;
+    private final Map<ColumnIdentifier, Attribute> attributes;
     private final Map<ColumnIdentifier, Set<ColumnIdentifier>> fromEdges;
     private final Map<ColumnIdentifier, Set<ColumnIdentifier>> toEdges;
     private final Map<ColumnIdentifier, List<IndTest>> tests;
+
+    private int dbTests = 0;
 
     public IndGraph(
             InclusionDependencyResultReceiver resultReceiver,
@@ -46,6 +48,7 @@ public class IndGraph {
         this.resultReceiver = resultReceiver;
         this.dataAccessObject = dataAccessObject;
         this.candidates = attributes.stream().map(Attribute::getColumnIdentifier).collect(toImmutableList());
+        this.attributes = attributes.stream().collect(toMap(Attribute::getColumnIdentifier, a -> a));
         fromEdges = candidates.stream().collect(toMap(c -> c, c -> new HashSet<>()));
         toEdges = candidates.stream().collect(toMap(c -> c, c -> new HashSet<>()));
         tests = new HashMap<>();
@@ -85,11 +88,15 @@ public class IndGraph {
         // Run test if not: has edge A_ref -> A_k with k < i and no edge A_depend -> A_k
         if (fromEdges.get(referenced).stream()
                 .noneMatch(node -> getCandidateIndex(node) < dependantIndex && !hasEdge(dependant, node))) {
+            dbTests++;
             if (dataAccessObject.isValidUIND(test)) {
                 updateGraph(test);
-                InclusionDependency reversedTest = reverseInd(test);
-                if (dataAccessObject.isValidUIND(reversedTest)) {
-                    updateGraph(reversedTest);
+                if (hasEqualRange(test)) {
+                    InclusionDependency reversedTest = reverseInd(test);
+                    dbTests++;
+                    if (dataAccessObject.isValidUIND(reversedTest)) {
+                        updateGraph(reversedTest);
+                    }
                 }
             }
         }
@@ -220,5 +227,15 @@ public class IndGraph {
 
     private InclusionDependency reverseInd(final InclusionDependency ind) {
         return new InclusionDependency(ind.getReferenced(), ind.getDependant());
+    }
+
+    private boolean hasEqualRange(final InclusionDependency ind) {
+        Attribute dependant = attributes.get(getDependant(ind));
+        Attribute referenced = attributes.get(getReferenced(ind));
+        return dependant.getValueRange().equals(referenced.getValueRange());
+    }
+
+    public int getDBTests() {
+        return dbTests;
     }
 }
