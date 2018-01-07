@@ -1,14 +1,11 @@
 package de.metanome.algorithms.mind;
 
-import static de.metanome.algorithms.mind.ConfigurationKey.DATABASE;
 import static java.util.Arrays.asList;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.algorithm_types.DatabaseConnectionParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
-import de.metanome.algorithm_integration.configuration.ConfigurationRequirementDatabaseConnection;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
@@ -20,7 +17,6 @@ import java.util.ArrayList;
 
 public class MindAlgorithm implements InclusionDependencyAlgorithm,
     TableInputParameterAlgorithm,
-    DatabaseConnectionParameterAlgorithm,
     InclusionDependencyValidationAlgorithm {
 
   private final Configuration.ConfigurationBuilder builder;
@@ -36,7 +32,6 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
     final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
     requirements.add(tableInput());
     requirements.addAll(ValidationConfigurationRequirements.validationStrategy());
-    requirements.add(new ConfigurationRequirementDatabaseConnection(DATABASE.name()));
     return requirements;
   }
 
@@ -57,17 +52,10 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
       final TableInputGenerator... values) {
 
     if (identifier.equals(ConfigurationKey.TABLE.name())) {
-      builder.tableInputGenerators(asList(values));
-    }
-  }
-
-  @Override
-  public void setDatabaseConnectionGeneratorConfigurationValue(final String identifier,
-      final DatabaseConnectionGenerator... values) {
-    if (identifier.equals(ConfigurationKey.DATABASE.name())) {
-      builder.databaseConnectionGenerator(values[0]);
+      DatabaseConnectionGenerator[] databaseConnectionGenerators = { values[0].getDatabaseConnectionGenerator() };
       ValidationConfigurationRequirements
-          .acceptDatabaseConnectionGenerator(values, validationParameters);
+          .acceptDatabaseConnectionGenerator(databaseConnectionGenerators, validationParameters);
+      builder.tableInputGenerators(asList(values));
     }
   }
 

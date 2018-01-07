@@ -20,6 +20,4 @@ class Configuration {
   @Singular
   private final List<TableInputGenerator> tableInputGenerators;
 
-  private final DatabaseConnectionGenerator databaseConnectionGenerator;
-
 }
