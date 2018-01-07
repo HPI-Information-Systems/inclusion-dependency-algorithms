@@ -9,10 +9,8 @@ import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_types.*;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementBoolean;
-import de.metanome.algorithm_integration.configuration.ConfigurationRequirementDatabaseConnection;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementInteger;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementString;
-import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithms.binder.utils.CollectionUtils;
@@ -34,18 +32,18 @@ public class BinderDatabaseAlgorithm extends Binder implements InclusionDependen
 	@Override
 	public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() {
 		ArrayList<ConfigurationRequirement<?>> configs = new ArrayList<>(8);
-		configs.add(new ConfigurationRequirementDatabaseConnection(BinderDatabaseAlgorithm.Identifier.INPUT_DATABASE.name()));
+//		configs.add(new ConfigurationRequirementDatabaseConnection(BinderDatabaseAlgorithm.Identifier.INPUT_DATABASE.name()));
 
-		ConfigurationRequirementString databaseType = new ConfigurationRequirementString(BinderDatabaseAlgorithm.Identifier.DATABASE_TYPE.name());
-		String[] defaultDatabaseType = new String[1];
-		defaultDatabaseType[0] = "MYSQL";
-		databaseType.setDefaultValues(defaultDatabaseType);
-		databaseType.setRequired(true);
-		configs.add(databaseType); // TODO: take this from the input source
+//		ConfigurationRequirementString databaseType = new ConfigurationRequirementString(BinderDatabaseAlgorithm.Identifier.DATABASE_TYPE.name());
+//		String[] defaultDatabaseType = new String[1];
+//		defaultDatabaseType[0] = "MYSQL";
+//		databaseType.setDefaultValues(defaultDatabaseType);
+//		databaseType.setRequired(true);
+//		configs.add(databaseType); // TODO: take this from the input source
 		
-		ConfigurationRequirementString tableNames = new ConfigurationRequirementString(BinderDatabaseAlgorithm.Identifier.INPUT_TABLES.name(), ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES);
-		tableNames.setRequired(true);
-		configs.add(tableNames);
+//		ConfigurationRequirementString tableNames = new ConfigurationRequirementString(BinderDatabaseAlgorithm.Identifier.INPUT_TABLES.name(), ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES);
+//		tableNames.setRequired(true);
+//		configs.add(tableNames);
 		
 		ConfigurationRequirementString tempFolder = new ConfigurationRequirementString(BinderDatabaseAlgorithm.Identifier.TEMP_FOLDER_PATH.name());
 		String[] defaultTempFolder = new String[1];

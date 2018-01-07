@@ -14,15 +14,3 @@ jar {
     }
     classifier 'file'
 }
-
-task binderDatabase(type: Jar) {
-    from sourceSets.main.output
-    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
-
-    manifest {
-        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.binder.BinderDatabaseAlgorithm'
-    }
-    classifier 'database'
-}
-
-assemble.dependsOn binderDatabase

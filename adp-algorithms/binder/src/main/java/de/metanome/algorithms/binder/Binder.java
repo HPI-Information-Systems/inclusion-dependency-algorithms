@@ -106,16 +106,12 @@ class Binder {
 	public void execute() throws AlgorithmExecutionException {
 		// Disable Logging (FastSet sometimes complains about skewed key distributions with lots of WARNINGs)
 		//LoggingUtils.disableLogging();
-		
-		try {
+		long startExecutionTime = System.currentTimeMillis();
 
-			System.out.println("before");
-			System.out.println(fileInputGenerator == null);
-			System.out.println(tableInputGenerator == null);
+		try {
 			final List<TableInfo> tables = tableInfoFactory
 					.create(fileInputGenerator,
 							tableInputGenerator);
-			System.out.println(tables.get(0).selectInputGenerator());
 			System.out.println("TableInfo created");
 
 			////////////////////////////////////////////////////////
@@ -124,6 +120,7 @@ class Binder {
 			long unaryStatisticTime = System.currentTimeMillis();
 			int[] column2table = this.initialize(tables);
 			unaryStatisticTime = System.currentTimeMillis() - unaryStatisticTime;
+			System.out.println(unaryStatisticTime);
 
 			//////////////////////////////////////////////////////
 			// Phase 1: Bucketing (Create and fill the buckets) //
@@ -131,7 +128,7 @@ class Binder {
 			long unaryLoadTime = System.currentTimeMillis();
 			BucketizedAttribute bucketizedAttribute = this.bucketize(tables);
 			unaryLoadTime = System.currentTimeMillis() - unaryLoadTime;
-
+			System.out.println(unaryLoadTime);
 			//////////////////////////////////////////////////////
 			// Phase 2: Checking (Check INDs using the buckets) //
 			//////////////////////////////////////////////////////
@@ -141,7 +138,7 @@ class Binder {
 			//this.checkViaTwoStageIndexAndBitSets(bucketizedAttribute, tables);
 			this.checkViaTwoStageIndexAndLists(bucketizedAttribute, tables, column2table);
 			unaryCompareTime = System.currentTimeMillis() - unaryCompareTime;
-
+			System.out.println(unaryCompareTime);
 			/////////////////////////////////////////////////////////
 			// Phase 3: N-ary IND detection (Find INDs of size > 1 //
 			/////////////////////////////////////////////////////////4
@@ -160,18 +157,16 @@ class Binder {
 			long outputTime = System.currentTimeMillis();
 			this.output(naryDep2ref, tables);
 			outputTime = System.currentTimeMillis() - outputTime;
-			
-			System.out.println(this.toString());
-			System.out.println();
+			System.out.println(outputTime);
+			System.out.println(String.format("Total Time: %d", (System.currentTimeMillis()) - startExecutionTime));
 		}
 		catch (SQLException | IOException e) {
 			e.printStackTrace();
 			throw new AlgorithmExecutionException(e.getMessage());
 		} finally {
 			// Clean temp
-			System.out.println("finally????!??");
-//			if (this.cleanTemp)
-//				FileUtils.cleanDirectory(this.tempFolder);
+			if (this.cleanTemp)
+				FileUtils.cleanDirectory(this.tempFolder);
 		}
 	}
 	
@@ -1089,7 +1084,6 @@ class Binder {
 				currentNarySpillCounts[attributeCombinationNumber] = 0;
 			
 			naryGenerationTime.add(System.currentTimeMillis() - naryGenerationTimeCurrent);
-			System.out.print(nPlusOneAryDep2ref);
 
 			// Read the input dataset again and bucketize all attribute combinations that are refs or deps
 			int[] bucketComparisonOrder = this.naryBucketize(attributeCombinations, naryOffset, currentNarySpillCounts, bucketizedAttribute, tables);
@@ -1104,7 +1098,6 @@ class Binder {
 			naryCompareTime.add(System.currentTimeMillis() - naryCompareTimeCurrent);
 			System.out.print("(" + (System.currentTimeMillis() - naryGenerationTimeCurrent) + " ms)");
 		}
-		System.out.print(nPlusOneAryDep2ref);
 
 		return nPlusOneAryDep2ref;
 	}
@@ -1235,7 +1228,11 @@ class Binder {
 				// Ensure non-empty attribute extension
 				if ((previousSize == 1) && ((columnSizes.getLong(depPivotAttr) == 0) || (columnSizes.getLong(depExtensionAttr) == 0)))
 					continue;
-				
+
+				System.out.println(Arrays.toString(depPivot.getAttributes()));
+				System.out.println(Arrays.toString(depExtension.getAttributes()));
+				System.out.println(depPivotAttr);
+				System.out.println(depExtensionAttr);
 				for (AttributeCombination refPivot : naryDep2ref.get(depPivot)) {
 					for (AttributeCombination refExtension : naryDep2ref.get(depExtension)) {
 						
@@ -1278,7 +1275,6 @@ class Binder {
 				}
 			}
 		}
-		System.out.println(nPlusOneAryDep2ref);
 		return nPlusOneAryDep2ref;
 	}
 
@@ -1404,7 +1400,6 @@ class Binder {
 		int startTableColumnIndex = 0;
 		for (int tableIndex = 0; tableIndex < tables.size(); tableIndex++) {
 			int numTableAttributeCombinations = table2attributeCombinationNumbers.get(tableIndex).size();
-			System.out.println(numTableAttributeCombinations);
 			//int startTableColumnIndex = getTotalColumnCountList(tables).get(tableIndex);
 			if (numTableAttributeCombinations == 0) {
 				startTableColumnIndex += tables.get(tableIndex).getColumnCount();
@@ -1442,7 +1437,6 @@ class Binder {
 						boolean anyNull = false;
 						List<String> attributeCombinationValues = new ArrayList<>(attributeCombination.getAttributes().length);
 						for (int attribute : attributeCombination.getAttributes()) {
-							System.out.println(attribute);
 							String attributeValue = values.get(attribute - startTableColumnIndex);
 							if (anyNull = attributeValue == null) break;
 							attributeCombinationValues.add(attributeValue);
@@ -1632,16 +1626,15 @@ class Binder {
 			}
 		}
 		// Output n-ary INDs
-		System.out.print(naryDep2ref);
 		if (naryDep2ref == null)
 			return;
 		for (AttributeCombination depAttributeCombination : naryDep2ref.keySet()) {
 			ColumnPermutation dep = this.buildColumnPermutationFor(depAttributeCombination, tables);
-			System.out.print("Dep: " + dep);
+			System.out.println("Dep: " + dep);
 
 			for (AttributeCombination refAttributeCombination : naryDep2ref.get(depAttributeCombination)) {
 				ColumnPermutation ref = this.buildColumnPermutationFor(refAttributeCombination, tables);
-				System.out.print("Ref: " + ref);
+				System.out.println("Ref: " + ref);
 				this.resultReceiver.receiveResult(new InclusionDependency(dep, ref));
 			}
 		}
