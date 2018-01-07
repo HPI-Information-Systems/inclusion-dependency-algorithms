@@ -16,6 +16,26 @@ public class TableInfo {
   private final List<String> columnNames;
   private final List<String> columnTypes;
 
+  public List<String> getColumnTypes() {
+    return columnTypes;
+  }
+
+  public String getTableName() {
+    return tableName;
+  }
+
+  public RelationalInputGenerator getRelationalInputGenerator() {
+    return relationalInputGenerator;
+  }
+
+  public List<String> getColumnNames() {
+    return columnNames;
+  }
+
+  public TableInputGenerator getTableInputGenerator() {
+    return tableInputGenerator;
+  }
+
   public int getColumnCount() {
     return columnNames.size();
   }
@@ -23,4 +43,5 @@ public class TableInfo {
   public RelationalInputGenerator selectInputGenerator() {
     return relationalInputGenerator == null ? tableInputGenerator : relationalInputGenerator;
   }
+
 }
