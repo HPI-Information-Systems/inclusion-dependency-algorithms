@@ -2,20 +2,18 @@ package de.metanome.algorithms.binder;
 
 import java.io.File;
 import java.util.ArrayList;
+import static java.util.Arrays.asList;
 
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.algorithm_types.BooleanParameterAlgorithm;
-import de.metanome.algorithm_integration.algorithm_types.DatabaseConnectionParameterAlgorithm;
-import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
-import de.metanome.algorithm_integration.algorithm_types.IntegerParameterAlgorithm;
-import de.metanome.algorithm_integration.algorithm_types.StringParameterAlgorithm;
+import de.metanome.algorithm_integration.algorithm_types.*;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementBoolean;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementDatabaseConnection;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementInteger;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementString;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
+import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithms.binder.utils.CollectionUtils;
 import de.metanome.algorithms.binder.utils.FileUtils;
@@ -23,12 +21,12 @@ import de.metanome.algorithms.binder.dao.DB2DataAccessObject;
 import de.metanome.algorithms.binder.dao.MySQLDataAccessObject;
 import de.metanome.algorithms.binder.dao.PostgreSQLDataAccessObject;
 
-public class BinderDatabaseAlgorithm extends Binder implements InclusionDependencyAlgorithm, DatabaseConnectionParameterAlgorithm, IntegerParameterAlgorithm, StringParameterAlgorithm, BooleanParameterAlgorithm {
+public class BinderDatabaseAlgorithm extends Binder implements InclusionDependencyAlgorithm, TableInputParameterAlgorithm, IntegerParameterAlgorithm, StringParameterAlgorithm, BooleanParameterAlgorithm {
 
 	public enum Database {
 		MYSQL, DB2, POSTGRESQL
 	}
-	
+
 	public enum Identifier {
 		INPUT_DATABASE, INPUT_ROW_LIMIT, DATABASE_NAME, DATABASE_TYPE, INPUT_TABLES, TEMP_FOLDER_PATH, CLEAN_TEMP, DETECT_NARY, MAX_NARY_LEVEL, FILTER_KEY_FOREIGNKEYS, NUM_BUCKETS_PER_COLUMN, MEMORY_CHECK_FREQUENCY, MAX_MEMORY_USAGE_PERCENTAGE
 	}
@@ -57,52 +55,52 @@ public class BinderDatabaseAlgorithm extends Binder implements InclusionDependen
 		configs.add(tempFolder);
 
 		ConfigurationRequirementInteger inputRowLimit = new ConfigurationRequirementInteger(BinderDatabaseAlgorithm.Identifier.INPUT_ROW_LIMIT.name());
-		Integer[] defaultInputRowLimit = { Integer.valueOf(this.inputRowLimit) };
+		Integer[] defaultInputRowLimit = {this.inputRowLimit};
 		inputRowLimit.setDefaultValues(defaultInputRowLimit);
 		inputRowLimit.setRequired(false);
 		configs.add(inputRowLimit);
 
 		ConfigurationRequirementInteger maxNaryLevel = new ConfigurationRequirementInteger(BinderDatabaseAlgorithm.Identifier.MAX_NARY_LEVEL.name());
-		Integer[] defaultMaxNaryLevel = { Integer.valueOf(this.maxNaryLevel) };
+		Integer[] defaultMaxNaryLevel = {this.maxNaryLevel};
 		maxNaryLevel.setDefaultValues(defaultMaxNaryLevel);
 		maxNaryLevel.setRequired(false);
 		configs.add(maxNaryLevel);
 
 		ConfigurationRequirementInteger numBucketsPerColumn = new ConfigurationRequirementInteger(BinderDatabaseAlgorithm.Identifier.NUM_BUCKETS_PER_COLUMN.name());
-		Integer[] defaultNumBucketsPerColumn = { Integer.valueOf(this.numBucketsPerColumn) };
+		Integer[] defaultNumBucketsPerColumn = {this.numBucketsPerColumn};
 		numBucketsPerColumn.setDefaultValues(defaultNumBucketsPerColumn);
 		numBucketsPerColumn.setRequired(true);
 		configs.add(numBucketsPerColumn);
 
 		ConfigurationRequirementInteger memoryCheckFrequency = new ConfigurationRequirementInteger(BinderDatabaseAlgorithm.Identifier.MEMORY_CHECK_FREQUENCY.name());
-		Integer[] defaultMemoryCheckFrequency = { Integer.valueOf(this.memoryCheckFrequency) };
+		Integer[] defaultMemoryCheckFrequency = {this.memoryCheckFrequency};
 		memoryCheckFrequency.setDefaultValues(defaultMemoryCheckFrequency);
 		memoryCheckFrequency.setRequired(true);
 		configs.add(memoryCheckFrequency);
 
 		ConfigurationRequirementInteger maxMemoryUsagePercentage = new ConfigurationRequirementInteger(BinderDatabaseAlgorithm.Identifier.MAX_MEMORY_USAGE_PERCENTAGE.name());
-		Integer[] defaultMaxMemoryUsagePercentage = { Integer.valueOf(this.maxMemoryUsagePercentage) };
+		Integer[] defaultMaxMemoryUsagePercentage = {this.maxMemoryUsagePercentage};
 		maxMemoryUsagePercentage.setDefaultValues(defaultMaxMemoryUsagePercentage);
 		maxMemoryUsagePercentage.setRequired(true);
 		configs.add(maxMemoryUsagePercentage);
 		
 		ConfigurationRequirementBoolean cleanTemp = new ConfigurationRequirementBoolean(BinderDatabaseAlgorithm.Identifier.CLEAN_TEMP.name());
 		Boolean[] defaultCleanTemp = new Boolean[1];
-		defaultCleanTemp[0] = Boolean.valueOf(this.cleanTemp);
+		defaultCleanTemp[0] = this.cleanTemp;
 		cleanTemp.setDefaultValues(defaultCleanTemp);
 		cleanTemp.setRequired(true);
 		configs.add(cleanTemp);
 		
 		ConfigurationRequirementBoolean detectNary = new ConfigurationRequirementBoolean(BinderDatabaseAlgorithm.Identifier.DETECT_NARY.name());
 		Boolean[] defaultDetectNary = new Boolean[1];
-		defaultDetectNary[0] = Boolean.valueOf(this.detectNary);
+		defaultDetectNary[0] = this.detectNary;
 		detectNary.setDefaultValues(defaultDetectNary);
 		detectNary.setRequired(true);
 		configs.add(detectNary);
 
 		ConfigurationRequirementBoolean filterKeyForeignkeys = new ConfigurationRequirementBoolean(BinderDatabaseAlgorithm.Identifier.FILTER_KEY_FOREIGNKEYS.name());
 		Boolean[] defaultFilterKeyForeignkeys = new Boolean[1];
-		defaultFilterKeyForeignkeys[0] = Boolean.valueOf(this.filterKeyForeignkeys);
+		defaultFilterKeyForeignkeys[0] = this.filterKeyForeignkeys;
 		filterKeyForeignkeys.setDefaultValues(defaultFilterKeyForeignkeys);
 		filterKeyForeignkeys.setRequired(true);
 		configs.add(filterKeyForeignkeys);
@@ -110,11 +108,12 @@ public class BinderDatabaseAlgorithm extends Binder implements InclusionDependen
 		return configs;
 	}
 
+
 	@Override
-	public void setDatabaseConnectionGeneratorConfigurationValue(String identifier, DatabaseConnectionGenerator... values) throws AlgorithmConfigurationException {
-		if (BinderDatabaseAlgorithm.Identifier.INPUT_DATABASE.name().equals(identifier))
-			this.databaseConnectionGenerator = values[0];
-		else
+	public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values) throws AlgorithmConfigurationException {
+		if (BinderDatabaseAlgorithm.Identifier.INPUT_DATABASE.name().equals(identifier)) {
+			this.tableInputGenerator = asList(values);
+		} else
 			this.handleUnknownConfiguration(identifier, CollectionUtils.concat(values, ","));
 	}
 
@@ -127,26 +126,26 @@ public class BinderDatabaseAlgorithm extends Binder implements InclusionDependen
 	public void setIntegerConfigurationValue(String identifier, Integer... values) throws AlgorithmConfigurationException {
 		if (BinderDatabaseAlgorithm.Identifier.INPUT_ROW_LIMIT.name().equals(identifier)) {
 			if (values.length > 0)
-				this.inputRowLimit = values[0].intValue();
+				this.inputRowLimit = values[0];
 		}
 		else if (BinderDatabaseAlgorithm.Identifier.MAX_NARY_LEVEL.name().equals(identifier)) {
 			if (values.length > 0)
-				this.maxNaryLevel = values[0].intValue();
+				this.maxNaryLevel = values[0];
 		}
 		else if (BinderDatabaseAlgorithm.Identifier.NUM_BUCKETS_PER_COLUMN.name().equals(identifier)) {
-			if (values[0].intValue() <= 0)
+			if (values[0] <= 0)
 				throw new AlgorithmConfigurationException(BinderDatabaseAlgorithm.Identifier.NUM_BUCKETS_PER_COLUMN.name() + " must be greater than 0!");
-			this.numBucketsPerColumn = values[0].intValue();
+			this.numBucketsPerColumn = values[0];
 		}
 		else if (BinderDatabaseAlgorithm.Identifier.MEMORY_CHECK_FREQUENCY.name().equals(identifier)) {
-			if (values[0].intValue() <= 0)
+			if (values[0] <= 0)
 				throw new AlgorithmConfigurationException(BinderDatabaseAlgorithm.Identifier.MEMORY_CHECK_FREQUENCY.name() + " must be greater than 0!");
-			this.memoryCheckFrequency = values[0].intValue();
+			this.memoryCheckFrequency = values[0];
 		}
 		else if (BinderDatabaseAlgorithm.Identifier.MAX_MEMORY_USAGE_PERCENTAGE.name().equals(identifier)) {
-			if (values[0].intValue() <= 0)
+			if (values[0] <= 0)
 				throw new AlgorithmConfigurationException(BinderDatabaseAlgorithm.Identifier.MAX_MEMORY_USAGE_PERCENTAGE.name() + " must be greater than 0!");
-			this.maxMemoryUsagePercentage = values[0].intValue();
+			this.maxMemoryUsagePercentage = values[0];
 		}
 		else 
 			this.handleUnknownConfiguration(identifier, CollectionUtils.concat(values, ","));
@@ -166,8 +165,8 @@ public class BinderDatabaseAlgorithm extends Binder implements InclusionDependen
 			else
 				this.handleUnknownConfiguration(identifier, CollectionUtils.concat(values, ","));
 		}
-		else if (BinderDatabaseAlgorithm.Identifier.INPUT_TABLES.name().equals(identifier))
-			this.tableNames = values;
+//		else if (BinderDatabaseAlgorithm.Identifier.INPUT_TABLES.name().equals(identifier))
+//			this.tableNames = values;
 		else if (BinderDatabaseAlgorithm.Identifier.TEMP_FOLDER_PATH.name().equals(identifier)) {
 			if ("".equals(values[0]) || " ".equals(values[0]) || "/".equals(values[0]) || "\\".equals(values[0]) || File.separator.equals(values[0]) || FileUtils.isRoot(new File(values[0])))
 				throw new AlgorithmConfigurationException(BinderDatabaseAlgorithm.Identifier.TEMP_FOLDER_PATH + " must not be \"" + values[0] + "\"");
@@ -180,11 +179,11 @@ public class BinderDatabaseAlgorithm extends Binder implements InclusionDependen
 	@Override
 	public void setBooleanConfigurationValue(String identifier, Boolean... values) throws AlgorithmConfigurationException {
 		if (BinderDatabaseAlgorithm.Identifier.CLEAN_TEMP.name().equals(identifier))
-			this.cleanTemp = values[0].booleanValue();
+			this.cleanTemp = values[0];
 		else if (BinderDatabaseAlgorithm.Identifier.DETECT_NARY.name().equals(identifier))
-			this.detectNary = values[0].booleanValue();
+			this.detectNary = values[0];
 		else if (BinderDatabaseAlgorithm.Identifier.FILTER_KEY_FOREIGNKEYS.name().equals(identifier))
-			this.filterKeyForeignkeys = values[0].booleanValue();
+			this.filterKeyForeignkeys = values[0];
 		else
 			this.handleUnknownConfiguration(identifier, CollectionUtils.concat(values, ","));
 	}

@@ -1,5 +1,7 @@
 package de.metanome.algorithms.binder;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+
 import java.util.BitSet;
 /**
  * Created by maxi on 23.12.17.
@@ -7,10 +9,21 @@ import java.util.BitSet;
 public class BucketizedAttribute {
     private int[] bucketComparisonOrder;
     private BitSet nullValueColumns;
+    private LongArrayList columnSizes;
 
-    public BucketizedAttribute(int[] bucketComparisonOrder, BitSet nullValueColumns) {
+
+    public BucketizedAttribute(int[] bucketComparisonOrder, BitSet nullValueColumns, LongArrayList columnSizes) {
         this.bucketComparisonOrder = bucketComparisonOrder;
         this.nullValueColumns = nullValueColumns;
+        this.columnSizes = columnSizes;
+    }
+
+    public LongArrayList getColumnSizes() {
+        return columnSizes;
+    }
+
+    public void setColumnSizes(LongArrayList columnSizes) {
+        this.columnSizes = columnSizes;
     }
 
     public int[] getBucketComparisonOrder() {

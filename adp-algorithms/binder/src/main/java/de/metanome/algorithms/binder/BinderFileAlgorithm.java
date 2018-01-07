@@ -2,6 +2,7 @@ package de.metanome.algorithms.binder;
 
 import java.io.File;
 import java.util.ArrayList;
+import static java.util.Arrays.asList;
 
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
@@ -97,8 +98,8 @@ public class BinderFileAlgorithm extends Binder implements InclusionDependencyAl
 	@Override
 	public void setRelationalInputConfigurationValue(String identifier, RelationalInputGenerator... values) throws AlgorithmConfigurationException {
 		if (BinderFileAlgorithm.Identifier.INPUT_FILES.name().equals(identifier)) {
-			this.fileInputGenerator = values;
-			
+			this.fileInputGenerator = asList(values);
+
 			this.tableNames = new String[values.length];
 			RelationalInput input = null;
 			for (int i = 0; i < values.length; i++) {
