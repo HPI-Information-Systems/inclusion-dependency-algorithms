@@ -50,7 +50,6 @@ class MindTest {
     connectionGenerator = testDatabase.asConnectionGenerator();
 
     configuration = Configuration.builder()
-        .databaseConnectionGenerator(connectionGenerator)
         .tableInputGenerator(testDatabase.asTableInputGenerator())
         .resultReceiver(resultReceiver)
         .validationParameters(validationParameters())
