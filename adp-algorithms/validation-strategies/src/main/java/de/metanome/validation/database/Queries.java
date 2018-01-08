@@ -32,7 +32,8 @@ class Queries {
   Queries() {
     queries = ImmutableMap.of(QueryType.NOT_IN, this::notIn,
         QueryType.NOT_EXISTS, this::notExists,
-        QueryType.LEFT_OUTER_JOIN, this::leftOuterJoin);
+        QueryType.LEFT_OUTER_JOIN, this::leftOuterJoin,
+        QueryType.EXCEPT, this::except);
   }
 
   Query get(final QueryType type) {
@@ -64,7 +65,7 @@ class Queries {
     final int violators = context.selectCount().from(
         selectFrom(lhsAlias).whereNotExists(
             context.selectOne().from(tables(rhs)).where(row(fields(rhs)).eq(row(lhsAlias.fields())))
-        )
+        ).limit(1)
     ).fetchOne().value1();
 
     return new DefaultValidationResult(violators == 0);
@@ -85,6 +86,18 @@ class Queries {
         .and(oneNotNull(lhs))
         .limit(1)
         .execute();
+
+    return new DefaultValidationResult(violators == 0);
+  }
+
+  private ValidationResult except(final DSLContext context, final ColumnPermutation lhs,
+      final ColumnPermutation rhs) {
+
+    final int violators =
+        context.selectCount().from(
+            select(fields(lhs)).from(tables(lhs)).where(notNull(lhs))
+                .except(select(fields(rhs)).from(tables(rhs))).limit(1))
+            .fetchOne().value1();
 
     return new DefaultValidationResult(violators == 0);
   }
