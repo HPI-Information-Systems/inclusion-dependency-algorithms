@@ -27,9 +27,9 @@ class DeMarchiInput {
     final Configuration configuration = Configuration.withDefaults();
     ConfigurationMapper.applyFrom(parameters.getConfigurationString(), configuration);
     configuration.setRelationalInputGenerators(
-            Optional.ofNullable(parameters.getRelationalInputGenerators()).orElse(ImmutableList.of()));
+        Optional.ofNullable(parameters.getRelationalInputGenerators()).orElse(ImmutableList.of()));
     configuration.setTableInputGenerators(
-            Optional.ofNullable(parameters.getTableInputGenerators()).orElse(ImmutableList.of()));
+        Optional.ofNullable(parameters.getTableInputGenerators()).orElse(ImmutableList.of()));
     return configuration;
   }
 }

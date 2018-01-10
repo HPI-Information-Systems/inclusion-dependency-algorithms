@@ -92,10 +92,10 @@ public class DeMarchi {
 
       if (values.isEmpty()) {
         handleEmptyAttribute(attribute, attributes);
-      }
-
-      for (final String value : values) {
-        attributesByValue.computeIfAbsent(value, k -> new IntOpenHashSet()).add(attribute);
+      } else {
+        for (final String value : values) {
+          attributesByValue.computeIfAbsent(value, k -> new IntOpenHashSet()).add(attribute);
+        }
       }
     }
     return attributesByValue;

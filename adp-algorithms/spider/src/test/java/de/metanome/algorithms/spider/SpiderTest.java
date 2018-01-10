@@ -5,13 +5,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
-import de.metanome.algorithm_integration.ColumnIdentifier;
-import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.FileGeneratorFake;
+import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.util.RelationalInputStub;
 import de.metanome.util.Row;
 import de.metanome.util.TPMMSConfiguration;
@@ -73,11 +72,9 @@ class SpiderTest {
   }
 
   private InclusionDependency expectedInd() {
-    final ColumnPermutation left = new ColumnPermutation(
-        new ColumnIdentifier(input.relationName(), COL_A));
-    final ColumnPermutation right = new ColumnPermutation(
-        new ColumnIdentifier(input.relationName(), COL_B));
-    return new InclusionDependency(left, right);
+    return InclusionDependencyBuilder
+        .dependent().column(input.relationName(), COL_A)
+        .referenced().column(input.relationName(), COL_B).build();
   }
 
 }

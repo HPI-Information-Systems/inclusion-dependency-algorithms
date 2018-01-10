@@ -37,17 +37,6 @@ abstract class SpiderAlgorithm implements InclusionDependencyAlgorithm,
     return requirements;
   }
 
-  <T> T get(final String identifier, final T[] values, final int index)
-      throws AlgorithmConfigurationException {
-
-    if (index >= values.length) {
-      final String message = String
-          .format("Expected at least %d items width identifier %s", index + 1, identifier);
-      throw new AlgorithmConfigurationException(message);
-    }
-    return values[index];
-  }
-
   @SafeVarargs
   final <T> void handleUnknownConfiguration(final String identifier, final T... values)
       throws AlgorithmConfigurationException {
@@ -67,7 +56,8 @@ abstract class SpiderAlgorithm implements InclusionDependencyAlgorithm,
 
   @Override
   public void setResultReceiver(
-      InclusionDependencyResultReceiver inclusionDependencyResultReceiver) {
+      final InclusionDependencyResultReceiver inclusionDependencyResultReceiver) {
+
     builder.resultReceiver(inclusionDependencyResultReceiver);
   }
 

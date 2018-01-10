@@ -19,8 +19,6 @@ SPIDER
 3. Implement IND-pruning by data type. Given a table input (and therefore precise typing
   information) the reference implementation pruned candidates of unequal data type early. This is
   currently missing.
-4. Inside `Spider`, the `attributeIndex` could possibly a fixed-size array and not a map, making 
-  look-ups from attribute ID to attribute even cheaper.
 5. Revisit I/O handling. If a single I/O-Exception occurs, the algorithm execution can be aborted
   immediately. However, if resources are allocated in batch, failure to allocate a single resource
   currently does not free the already open resources. 

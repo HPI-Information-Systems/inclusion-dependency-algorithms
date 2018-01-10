@@ -6,11 +6,10 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import de.metanome.algorithm_integration.ColumnIdentifier;
-import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.util.Row;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
@@ -84,8 +83,7 @@ class DeMarchiTest {
   }
 
   private InclusionDependency expectedInd() {
-    final ColumnIdentifier lhs = new ColumnIdentifier(TABLE_NAME, "b");
-    final ColumnIdentifier rhs = new ColumnIdentifier(TABLE_NAME, "c");
-    return new InclusionDependency(new ColumnPermutation(lhs), new ColumnPermutation(rhs));
+    return InclusionDependencyBuilder.dependent().column(TABLE_NAME, "b")
+        .referenced().column(TABLE_NAME, "c").build();
   }
 }

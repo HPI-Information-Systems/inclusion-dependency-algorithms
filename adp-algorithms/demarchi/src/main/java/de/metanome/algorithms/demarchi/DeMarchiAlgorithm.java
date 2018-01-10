@@ -2,6 +2,7 @@ package de.metanome.algorithms.demarchi;
 
 import static java.util.Arrays.asList;
 
+import com.google.common.base.Joiner;
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
@@ -9,7 +10,6 @@ import de.metanome.algorithm_integration.algorithm_types.RelationalInputParamete
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
-import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
@@ -46,11 +46,13 @@ public class DeMarchiAlgorithm implements InclusionDependencyAlgorithm,
   }
 
   @Override
-  public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values)
-      throws AlgorithmConfigurationException {
+  public void setTableInputConfigurationValue(final String identifier,
+      final TableInputGenerator... values) throws AlgorithmConfigurationException {
 
     if (identifier.equals(ConfigurationKey.TABLE.name())) {
       builder.tableInputGenerators(asList(values));
+    } else {
+      handleUnknownConfiguration(identifier, values);
     }
   }
 
@@ -60,7 +62,19 @@ public class DeMarchiAlgorithm implements InclusionDependencyAlgorithm,
 
     if (identifier.equals(ConfigurationKey.TABLE.name())) {
       builder.relationalInputGenerators(asList(values));
+    } else {
+      handleUnknownConfiguration(identifier, values);
     }
+  }
+
+  @SafeVarargs
+  private final <T> void handleUnknownConfiguration(final String identifier, final T... values)
+      throws AlgorithmConfigurationException {
+
+    final String formattedValues = Joiner.on(", ").join(values);
+    final String message = String
+        .format("unknown configuration '%s', values: '%s'", identifier, formattedValues);
+    throw new AlgorithmConfigurationException(message);
   }
 
   @Override
