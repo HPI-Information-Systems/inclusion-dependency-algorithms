@@ -26,7 +26,6 @@ import de.metanome.algorithms.binder.utils.CollectionUtils;
 import de.metanome.algorithms.binder.utils.DatabaseUtils;
 import de.metanome.algorithms.binder.utils.FileUtils;
 import de.metanome.algorithms.binder.dao.DataAccessObject;
-//import de.metanome.algorithms.binder.BinderConfiguration.BinderConfigurationBuilder;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntIterator;
@@ -39,7 +38,6 @@ import de.metanome.util.TableInfoFactory;
 
 // Bucketing IND ExtractoR (BINDER)
 class Binder {
-
 
 	// candidates for configuration class
 	boolean detectNary = false;
@@ -67,27 +65,13 @@ class Binder {
 	DataAccessObject dao = null;
 	String databaseName = null;
 	String[] tableNames = null;
-	//private int[] numColumnsPerTable = null;
-
-	// candidates for TableInfo class
-
-	//private int[] column2table = null;
-
-	// actual TableInfo
-	//private List<String> columnNames = null;
-	//private List<String> columnTypes = null; // getTotalColumnTypes
-	//private int numColumns; // getTotalColumnCount()
-	//private LongArrayList columnSizes = null;
-	//private String tableName = null;
-
 
 	private final TableInfoFactory tableInfoFactory;
-	//final BinderConfigurationBuilder builder;
-	//private BinderConfiguration configuration;
+	private List<TableInfo> tables;
+	private int[] column2table;
 
 	Binder() {
 		tableInfoFactory = new TableInfoFactory();
-	//	builder = BinderConfiguration.builder();
 	}
 
 	@Override
@@ -109,16 +93,12 @@ class Binder {
 		long startExecutionTime = System.currentTimeMillis();
 
 		try {
-			final List<TableInfo> tables = tableInfoFactory
-					.create(fileInputGenerator,
-							tableInputGenerator);
-			System.out.println("TableInfo created");
 
 			////////////////////////////////////////////////////////
 			// Phase 0: Initialization (Collect basic statistics) //
 			////////////////////////////////////////////////////////
 			long unaryStatisticTime = System.currentTimeMillis();
-			int[] column2table = this.initialize(tables);
+			this.initialize(tables);
 			unaryStatisticTime = System.currentTimeMillis() - unaryStatisticTime;
 			System.out.println(unaryStatisticTime);
 
@@ -126,7 +106,7 @@ class Binder {
 			// Phase 1: Bucketing (Create and fill the buckets) //
 			//////////////////////////////////////////////////////
 			long unaryLoadTime = System.currentTimeMillis();
-			BucketizedAttribute bucketizedAttribute = this.bucketize(tables);
+			BucketizedAttribute bucketizedAttribute = this.bucketize();
 			unaryLoadTime = System.currentTimeMillis() - unaryLoadTime;
 			System.out.println(unaryLoadTime);
 			//////////////////////////////////////////////////////
@@ -136,7 +116,7 @@ class Binder {
 			//this.checkViaHashing(tables, bucketizedAttribute);
 			//this.checkViaSorting(bucketizedAttribute, tables);
 			//this.checkViaTwoStageIndexAndBitSets(bucketizedAttribute, tables);
-			this.checkViaTwoStageIndexAndLists(bucketizedAttribute, tables, column2table);
+			this.checkViaTwoStageIndexAndLists(bucketizedAttribute);
 			unaryCompareTime = System.currentTimeMillis() - unaryCompareTime;
 			System.out.println(unaryCompareTime);
 			/////////////////////////////////////////////////////////
@@ -144,7 +124,7 @@ class Binder {
 			/////////////////////////////////////////////////////////4
 			Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = null;
 			if (this.detectNary && (this.maxNaryLevel > 1 || this.maxNaryLevel <= 0)) {
-				naryDep2ref = this.detectNaryViaBucketing(tables, bucketizedAttribute, column2table);
+				naryDep2ref = this.detectNaryViaBucketing(bucketizedAttribute);
 				//naryDep2ref = this.detectNaryViaSingleChecks();
 			}
 			System.out.println("going to output solutions now");
@@ -170,12 +150,16 @@ class Binder {
 		}
 	}
 	
-	private int[] initialize(List<TableInfo> tables) throws InputGenerationException, SQLException, InputIterationException, AlgorithmConfigurationException {
+	private void initialize(List<TableInfo> tables) throws InputGenerationException, SQLException, InputIterationException, AlgorithmConfigurationException {
 		System.out.println("Initializing ...");
-		
+
 		// Ensure the presence of an input generator
 		if ((this.tableInputGenerator == null) && (this.fileInputGenerator == null))
 			throw new InputGenerationException("No input generator specified!");
+
+		this.tables = tableInfoFactory
+				.create(fileInputGenerator,
+						tableInputGenerator);
 
 		// Initialize temp folder
 		this.tempFolder = new File(this.tempFolderPath + File.separator + "temp");
@@ -185,51 +169,18 @@ class Binder {
 		
 		// Initialize memory management
 		long availableMemory = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
-		this.maxMemoryUsage = (long)(availableMemory * (this.maxMemoryUsagePercentage / 100.0f));
+		long maxMemoryUsage = (long)(availableMemory * (this.maxMemoryUsagePercentage / 100.0f));
 
 		// Build an index that assigns the columns to their tables, because the n-ary detection can only group those attributes that belong to the same table and the foreign key detection also only groups attributes from different tables.
-		int[] column2table = new int[getTotalColumnCount(tables)];
 		int currentStartIndex = 0;
 		int currentTableIndex = 0;
 		for (TableInfo table: tables) {
 			for (int i = currentStartIndex; i < (currentStartIndex + table.getColumnCount()); i++)
-				column2table[i] = currentTableIndex;
+				this.column2table[i] = currentTableIndex;
 			currentStartIndex += table.getColumnCount();
 			currentTableIndex++;
 		}
-
-		return column2table;
 	}
-//
-//	private void collectStatisticsFrom(TableInputGenerator tableInputGenerator) throws InputIterationException, InputGenerationException, AlgorithmConfigurationException {
-//		RelationalInput input = null;
-//		try {
-//			// Query attribute names and types
-//			input = tableInputGenerator.generateNewCopy();
-//			for (String columnName : input.columnNames()) {
-//				this.columnNames.add(columnName);
-//				this.columnTypes.add("String"); // TODO: Column types as parameter or from the file?
-//			}
-//		}
-//		finally {
-//			FileUtils.close(input);
-//		}
-//	}
-//
-//	private void collectStatisticsFrom(RelationalInputGenerator inputGenerator) throws InputIterationException, InputGenerationException, AlgorithmConfigurationException {
-//		RelationalInput input = null;
-//		try {
-//			// Query attribute names and types
-//			input = inputGenerator.generateNewCopy();
-//			for (String columnName : input.columnNames()) {
-//				this.columnNames.add(columnName);
-//				this.columnTypes.add("String"); // TODO: Column types as parameter or from the file?
-//			}
-//		}
-//		finally {
-//			FileUtils.close(input);
-//		}
-//	}
 
 	private List<String> getTotalColumnNames(final List<TableInfo> tables) {
 		return tables.stream().map(TableInfo::getColumnNames).flatMap(List::stream).collect(Collectors.toList());
@@ -243,15 +194,7 @@ class Binder {
 		return tables.stream().mapToInt(TableInfo::getColumnCount).sum();
 	}
 
-	private List<Integer> getTotalColumnCountList(final List<TableInfo> tables) {
-		return tables.stream().mapToInt(TableInfo::getColumnCount).boxed().collect(Collectors.toList());
-	}
-
-	private int getTotalColumnSizes(final List<TableInfo> tables) {
-		return tables.stream().mapToInt(TableInfo::getColumnCount).sum();
-	}
-
-	private BucketizedAttribute bucketize(List<TableInfo> tables) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
+	private BucketizedAttribute bucketize() throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		System.out.print("Bucketizing ... ");
 
 		// externalized methods from initialize()
@@ -270,73 +213,63 @@ class Binder {
 			columnSizes.add(0);
 
 		int startTableColumnIndex = 0;
-		for (int tableIndex = 0; tableIndex < tables.size(); tableIndex++) {
-			String tableName = tables.get(tableIndex).getTableName();
-			System.out.print(tableName + " ");
-
-//			List<Integer> numColumnsPerTable = getTotalColumnCountList(tables);
-//
-//			int numTableColumns = (numColumnsPerTable.size() > tableIndex + 1) ? numColumnsPerTable[tableIndex + 1] - numColumnsPerTable[tableIndex] : getTotalColumnCount(tables) - numColumnsPerTable[tableIndex];
-//			int startTableColumnIndex = numColumnsPerTable[tableIndex];
-
+		for (TableInfo table : tables) {
 			// Initialize buckets
-			List<List<Set<String>>> buckets = new ArrayList<>(tables.get(tableIndex).getColumnCount());
-			for (int columnNumber = 0; columnNumber < tables.get(tableIndex).getColumnCount(); columnNumber++) {
+			List<List<Set<String>>> buckets = new ArrayList<>(table.getColumnCount());
+			for (int columnNumber = 0; columnNumber < table.getColumnCount(); columnNumber++) {
 				ArrayList<Set<String>> attributeBuckets = new ArrayList<>();
 				for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++)
 					attributeBuckets.add(new HashSet<>());
 				buckets.add(attributeBuckets);
 			}
-			
+
 			// Initialize value counters
 			int numValuesSinceLastMemoryCheck = 0;
-			int[] numValuesInColumn = new int[getTotalColumnCount(tables)];
-			for (int columnNumber = 0; columnNumber < tables.get(tableIndex).getColumnCount(); columnNumber++)
+			int[] numValuesInColumn = new int[table.getColumnCount()];
+			for (int columnNumber = 0; columnNumber < table.getColumnCount(); columnNumber++)
 				numValuesInColumn[columnNumber] = 0;
+			long availableMemory = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
+			long maxMemoryUsage = (long) (availableMemory * (this.maxMemoryUsagePercentage / 100.0f));
 
 			// Load data
 			InputIterator inputIterator = null;
 			try {
-				if (this.tableInputGenerator != null)
-					inputIterator = new FileInputIterator(this.tableInputGenerator.get(tableIndex), this.inputRowLimit);
-				else
-					inputIterator = new FileInputIterator(this.fileInputGenerator.get(tableIndex), this.inputRowLimit);
-				
+				inputIterator = new FileInputIterator(table.selectInputGenerator(), this.inputRowLimit);
+
 				while (inputIterator.next()) {
-					for (int columnNumber = 0; columnNumber < tables.get(tableIndex).getColumnCount(); columnNumber++) {
+					for (int columnNumber = 0; columnNumber < table.getColumnCount(); columnNumber++) {
 						String value = inputIterator.getValue(columnNumber);
-						
+
 						//value = new StringBuilder(value).reverse().toString(); // This is an optimization if urls with long, common prefixes are used to later improve the comparison values
-						
+
 						if (value == null) {
 							nullValueColumns.set(startTableColumnIndex + columnNumber);
 							continue;
 						}
-						
+
 						// Bucketize
 						int bucketNumber = this.calculateBucketFor(value);
 						if (buckets.get(columnNumber).get(bucketNumber).add(value)) {
-							numValuesSinceLastMemoryCheck++;
 							numValuesInColumn[columnNumber] = numValuesInColumn[columnNumber] + 1;
+							numValuesSinceLastMemoryCheck++;
 						}
-						//this.pruningStatistics.addValue(startTableColumnIndex + columnNumber, bucketNumber, value); // TODO: Remove?
-						
+
 						// Occasionally check the memory consumption
 						if (numValuesSinceLastMemoryCheck >= this.memoryCheckFrequency) {
 							numValuesSinceLastMemoryCheck = 0;
-							
+
 							// Spill to disk if necessary
-							while (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() > this.maxMemoryUsage) {								
+							while (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() > maxMemoryUsage) {
 								// Identify largest buffer
 								int largestColumnNumber = 0;
 								int largestColumnSize = numValuesInColumn[largestColumnNumber];
-								for (int otherColumnNumber = 1; otherColumnNumber < tables.get(tableIndex).getColumnCount(); otherColumnNumber++) {
+								for (int otherColumnNumber = 1; otherColumnNumber < table.getColumnCount(); otherColumnNumber++) {
 									if (largestColumnSize < numValuesInColumn[otherColumnNumber]) {
 										largestColumnNumber = otherColumnNumber;
 										largestColumnSize = numValuesInColumn[otherColumnNumber];
 									}
 								}
-								
+
 								// Write buckets from largest column to disk and empty written buckets
 								int globalLargestColumnIndex = startTableColumnIndex + largestColumnNumber;
 								for (int largeBucketNumber = 0; largeBucketNumber < this.numBucketsPerColumn; largeBucketNumber++) {
@@ -344,21 +277,20 @@ class Binder {
 									buckets.get(largestColumnNumber).set(largeBucketNumber, new HashSet<>());
 								}
 								numValuesInColumn[largestColumnNumber] = 0;
-								
+
 								spillCounts[globalLargestColumnIndex] = spillCounts[globalLargestColumnIndex] + 1;
-								
+
 								System.gc();
 							}
 						}
 					}
 				}
-			}
-			finally {
+			} finally {
 				FileUtils.close(inputIterator);
 			}
-			
+
 			// Write buckets to disk
-			for (int columnNumber = 0; columnNumber < tables.get(tableIndex).getColumnCount(); columnNumber++) {
+			for (int columnNumber = 0; columnNumber < table.getColumnCount(); columnNumber++) {
 				int globalColumnIndex = startTableColumnIndex + columnNumber;
 				if (spillCounts[globalColumnIndex] == 0) { // if a column was spilled to disk, we do not count empty buckets for this column, because the partitioning distributes the values evenly and hence all buckets should have been populated
 					for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++) {
@@ -368,8 +300,7 @@ class Binder {
 						else
 							emptyBuckets[bucketNumber] = emptyBuckets[bucketNumber] + 1;
 					}
-				}
-				else {
+				} else {
 					for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++) {
 						Set<String> bucket = buckets.get(columnNumber).get(bucketNumber);
 						if (bucket.size() != 0)
@@ -377,11 +308,11 @@ class Binder {
 					}
 				}
 			}
-			startTableColumnIndex += tables.get(tableIndex).getColumnCount();
+			startTableColumnIndex += table.getColumnCount();
 		}
 		
 		// Calculate the bucket comparison order from the emptyBuckets to minimize the influence of sparse-attribute-issue
-		int[] bucketComparisonOrder = this.calculateBucketComparisonOrder(emptyBuckets, tables);
+		int[] bucketComparisonOrder = this.calculateBucketComparisonOrder(emptyBuckets);
 		return new BucketizedAttribute(bucketComparisonOrder, nullValueColumns, columnSizes);
 	}
 		
@@ -638,7 +569,7 @@ class Binder {
 		}
 	}
 	
-	private void checkViaTwoStageIndexAndLists(BucketizedAttribute bucketizedAttribute, List<TableInfo> tables, int[] column2table) throws IOException {
+	private void checkViaTwoStageIndexAndLists(BucketizedAttribute bucketizedAttribute) throws IOException {
 		System.out.println("Checking ...");
 		
 		/////////////////////////////////////////////////////////
@@ -667,10 +598,10 @@ class Binder {
 		
 		// Empty attributes can directly be placed in the output as they are contained in everything else; no empty attribute needs to be checked
 		FetchedCandidates fetchedCandidates = new FetchedCandidates(new Int2ObjectOpenHashMap<>(getTotalColumnCount(tables)), new Int2ObjectOpenHashMap<>(getTotalColumnCount(tables)));
-		fetchedCandidates = this.fetchCandidates(strings, fetchedCandidates, bucketizedAttribute, column2table);
-		fetchedCandidates = this.fetchCandidates(numerics, fetchedCandidates, bucketizedAttribute, column2table);
-		fetchedCandidates = this.fetchCandidates(temporals, fetchedCandidates, bucketizedAttribute, column2table);
-		fetchedCandidates = this.fetchCandidates(unknown, fetchedCandidates, bucketizedAttribute, column2table);
+		fetchedCandidates = this.fetchCandidates(strings, fetchedCandidates, bucketizedAttribute);
+		fetchedCandidates = this.fetchCandidates(numerics, fetchedCandidates, bucketizedAttribute);
+		fetchedCandidates = this.fetchCandidates(temporals, fetchedCandidates, bucketizedAttribute);
+		fetchedCandidates = this.fetchCandidates(unknown, fetchedCandidates, bucketizedAttribute);
 		
 		///////////////////////////////////////////////////////////////
 		// Phase 2.2: Validation (Successively check all candidates) //
@@ -740,7 +671,7 @@ class Binder {
 		this.dep2ref.putAll(fetchedCandidates.getDep2refFinal());
 	}
 	
-	private FetchedCandidates fetchCandidates(IntArrayList columns, FetchedCandidates fetchedCandidates, BucketizedAttribute bucketizedAttribute, int[] column2table) {
+	private FetchedCandidates fetchCandidates(IntArrayList columns, FetchedCandidates fetchedCandidates, BucketizedAttribute bucketizedAttribute) {
 		IntArrayList nonEmptyColumns = new IntArrayList(columns.size());
 		nonEmptyColumns.addAll(columns.stream().filter(column -> bucketizedAttribute.getColumnSizes().getLong(column) > 0).collect(Collectors.toList()));
 
@@ -815,7 +746,7 @@ class Binder {
 		return ((Math.abs(value.hashCode() % (this.numBucketsPerColumn * numSubBuckets)) - bucketNumber) / this.numBucketsPerColumn); // range partitioning
 	}
 	
-	private int[] calculateBucketComparisonOrder(int[] emptyBuckets, List<TableInfo> tables) {
+	private int[] calculateBucketComparisonOrder(int[] emptyBuckets) {
 		List<Level> levels = new ArrayList<>(getTotalColumnCount(tables));
 		for (int level = 0; level < this.numBucketsPerColumn; level++)
 			levels.add(new Level(level, emptyBuckets[level]));
@@ -827,14 +758,6 @@ class Binder {
 		return bucketComparisonOrder;
 	}
 
-	private static long sizeOf64(String s) {
-		long bytes = 64 + 2 * s.length();
-
-		bytes = (long)(8 * (Math.ceil(bytes / 8)));
-
-		return bytes;
-	}
-
 	private LongArrayList writeBucket(int attributeNumber, int bucketNumber, int subBucketNumber, Collection<String> values, LongArrayList columnSizes) throws IOException {
 		// Write the values
 		String bucketFilePath = this.getBucketFilePath(attributeNumber, bucketNumber, subBucketNumber);
@@ -844,7 +767,7 @@ class Binder {
 		long size = columnSizes.getLong(attributeNumber);
 		int overheadPerValueForIndexes = 64;
 		for (String value : values)
-			size = size + sizeOf64(value) + overheadPerValueForIndexes;
+			size = size + (long)(8 * (Math.ceil(64 + 2 * value.length() / 8))) + overheadPerValueForIndexes;
 		columnSizes.set(attributeNumber, size);
 		return columnSizes;
 	}
@@ -1025,7 +948,7 @@ class Binder {
 		return subBucketNumbers;
 	}
 	
-	private Map<AttributeCombination, List<AttributeCombination>> detectNaryViaBucketing(List<TableInfo> tables, BucketizedAttribute bucketizedAttribute, int[] column2table) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
+	private Map<AttributeCombination, List<AttributeCombination>> detectNaryViaBucketing(BucketizedAttribute bucketizedAttribute) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		System.out.print("N-ary IND detection ...");
 		
 		// Clean temp
@@ -1419,14 +1342,13 @@ class Binder {
 			int[] numValuesInAttributeCombination = new int[attributeCombinations.size()];
 			for (int attributeCombinationNumber = 0; attributeCombinationNumber < attributeCombinations.size(); attributeCombinationNumber++)
 				numValuesInAttributeCombination[attributeCombinationNumber] = 0;
+			long availableMemory = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
+			long maxMemoryUsage = (long)(availableMemory * (this.maxMemoryUsagePercentage / 100.0f));
 
 			// Load data
 			InputIterator inputIterator = null;
 			try {
-				if (this.tableInputGenerator != null)
-					inputIterator = new FileInputIterator(this.tableInputGenerator.get(tableIndex), this.inputRowLimit);
-				else
-					inputIterator = new FileInputIterator(this.fileInputGenerator.get(tableIndex), this.inputRowLimit);
+				inputIterator = new FileInputIterator(tables.get(tableIndex).selectInputGenerator(), this.inputRowLimit);
 				
 				while (inputIterator.next()) {
 					List<String> values = inputIterator.getValues();
@@ -1460,7 +1382,7 @@ class Binder {
 							numValuesSinceLastMemoryCheck = 0;
 							
 							// Spill to disk if necessary
-							while (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() > this.maxMemoryUsage) {								
+							while (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() > maxMemoryUsage) {
 								// Identify largest buffer
 								int largestAttributeCombinationNumber = 0;
 								int largestAttributeCombinationSize = numValuesInAttributeCombination[largestAttributeCombinationNumber];
@@ -1514,7 +1436,7 @@ class Binder {
 		}
 		
 		// Calculate the bucket comparison order from the emptyBuckets to minimize the influence of sparse-attribute-issue
-		int[] bucketComparisonOrder = this.calculateBucketComparisonOrder(emptyBuckets, tables);
+		int[] bucketComparisonOrder = this.calculateBucketComparisonOrder(emptyBuckets);
 		return bucketComparisonOrder;
 	}
 
@@ -1659,5 +1581,4 @@ class Binder {
 		
 		return new ColumnPermutation(columnIdentifiers.toArray(new ColumnIdentifier[0]));
 	}
-
 }
