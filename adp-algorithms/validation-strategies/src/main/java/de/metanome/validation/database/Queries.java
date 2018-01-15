@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableMap;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.validation.DefaultValidationResult;
+import de.metanome.validation.ErrorMarginValidationResult;
 import de.metanome.validation.ValidationResult;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,8 @@ class Queries {
     queries = ImmutableMap.of(QueryType.NOT_IN, this::notIn,
         QueryType.NOT_EXISTS, this::notExists,
         QueryType.LEFT_OUTER_JOIN, this::leftOuterJoin,
-        QueryType.EXCEPT, this::except);
+        QueryType.EXCEPT, this::except,
+        QueryType.ERROR_MARGIN, this::errorMargin);
   }
 
   Query get(final QueryType type) {
@@ -117,5 +119,25 @@ class Queries {
   private String randomAlias() {
     // cheap copy of org.jooq.impl.SelectQueryImpl.asTable()
     return "alias_" + System.currentTimeMillis();
+  }
+
+  private ValidationResult errorMargin(final DSLContext context, final ColumnPermutation lhs,
+      final ColumnPermutation rhs) {
+
+    final Table<Record> lhsAlias = context.select(fields(lhs))
+        .from(tables(lhs))
+        .where(notNull(lhs))
+        .asTable();
+
+    final double errorCount = context.selectCount().from(
+        selectFrom(lhsAlias).whereNotExists(
+            context.selectOne().from(tables(rhs)).where(row(fields(rhs)).eq(row(lhsAlias.fields())))
+        )
+    ).fetchOne().value1();
+
+    final double rowCount = context.fetchCount(lhsAlias);
+    final double errorMargin = errorCount / rowCount;
+
+    return new ErrorMarginValidationResult(errorCount == 0, errorMargin);
   }
 }

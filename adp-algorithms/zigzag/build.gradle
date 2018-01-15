@@ -1,0 +1,27 @@
+
+dependencies {
+    extraLibs(project(':util')) {
+        transitive = false
+    }
+
+    extraLibs(project(':ind-input')) {
+    }
+
+    extraLibs(project(':validation-strategies')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
+    }
+
+    testCompile project(path: ':util', configuration: 'tests')
+}
+
+task zigzagDatabase(type: Jar) {
+    from sourceSets.main.output
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.zigzag.ZigzagDatabaseAlgorithm'
+    }
+    classifier 'database'
+}
+
+assemble.dependsOn zigzagDatabase
