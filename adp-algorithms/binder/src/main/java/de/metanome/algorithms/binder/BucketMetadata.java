@@ -6,13 +6,13 @@ import java.util.BitSet;
 /**
  * Created by maxi on 23.12.17.
  */
-public class BucketizedAttribute {
+public class BucketMetadata {
     private int[] bucketComparisonOrder;
     private BitSet nullValueColumns;
     private LongArrayList columnSizes;
 
 
-    public BucketizedAttribute(int[] bucketComparisonOrder, BitSet nullValueColumns, LongArrayList columnSizes) {
+    public BucketMetadata(int[] bucketComparisonOrder, BitSet nullValueColumns, LongArrayList columnSizes) {
         this.bucketComparisonOrder = bucketComparisonOrder;
         this.nullValueColumns = nullValueColumns;
         this.columnSizes = columnSizes;

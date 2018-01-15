@@ -126,17 +126,17 @@ class Binder {
 			// Phase 1: Bucketing (Create and fill the buckets) //
 			//////////////////////////////////////////////////////
 			long unaryLoadTime = System.currentTimeMillis();
-			BucketizedAttribute bucketizedAttribute = this.bucketize(tables);
+			BucketMetadata bucketMetadata = this.bucketize(tables);
 			unaryLoadTime = System.currentTimeMillis() - unaryLoadTime;
 			System.out.println(unaryLoadTime);
 			//////////////////////////////////////////////////////
 			// Phase 2: Checking (Check INDs using the buckets) //
 			//////////////////////////////////////////////////////
 			long unaryCompareTime = System.currentTimeMillis();
-			//this.checkViaHashing(tables, bucketizedAttribute);
-			//this.checkViaSorting(bucketizedAttribute, tables);
-			//this.checkViaTwoStageIndexAndBitSets(bucketizedAttribute, tables);
-			this.checkViaTwoStageIndexAndLists(bucketizedAttribute, tables, column2table);
+			//this.checkViaHashing(tables, bucketMetadata);
+			//this.checkViaSorting(bucketMetadata, tables);
+			//this.checkViaTwoStageIndexAndBitSets(bucketMetadata, tables);
+			this.checkViaTwoStageIndexAndLists(bucketMetadata, tables, column2table);
 			unaryCompareTime = System.currentTimeMillis() - unaryCompareTime;
 			System.out.println(unaryCompareTime);
 			/////////////////////////////////////////////////////////
@@ -144,10 +144,9 @@ class Binder {
 			/////////////////////////////////////////////////////////4
 			Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = null;
 			if (this.detectNary && (this.maxNaryLevel > 1 || this.maxNaryLevel <= 0)) {
-				naryDep2ref = this.detectNaryViaBucketing(tables, bucketizedAttribute, column2table);
+				naryDep2ref = this.detectNaryViaBucketing(tables, bucketMetadata, column2table);
 				//naryDep2ref = this.detectNaryViaSingleChecks();
 			}
-			System.out.println("going to output solutions now");
 			System.out.println(naryDep2ref);
 
 			//////////////////////////////////////////////////////
@@ -251,7 +250,7 @@ class Binder {
 		return tables.stream().mapToInt(TableInfo::getColumnCount).sum();
 	}
 
-	private BucketizedAttribute bucketize(List<TableInfo> tables) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
+	private BucketMetadata bucketize(List<TableInfo> tables) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		System.out.print("Bucketizing ... ");
 
 		// externalized methods from initialize()
@@ -272,7 +271,6 @@ class Binder {
 		int startTableColumnIndex = 0;
 		for (int tableIndex = 0; tableIndex < tables.size(); tableIndex++) {
 			String tableName = tables.get(tableIndex).getTableName();
-			System.out.print(tableName + " ");
 
 //			List<Integer> numColumnsPerTable = getTotalColumnCountList(tables);
 //
@@ -382,10 +380,10 @@ class Binder {
 		
 		// Calculate the bucket comparison order from the emptyBuckets to minimize the influence of sparse-attribute-issue
 		int[] bucketComparisonOrder = this.calculateBucketComparisonOrder(emptyBuckets, tables);
-		return new BucketizedAttribute(bucketComparisonOrder, nullValueColumns, columnSizes);
+		return new BucketMetadata(bucketComparisonOrder, nullValueColumns, columnSizes);
 	}
 		
-	private void checkViaHashing(List<TableInfo> tables, BucketizedAttribute bucketizedAttribute) throws IOException {
+	private void checkViaHashing(List<TableInfo> tables, BucketMetadata bucketMetadata) throws IOException {
 		/////////////////////////////////////////////////////////
 		// Phase 2.1: Pruning (Dismiss first candidates early) //
 		/////////////////////////////////////////////////////////
@@ -418,7 +416,7 @@ class Binder {
 		activeAttributes.set(0, getTotalColumnCount(tables));
 		for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++) {
 			// Refine the current bucket level if it does not fit into memory at once
-			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber, bucketizedAttribute);
+			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber, bucketMetadata);
 			for (int subBucketNumber : subBucketNumbers) {
 				if (column2bucket.keySet().isEmpty())
 					break;
@@ -454,7 +452,7 @@ class Binder {
 		}
 	}
 	
-	private void checkViaSorting(BucketizedAttribute bucketizedAttribute, List<TableInfo> tables) throws IOException {
+	private void checkViaSorting(BucketMetadata bucketMetadata, List<TableInfo> tables) throws IOException {
 		/////////////////////////////////////
 		// Phase 2: Pruning and Validation //
 		/////////////////////////////////////
@@ -477,9 +475,9 @@ class Binder {
 		}
 		
 		// Validate INDs
-		for (int bucketNumber : bucketizedAttribute.getBucketComparisonOrder()) {
+		for (int bucketNumber : bucketMetadata.getBucketComparisonOrder()) {
 			// Refine the current bucket level if it does not fit into memory at once
-			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, bucketNumber, tables, bucketizedAttribute);
+			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, bucketNumber, tables, bucketMetadata);
 			for (int subBucketNumber : subBucketNumbers) {
 				//this.activeAttributesPerBucketLevel.add(activeAttributes.size());
 				if (activeAttributes.isEmpty())
@@ -528,7 +526,7 @@ class Binder {
 		attributeId2attributeObject.values().stream().filter(attribute -> !attribute.getReferenced().isEmpty()).forEach(attribute -> this.dep2ref.put(attribute.getAttributeId(), new IntSingleLinkedList(attribute.getReferenced())));
 	}
 	
-	private void checkViaTwoStageIndexAndBitSets(BucketizedAttribute bucketizedAttribute, List<TableInfo> tables) throws IOException {
+	private void checkViaTwoStageIndexAndBitSets(BucketMetadata bucketMetadata, List<TableInfo> tables) throws IOException {
 		/////////////////////////////////////////////////////////
 		// Phase 2.1: Pruning (Dismiss first candidates early) //
 		/////////////////////////////////////////////////////////
@@ -577,9 +575,9 @@ class Binder {
 		
 		// Iterate the buckets for all remaining INDs until the end is reached or no more INDs exist
 		BitSet activeAttributes = (BitSet)allAttributes.clone();
-		levelloop : for (int bucketNumber : bucketizedAttribute.getBucketComparisonOrder()) { // TODO: Externalize this code into a method and use return instead of break
+		levelloop : for (int bucketNumber : bucketMetadata.getBucketComparisonOrder()) { // TODO: Externalize this code into a method and use return instead of break
 			// Refine the current bucket level if it does not fit into memory at once
-			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber, bucketizedAttribute);
+			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber, bucketMetadata);
 			for (int subBucketNumber : subBucketNumbers) {
 				// Identify all currently active attributes
 				activeAttributes = this.getActiveAttributesFromBitSets(activeAttributes, attribute2Refs, tables);
@@ -638,7 +636,7 @@ class Binder {
 		}
 	}
 	
-	private void checkViaTwoStageIndexAndLists(BucketizedAttribute bucketizedAttribute, List<TableInfo> tables, int[] column2table) throws IOException {
+	private void checkViaTwoStageIndexAndLists(BucketMetadata bucketMetadata, List<TableInfo> tables, int[] column2table) throws IOException {
 		System.out.println("Checking ...");
 		
 		/////////////////////////////////////////////////////////
@@ -667,10 +665,10 @@ class Binder {
 		
 		// Empty attributes can directly be placed in the output as they are contained in everything else; no empty attribute needs to be checked
 		FetchedCandidates fetchedCandidates = new FetchedCandidates(new Int2ObjectOpenHashMap<>(getTotalColumnCount(tables)), new Int2ObjectOpenHashMap<>(getTotalColumnCount(tables)));
-		fetchedCandidates = this.fetchCandidates(strings, fetchedCandidates, bucketizedAttribute, column2table);
-		fetchedCandidates = this.fetchCandidates(numerics, fetchedCandidates, bucketizedAttribute, column2table);
-		fetchedCandidates = this.fetchCandidates(temporals, fetchedCandidates, bucketizedAttribute, column2table);
-		fetchedCandidates = this.fetchCandidates(unknown, fetchedCandidates, bucketizedAttribute, column2table);
+		fetchedCandidates = this.fetchCandidates(strings, fetchedCandidates, bucketMetadata, column2table);
+		fetchedCandidates = this.fetchCandidates(numerics, fetchedCandidates, bucketMetadata, column2table);
+		fetchedCandidates = this.fetchCandidates(temporals, fetchedCandidates, bucketMetadata, column2table);
+		fetchedCandidates = this.fetchCandidates(unknown, fetchedCandidates, bucketMetadata, column2table);
 		
 		///////////////////////////////////////////////////////////////
 		// Phase 2.2: Validation (Successively check all candidates) //
@@ -679,13 +677,13 @@ class Binder {
 		// The initially active attributes are all non-empty attributes
 		BitSet activeAttributes = new BitSet(getTotalColumnCount(tables));
 		for (int column = 0; column < getTotalColumnCount(tables); column++)
-			if (bucketizedAttribute.getColumnSizes().getLong(column) > 0)
+			if (bucketMetadata.getColumnSizes().getLong(column) > 0)
 				activeAttributes.set(column);
 		
 		// Iterate the buckets for all remaining INDs until the end is reached or no more INDs exist
-		levelloop : for (int bucketNumber : bucketizedAttribute.getBucketComparisonOrder()) { // TODO: Externalize this code into a method and use return instead of break
+		levelloop : for (int bucketNumber : bucketMetadata.getBucketComparisonOrder()) { // TODO: Externalize this code into a method and use return instead of break
 			// Refine the current bucket level if it does not fit into memory at once
-			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber, bucketizedAttribute);
+			int[] subBucketNumbers = this.refineBucketLevel(activeAttributes, 0, bucketNumber, bucketMetadata);
 			for (int subBucketNumber : subBucketNumbers) {
 				// Identify all currently active attributes
 				activeAttributes = this.getActiveAttributesFromLists(activeAttributes, fetchedCandidates.getDep2refToCheck(), tables);
@@ -740,14 +738,14 @@ class Binder {
 		this.dep2ref.putAll(fetchedCandidates.getDep2refFinal());
 	}
 	
-	private FetchedCandidates fetchCandidates(IntArrayList columns, FetchedCandidates fetchedCandidates, BucketizedAttribute bucketizedAttribute, int[] column2table) {
+	private FetchedCandidates fetchCandidates(IntArrayList columns, FetchedCandidates fetchedCandidates, BucketMetadata bucketMetadata, int[] column2table) {
 		IntArrayList nonEmptyColumns = new IntArrayList(columns.size());
-		nonEmptyColumns.addAll(columns.stream().filter(column -> bucketizedAttribute.getColumnSizes().getLong(column) > 0).collect(Collectors.toList()));
+		nonEmptyColumns.addAll(columns.stream().filter(column -> bucketMetadata.getColumnSizes().getLong(column) > 0).collect(Collectors.toList()));
 
 		if (this.filterKeyForeignkeys) {
 			for (int dep : columns) {
 				// Empty columns are no foreign keys
-				if (bucketizedAttribute.getColumnSizes().getLong(dep) == 0)
+				if (bucketMetadata.getColumnSizes().getLong(dep) == 0)
 					continue;
 				
 				// Referenced columns must not have null values and must come from different tables
@@ -755,7 +753,7 @@ class Binder {
 				IntListIterator iterator = seed.iterator();
 				while (iterator.hasNext()) {
 					int ref = iterator.nextInt();
-					if ((column2table[dep] == column2table[ref]) || bucketizedAttribute.getNullValueColumns().get(ref))
+					if ((column2table[dep] == column2table[ref]) || bucketMetadata.getNullValueColumns().get(ref))
 						iterator.remove();
 				}
 				
@@ -764,7 +762,7 @@ class Binder {
 		}
 		else {
 			for (int dep : columns) {
-				if (bucketizedAttribute.getColumnSizes().getLong(dep) == 0)
+				if (bucketMetadata.getColumnSizes().getLong(dep) == 0)
 					fetchedCandidates.setDep2refFinal(dep, new IntSingleLinkedList(columns, dep));
 				else
 					fetchedCandidates.setDep2refToCheck(dep, new IntSingleLinkedList(nonEmptyColumns, dep));
@@ -920,14 +918,14 @@ class Binder {
 		return this.tempFolder.getPath() + File.separator + attributeNumber + File.separator + bucketNumber;
 	}
 	
-	private int[] refineBucketLevel(IntArrayList activeAttributes, int level, List<TableInfo> tables, BucketizedAttribute bucketizedAttribute) throws IOException {
+	private int[] refineBucketLevel(IntArrayList activeAttributes, int level, List<TableInfo> tables, BucketMetadata bucketMetadata) throws IOException {
 		BitSet activeAttributesBits = new BitSet(getTotalColumnCount(tables));
 		for (Integer IntConsumer : activeAttributes)
 			activeAttributesBits.set(IntConsumer);
-		return this.refineBucketLevel(activeAttributesBits, 0, level, bucketizedAttribute);
+		return this.refineBucketLevel(activeAttributesBits, 0, level, bucketMetadata);
 	}
 	
-	private int[] refineBucketLevel(BitSet activeAttributes, int attributeOffset, int level, BucketizedAttribute bucketizedAttribute) throws IOException { // The offset is used for n-ary INDs, because their buckets are placed behind the unary buckets on disk, which is important if the unary buckets have not been deleted before
+	private int[] refineBucketLevel(BitSet activeAttributes, int attributeOffset, int level, BucketMetadata bucketMetadata) throws IOException { // The offset is used for n-ary INDs, because their buckets are placed behind the unary buckets on disk, which is important if the unary buckets have not been deleted before
 		// Empty sub bucket cache, because it will be refilled in the following
 		this.attribute2subBucketsCache = null;
 
@@ -940,7 +938,7 @@ class Binder {
 		for (int attribute = activeAttributes.nextSetBit(0); attribute >= 0; attribute = activeAttributes.nextSetBit(attribute + 1)) {
 			numAttributes++;
 			int attributeIndex = attribute + attributeOffset;
-			long bucketSize = bucketizedAttribute.getColumnSizes().getLong(attributeIndex) / this.numBucketsPerColumn;
+			long bucketSize = bucketMetadata.getColumnSizes().getLong(attributeIndex) / this.numBucketsPerColumn;
 			levelSize = levelSize + bucketSize;
 		}
 		
@@ -999,7 +997,7 @@ class Binder {
 							// Spill to disk if necessary
 							if (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() > this.maxMemoryUsage) {								
 								for (int subBucket = 0; subBucket < numSubBuckets; subBucket++) {
-									bucketizedAttribute.setColumnSizes(this.writeBucket(attributeIndex, level, subBucket, subBuckets.get(subBucket), bucketizedAttribute.getColumnSizes()));
+									bucketMetadata.setColumnSizes(this.writeBucket(attributeIndex, level, subBucket, subBuckets.get(subBucket), bucketMetadata.getColumnSizes()));
 									subBuckets.set(subBucket, new ArrayList<>());
 								}
 								
@@ -1015,9 +1013,9 @@ class Binder {
 			}
 			
 			// Large sub bucketings need to be written to disk; small sub bucketings can stay in memory
-			if ((bucketizedAttribute.getColumnSizes().getLong(attributeIndex) / this.numBucketsPerColumn > maxBucketSize) || spilled)
+			if ((bucketMetadata.getColumnSizes().getLong(attributeIndex) / this.numBucketsPerColumn > maxBucketSize) || spilled)
 				for (int subBucket = 0; subBucket < numSubBuckets; subBucket++)
-					bucketizedAttribute.setColumnSizes(this.writeBucket(attributeIndex, level, subBucket, subBuckets.get(subBucket), bucketizedAttribute.getColumnSizes()));
+					bucketMetadata.setColumnSizes(this.writeBucket(attributeIndex, level, subBucket, subBuckets.get(subBucket), bucketMetadata.getColumnSizes()));
 			else
 				this.attribute2subBucketsCache.put(attributeIndex, subBuckets);
 		}
@@ -1025,7 +1023,7 @@ class Binder {
 		return subBucketNumbers;
 	}
 	
-	private Map<AttributeCombination, List<AttributeCombination>> detectNaryViaBucketing(List<TableInfo> tables, BucketizedAttribute bucketizedAttribute, int[] column2table) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
+	private Map<AttributeCombination, List<AttributeCombination>> detectNaryViaBucketing(List<TableInfo> tables, BucketMetadata bucketMetadata, int[] column2table) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		System.out.print("N-ary IND detection ...");
 		
 		// Clean temp
@@ -1061,7 +1059,7 @@ class Binder {
 			final long naryGenerationTimeCurrent = System.currentTimeMillis();
 			Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = nPlusOneAryDep2ref;
 
-			nPlusOneAryDep2ref = this.generateNPlusOneAryCandidates(nPlusOneAryDep2ref, bucketizedAttribute.getColumnSizes());
+			nPlusOneAryDep2ref = this.generateNPlusOneAryCandidates(nPlusOneAryDep2ref, bucketMetadata.getColumnSizes());
 			if (nPlusOneAryDep2ref.isEmpty()) {
 				nPlusOneAryDep2ref = naryDep2ref;
 				naryLevel -= 1;
@@ -1074,10 +1072,10 @@ class Binder {
 			List<AttributeCombination> attributeCombinations = new ArrayList<>(attributeCombinationSet);
 			
 			// Extend the columnSize array
-			LongArrayList columnSizes = bucketizedAttribute.getColumnSizes();
+			LongArrayList columnSizes = bucketMetadata.getColumnSizes();
 			for (int i = 0; i < attributeCombinations.size(); i++)
 				columnSizes.add(0);
-			bucketizedAttribute.setColumnSizes(columnSizes);
+			bucketMetadata.setColumnSizes(columnSizes);
 			
 			int[] currentNarySpillCounts = new int[attributeCombinations.size()];
 			for (int attributeCombinationNumber = 0; attributeCombinationNumber < attributeCombinations.size(); attributeCombinationNumber++)
@@ -1086,11 +1084,11 @@ class Binder {
 			naryGenerationTime.add(System.currentTimeMillis() - naryGenerationTimeCurrent);
 
 			// Read the input dataset again and bucketize all attribute combinations that are refs or deps
-			int[] bucketComparisonOrder = this.naryBucketize(attributeCombinations, naryOffset, currentNarySpillCounts, bucketizedAttribute, tables);
-			bucketizedAttribute.setBucketComparisonOrder(bucketComparisonOrder);
+			int[] bucketComparisonOrder = this.naryBucketize(attributeCombinations, naryOffset, currentNarySpillCounts, bucketMetadata, tables);
+			bucketMetadata.setBucketComparisonOrder(bucketComparisonOrder);
 			// Check the n-ary IND candidates
 			long naryCompareTimeCurrent = System.currentTimeMillis();
-			nPlusOneAryDep2ref = this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset, bucketizedAttribute);
+			nPlusOneAryDep2ref = this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset, bucketMetadata);
 
 			// Add the number of created buckets for n-ary INDs of this level to the naryOffset
 			naryOffset = naryOffset + attributeCombinations.size();
@@ -1229,10 +1227,6 @@ class Binder {
 				if ((previousSize == 1) && ((columnSizes.getLong(depPivotAttr) == 0) || (columnSizes.getLong(depExtensionAttr) == 0)))
 					continue;
 
-				System.out.println(Arrays.toString(depPivot.getAttributes()));
-				System.out.println(Arrays.toString(depExtension.getAttributes()));
-				System.out.println(depPivotAttr);
-				System.out.println(depExtensionAttr);
 				for (AttributeCombination refPivot : naryDep2ref.get(depPivot)) {
 					for (AttributeCombination refExtension : naryDep2ref.get(depExtension)) {
 						
@@ -1384,7 +1378,7 @@ class Binder {
 //
 //	}
 
-	private int[] naryBucketize(List<AttributeCombination> attributeCombinations, int naryOffset, int[] narySpillCounts, BucketizedAttribute bucketizedAttribute, List<TableInfo> tables) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
+	private int[] naryBucketize(List<AttributeCombination> attributeCombinations, int naryOffset, int[] narySpillCounts, BucketMetadata bucketMetadata, List<TableInfo> tables) throws InputGenerationException, InputIterationException, IOException, AlgorithmConfigurationException {
 		// Identify the relevant attribute combinations for the different tables
 		List<IntArrayList> table2attributeCombinationNumbers = new ArrayList<>(tables.size());
 		table2attributeCombinationNumbers.addAll(tables.stream().map(ignored -> new IntArrayList()).collect(Collectors.toList()));
@@ -1473,7 +1467,7 @@ class Binder {
 								
 								// Write buckets from largest column to disk and empty written buckets
 								for (int largeBucketNumber = 0; largeBucketNumber < this.numBucketsPerColumn; largeBucketNumber++) {
-									this.writeBucket(naryOffset + largestAttributeCombinationNumber, largeBucketNumber, -1, buckets.get(largestAttributeCombinationNumber).get(largeBucketNumber), bucketizedAttribute.getColumnSizes());
+									this.writeBucket(naryOffset + largestAttributeCombinationNumber, largeBucketNumber, -1, buckets.get(largestAttributeCombinationNumber).get(largeBucketNumber), bucketMetadata.getColumnSizes());
 									buckets.get(largestAttributeCombinationNumber).set(largeBucketNumber, new HashSet<>());
 								}
 								
@@ -1497,7 +1491,7 @@ class Binder {
 					for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++) {
 						Set<String> bucket = buckets.get(attributeCombinationNumber).get(bucketNumber);
 						if (bucket.size() != 0)
-							this.writeBucket(naryOffset + attributeCombinationNumber, bucketNumber, -1, bucket, bucketizedAttribute.getColumnSizes());
+							this.writeBucket(naryOffset + attributeCombinationNumber, bucketNumber, -1, bucket, bucketMetadata.getColumnSizes());
 						else
 							emptyBuckets[bucketNumber] = emptyBuckets[bucketNumber] + 1;
 					}
@@ -1506,7 +1500,7 @@ class Binder {
 					for (int bucketNumber = 0; bucketNumber < this.numBucketsPerColumn; bucketNumber++) {
 						Set<String> bucket = buckets.get(attributeCombinationNumber).get(bucketNumber);
 						if (bucket.size() != 0)
-							this.writeBucket(naryOffset + attributeCombinationNumber, bucketNumber, -1, bucket, bucketizedAttribute.getColumnSizes());
+							this.writeBucket(naryOffset + attributeCombinationNumber, bucketNumber, -1, bucket, bucketMetadata.getColumnSizes());
 					}
 				}
 			}
@@ -1518,7 +1512,7 @@ class Binder {
 		return bucketComparisonOrder;
 	}
 
-	private Map<AttributeCombination, List<AttributeCombination>> naryCheckViaTwoStageIndexAndLists(Map<AttributeCombination, List<AttributeCombination>> naryDep2ref, List<AttributeCombination> attributeCombinations, int naryOffset, BucketizedAttribute bucketizedAttribute) throws IOException {
+	private Map<AttributeCombination, List<AttributeCombination>> naryCheckViaTwoStageIndexAndLists(Map<AttributeCombination, List<AttributeCombination>> naryDep2ref, List<AttributeCombination> attributeCombinations, int naryOffset, BucketMetadata bucketMetadata) throws IOException {
 		////////////////////////////////////////////////////
 		// Validation (Successively check all candidates) //
 		////////////////////////////////////////////////////
@@ -1526,9 +1520,9 @@ class Binder {
 		// Iterate the buckets for all remaining INDs until the end is reached or no more INDs exist
 		BitSet activeAttributeCombinations = new BitSet(attributeCombinations.size());
 		activeAttributeCombinations.set(0, attributeCombinations.size());
-		levelloop : for (int bucketNumber : bucketizedAttribute.getBucketComparisonOrder()) { // TODO: Externalize this code into a method and use return instead of break
+		levelloop : for (int bucketNumber : bucketMetadata.getBucketComparisonOrder()) { // TODO: Externalize this code into a method and use return instead of break
 			// Refine the current bucket level if it does not fit into memory at once
-			int[] subBucketNumbers = this.refineBucketLevel(activeAttributeCombinations, naryOffset, bucketNumber, bucketizedAttribute);
+			int[] subBucketNumbers = this.refineBucketLevel(activeAttributeCombinations, naryOffset, bucketNumber, bucketMetadata);
 			for (int subBucketNumber : subBucketNumbers) {
 				// Identify all currently active attributes
 				activeAttributeCombinations = this.getActiveAttributeCombinations(activeAttributeCombinations, naryDep2ref, attributeCombinations);
