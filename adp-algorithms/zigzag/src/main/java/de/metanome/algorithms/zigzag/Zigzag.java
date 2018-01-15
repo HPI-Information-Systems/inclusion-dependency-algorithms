@@ -149,11 +149,6 @@ public class Zigzag {
         .flatMap(Collection::stream)
         .filter(x -> x.size() == nextLevel)
         .collect(Collectors.toSet());
-    /*for(Set<ColumnIdentifier> indNode : pessDI) {
-      Set<Set<ColumnIdentifier>> powerSet = new HashSet<>(Sets.powerSet(indNode));
-      powerSet.removeIf(x -> x.size() != nextLevel);
-      generalizedINDs.addAll(powerSet);
-    }*/
     return generalizedINDs;
   }
 
