@@ -13,14 +13,18 @@ import de.metanome.validation.ErrorMarginValidationResult;
 import de.metanome.validation.ValidationStrategy;
 import de.metanome.validation.ValidationStrategyFactory;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Zigzag {
+
+  private int dbChecks = 0;
 
   private final ZigzagConfiguration configuration;
   private ValidationStrategy validationStrategy;
@@ -46,15 +50,22 @@ public class Zigzag {
   }
 
   public void execute() throws AlgorithmExecutionException {
+    if(configuration.getUnaryInds().isEmpty()) {
+      return;
+    }
+
     validationStrategy = validationStrategyFactory
         .forDatabase(configuration.getValidationParameters());
 
     initialCandidateCheck(configuration.getK());
 
     Set<Set<ColumnIdentifier>> positiveBorder = indToNodes(satisfiedINDs); // Bd+(I)
+    System.out.println("Postive Border: " + positiveBorder);
     Set<Set<ColumnIdentifier>> negativeBorder = indToNodes(unsatisfiedINDs); // Bd-(I)
+    System.out.println("Negative Border: " + negativeBorder);
 
     Set<Set<ColumnIdentifier>> optimisticBorder = calculateOptimisticBorder(new HashSet<>(unsatisfiedINDs)); // Bd+(I opt)
+    System.out.println("First optimistic Border: " + optimisticBorder);
 
     while(!isOptimisticBorderFinal(optimisticBorder, positiveBorder)) {
       Set<Set<ColumnIdentifier>> possibleSmallerINDs = new HashSet<>(); // optDI, all g3' < epsilon
@@ -85,17 +96,15 @@ public class Zigzag {
         }
         possibleSmallerINDs = candidatesBelowOptimisticBorder;
       }
-      System.out.println(positiveBorder);
       positiveBorder = removeGeneralizations(positiveBorder);
-      System.out.println(positiveBorder);
 
       Set<Set<ColumnIdentifier>> candidatesOnNextLevel = getCandidatesOnNextLevel(pessDI); // C(k+1)
-      for(Set<ColumnIdentifier> ind : candidatesOnNextLevel) {
+      for(Set<ColumnIdentifier> indNode : candidatesOnNextLevel) {
         // check if positiveBorder already satisfies ind before calling the database
-        if(isSatisfiedByBorder(ind, positiveBorder) || isIND(nodeToInd(ind))) {
-          positiveBorder.add(ind);
+        if(isSatisfiedByBorder(indNode, positiveBorder) || isIND(nodeToInd(indNode))) {
+          positiveBorder.add(indNode);
         } else {
-          negativeBorder.add(ind);
+          negativeBorder.add(indNode);
         }
       }
       // remove unnecessary generalizations/specializations
@@ -103,7 +112,9 @@ public class Zigzag {
       negativeBorder = removeSpecializations(negativeBorder);
 
       currentLevel += 1;
-      optimisticBorder = calculateOptimisticBorder(new HashSet<>(unsatisfiedINDs));
+      optimisticBorder = calculateOptimisticBorder(negativeBorder.stream()
+          .map(this::nodeToInd)
+          .collect(Collectors.toSet()));
     }
     satisfiedINDs = positiveBorder.stream()
         .flatMap(ind -> Sets.powerSet(ind).stream())
@@ -112,6 +123,7 @@ public class Zigzag {
     collectResults();
 
     validationStrategy.close();
+    System.out.println("Total DB Checks: " + dbChecks);
   }
 
   private void collectResults() throws CouldNotReceiveResultException, ColumnNameMismatchException {
@@ -132,19 +144,23 @@ public class Zigzag {
 
   private Set<Set<ColumnIdentifier>> getCandidatesOnNextLevel(Set<Set<ColumnIdentifier>> pessDI) {
     int nextLevel = currentLevel + 1;
-    Set<Set<ColumnIdentifier>> generalizedINDs = new HashSet<>();
-    for(Set<ColumnIdentifier> indNode : pessDI) {
-      Set<Set<ColumnIdentifier>> powerSet = Sets.powerSet(indNode);
+    Set<Set<ColumnIdentifier>> generalizedINDs = pessDI.stream()
+        .map(Sets::powerSet)
+        .flatMap(Collection::stream)
+        .filter(x -> x.size() == nextLevel)
+        .collect(Collectors.toSet());
+    /*for(Set<ColumnIdentifier> indNode : pessDI) {
+      Set<Set<ColumnIdentifier>> powerSet = new HashSet<>(Sets.powerSet(indNode));
       powerSet.removeIf(x -> x.size() != nextLevel);
       generalizedINDs.addAll(powerSet);
-    }
+    }*/
     return generalizedINDs;
   }
 
   private Set<Set<ColumnIdentifier>> generalizeSet(Set<Set<ColumnIdentifier>> possibleSmallerIND) {
     Set<Set<ColumnIdentifier>> generalizedINDs = new HashSet<>();
     for(Set<ColumnIdentifier> indNode : possibleSmallerIND) {
-      Set<Set<ColumnIdentifier>> powerSet = Sets.powerSet(indNode);
+      Set<Set<ColumnIdentifier>> powerSet = new HashSet<>(Sets.powerSet(indNode));
       powerSet.removeIf(x -> x.size() != indNode.size() - 1);
       generalizedINDs.addAll(powerSet);
     }
@@ -152,6 +168,8 @@ public class Zigzag {
   }
 
   private boolean isOptimisticBorderFinal(Set<Set<ColumnIdentifier>> optimisticBorder, Set<Set<ColumnIdentifier>> positiveBorder) {
+    System.out.println("Optimistic border: " + optimisticBorder);
+    System.out.println("Positive border: " + positiveBorder);
     optimisticBorder.removeAll(positiveBorder);
     return optimisticBorder.isEmpty();
   }
@@ -168,6 +186,7 @@ public class Zigzag {
         solution = removeSpecializations(newSolution);
       }
     }
+    System.out.println("Non inverted: " + solution);
     return solution.stream().map(this::invertIND).collect(Collectors.toSet());
   }
 
@@ -198,13 +217,23 @@ public class Zigzag {
   }
 
   private Map<ColumnIdentifier,ColumnIdentifier> convertUnaryINDsToMap(Set<InclusionDependency> unaryINDs) {
+    System.out.println("Unary INDs: " + unaryINDs);
     Map<ColumnIdentifier,ColumnIdentifier> uINDs = new HashMap<>();
     for (InclusionDependency ind : unaryINDs) {
       for (int i = 0; i < ind.getDependant().getColumnIdentifiers().size(); i++) {
-        uINDs.put(ind.getDependant().getColumnIdentifiers().get(i), ind.getReferenced().getColumnIdentifiers().get(i));
+        ColumnIdentifier dep = ind.getDependant().getColumnIdentifiers().get(i);
+        ColumnIdentifier ref = ind.getReferenced().getColumnIdentifiers().get(i);
+        // filters out columns in the same table
+        if(notInTheSameTable(dep, ref)) {
+          uINDs.put(dep, ref);
+        }
       }
     }
     return uINDs;
+  }
+
+  private boolean notInTheSameTable(ColumnIdentifier dep, ColumnIdentifier ref) {
+    return !dep.getTableIdentifier().equals(ref.getTableIdentifier());
   }
 
   // Zigzag only needs to check one side for this, so use dependant
@@ -233,7 +262,6 @@ public class Zigzag {
   }
 
   private Set<ColumnIdentifier> invertIND(Set<ColumnIdentifier> ind) {
-    unaryIndMap = convertUnaryINDsToMap(configuration.getUnaryInds());
     Set<ColumnIdentifier> invertedIND = new HashSet<>(unaryIndMap.keySet());
     for(ColumnIdentifier depId : ind) {
       invertedIND.remove(depId);
@@ -252,28 +280,82 @@ public class Zigzag {
   }
 
   private double g3(InclusionDependency ind) {
+    if(hasMultipleTablesPerSide(ind)) {
+      System.out.println("INVALID. IND has multiple tables on one side: " + ind);
+      return configuration.getEpsilon() + 1;
+    }
+    // INVALID if it has duplicates
+    // only check for referenced, since dependant is held in a set
+    if(hasDuplicate(ind.getReferenced().getColumnIdentifiers())) {
+      return configuration.getEpsilon() + 1;
+    }
+    dbChecks++;
+    System.out.println("G3 Checking: " + ind);
     return ((ErrorMarginValidationResult) validationStrategy.validate(ind)).getErrorMargin();
   }
 
-  // equivalent to d |= i
+  // equivalent to d |= i in paper
   private boolean isIND(InclusionDependency ind) {
+    if(hasMultipleTablesPerSide(ind)) {
+      System.out.println("INVALID. IND has multiple tables on one side: " + ind);
+      return false;
+    }
+    // INVALID if it has duplicates
+    // only check for referenced, since dependant is held in a set
+    if(hasDuplicate(ind.getReferenced().getColumnIdentifiers())) {
+      return false;
+    }
+    dbChecks++;
+    System.out.println("Checking: " + ind);
     return validationStrategy.validate(ind).isValid();
   }
 
+  private <T> boolean hasDuplicate(Iterable<T> all) {
+    Set<T> set = new HashSet<T>();
+    // Set#add returns false if the set does not change, which
+    // indicates that a duplicate element has been added.
+    for (T each: all) if (!set.add(each)) return true;
+    return false;
+  }
+
+  private boolean hasMultipleTablesPerSide(InclusionDependency ind) {
+    int depTableCount = ind.getDependant().getColumnIdentifiers().stream()
+        .map(ColumnIdentifier::getTableIdentifier)
+        .collect(Collectors.toSet())
+        .size();
+
+    int refTableCount = ind.getReferenced().getColumnIdentifiers().stream()
+        .map(ColumnIdentifier::getTableIdentifier)
+        .collect(Collectors.toSet())
+        .size();
+    return depTableCount != 1 || refTableCount != 1;
+  }
+
   private void initialCandidateCheck(int k) {
-    for(int i = 1; i < k; i++) {
-      for(InclusionDependency ind : generateCandidatesForLevel(i)) {
+    for(int i = 2; i <= k; i++) {
+      Set<InclusionDependency> candidates = generateCandidatesForLevel(i);
+      for(InclusionDependency ind : candidates) {
+        System.out.println("IND to check: " + ind);
         if(isIND(ind)) {
           satisfiedINDs.add(ind);
+          System.out.println("New satisfied IND: " + ind);
         } else {
           unsatisfiedINDs.add(ind);
+          System.out.println("New unsatisfied IND: " + ind);
         }
       }
     }
   }
 
   private Set<InclusionDependency> generateCandidatesForLevel(int i) {
-    return Sets.combinations(unaryIndMap.keySet(),i).stream()
+    Set<ColumnIdentifier> unaryIndNodes = new HashSet<>();
+    for(Entry<ColumnIdentifier, ColumnIdentifier> entry : unaryIndMap.entrySet()) {
+      if(!entry.getKey().getTableIdentifier().equals(entry.getValue().getTableIdentifier())) {
+        unaryIndNodes.add(entry.getKey());
+      }
+    }
+    System.out.println("Combinations for level " + i + " : " + Sets.combinations(unaryIndNodes,i).toString());
+    return Sets.combinations(unaryIndNodes,i).stream()
         .map(this::nodeToInd)
         .collect(Collectors.toSet());
   }
