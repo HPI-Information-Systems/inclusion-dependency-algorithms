@@ -1,27 +1,39 @@
 package de.metanome.algorithms.spider;
 
+import de.metanome.algorithm_integration.algorithm_execution.FileGenerator;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+import de.metanome.util.TPMMSConfiguration;
+import java.util.Collections;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.Singular;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
-class SpiderConfiguration {
+public class SpiderConfiguration {
 
-  private final String temporaryFolderPath;
-  private final boolean clearTemporaryFolder;
-  private final InclusionDependencyResultReceiver resultReceiver;
+  private FileGenerator tempFileGenerator;
+  private InclusionDependencyResultReceiver resultReceiver;
 
-  private final int inputRowLimit;
-  private final long maxMemoryUsage;
-  private final int memoryCheckInterval;
-
+  private TPMMSConfiguration tpmmsConfiguration;
   @Singular
-  private final List<TableInputGenerator> tableInputGenerators;
+  private List<TableInputGenerator> tableInputGenerators;
   @Singular
-  private final List<RelationalInputGenerator> relationalInputGenerators;
+  private List<RelationalInputGenerator> relationalInputGenerators;
+
+  public static SpiderConfiguration withDefaults() {
+    return builder()
+        .resultReceiver(null)
+        .tpmmsConfiguration(TPMMSConfiguration.withDefaults())
+        .tableInputGenerators(Collections.emptyList())
+        .relationalInputGenerators(Collections.emptyList())
+        .build();
+  }
 }

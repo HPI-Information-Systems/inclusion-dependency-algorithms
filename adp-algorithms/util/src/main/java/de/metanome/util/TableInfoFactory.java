@@ -32,7 +32,7 @@ public class TableInfoFactory {
 
   public List<TableInfo> createFromRelationalInputs(
       final Collection<RelationalInputGenerator> generators)
-      throws InputGenerationException, AlgorithmConfigurationException {
+      throws InputGenerationException {
 
     final List<TableInfo> result = new ArrayList<>();
     if (generators != null) {
@@ -49,6 +49,7 @@ public class TableInfoFactory {
 
   private TableInfo createFrom(final RelationalInputGenerator generator,
       final RelationalInput input) {
+
     return TableInfo.builder()
         .relationalInputGenerator(generator)
         .tableName(input.relationName())
@@ -96,6 +97,5 @@ public class TableInfoFactory {
     } catch (final SQLException e) {
       throw new InputGenerationException("database error while reading metadata", e);
     }
-
   }
 }

@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
+import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
@@ -21,12 +22,16 @@ import org.mockito.stubbing.Answer;
 
 public class TableInputGeneratorStub implements TableInputGenerator {
 
+  private final String relationName;
   private final List<String> columnNames;
   private final List<Row> rows;
 
   @Builder
-  public TableInputGeneratorStub(@Singular final List<String> columnNames,
-      @Singular final List<Row> rows) {
+  public TableInputGeneratorStub(
+          final String relationName,
+          @Singular final List<String> columnNames,
+          @Singular final List<Row> rows) {
+    this.relationName = relationName;
     this.columnNames = columnNames;
     this.rows = rows;
   }
@@ -75,10 +80,15 @@ public class TableInputGeneratorStub implements TableInputGenerator {
   }
 
   @Override
+  public DatabaseConnectionGenerator getDatabaseConnectionGenerator() {
+    return null;
+  }
+
+  @Override
   public RelationalInput generateNewCopy()
       throws InputGenerationException, AlgorithmConfigurationException {
 
-    return new RelationalInputStub(columnNames, rows);
+    return new RelationalInputStub(relationName, columnNames, rows);
   }
 
   @Override

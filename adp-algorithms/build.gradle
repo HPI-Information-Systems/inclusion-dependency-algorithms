@@ -32,15 +32,24 @@ subprojects {
     }
 
     dependencies {
-        compile 'de.metanome:algorithm_integration:1.1-SNAPSHOT'
-        compile 'org.projectlombok:lombok:1.16.16'
-        compile 'it.unimi.dsi:fastutil:8.1.1'
+        compileOnly 'de.metanome:algorithm_integration:1.1-SNAPSHOT'
+        compileOnly 'org.projectlombok:lombok:1.16.16'
+        compileOnly 'it.unimi.dsi:fastutil:8.1.1'
+        compileOnly 'com.google.guava:guava:23.6-jre'
+
+        testCompile 'de.metanome:algorithm_integration:1.1-SNAPSHOT'
+        testCompile 'org.projectlombok:lombok:1.16.16'
+        testCompile 'it.unimi.dsi:fastutil:8.1.1'
 
         testCompile 'org.mockito:mockito-core:2.12.0'
         testCompile 'org.assertj:assertj-core:3.8.0'
         testCompile 'org.apiguardian:apiguardian-api:1.0.0'
         testCompile 'org.junit.jupiter:junit-jupiter-api:5.0.2'
+        testCompile 'org.junit.jupiter:junit-jupiter-params:5.0.2'
         testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.0.2'
+        testCompile 'org.mockito:mockito-core:2.12.0'
+        testCompile 'org.assertj:assertj-core:3.8.0'
+        testCompile 'org.jukito:jukito:1.5'
     }
 
     compileJava {

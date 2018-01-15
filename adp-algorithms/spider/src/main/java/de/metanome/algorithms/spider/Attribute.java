@@ -1,6 +1,5 @@
 package de.metanome.algorithms.spider;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -17,20 +16,15 @@ class Attribute {
   private final IntSet dependent;
   private final ReadPointer readPointer;
 
-  private String currentValue;
-
   Attribute(final int id, final String tableName, final String columnName,
       final ReadPointer readPointer) {
+
     this.id = id;
     this.readPointer = readPointer;
     this.tableName = tableName;
     this.columnName = columnName;
     dependent = new IntLinkedOpenHashSet();
     referenced = new IntLinkedOpenHashSet();
-
-    if (readPointer.hasNext()) {
-      currentValue = readPointer.next();
-    }
   }
 
   void addDependent(final IntSet dependent) {
@@ -49,15 +43,17 @@ class Attribute {
     this.referenced.remove(referenced);
   }
 
+  String getCurrentValue() {
+    return readPointer.getCurrentValue();
+  }
+
   void nextValue() {
     if (readPointer.hasNext()) {
-      currentValue = readPointer.next();
-    } else {
-      currentValue = null;
+      readPointer.next();
     }
   }
 
-  void intersectReferenced(final IntSet attributes, final Int2ObjectMap<Attribute> attributeIndex) {
+  void intersectReferenced(final IntSet attributes, final Attribute[] attributeIndex) {
     final IntIterator referencedIterator = referenced.iterator();
     while (referencedIterator.hasNext()) {
       final int ref = referencedIterator.nextInt();
@@ -66,7 +62,7 @@ class Attribute {
       }
 
       referencedIterator.remove();
-      attributeIndex.get(ref).removeDependent(id);
+      attributeIndex[ref].removeDependent(id);
     }
   }
 

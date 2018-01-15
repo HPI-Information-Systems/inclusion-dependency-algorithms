@@ -1,16 +1,13 @@
 package de.metanome.algorithms.spider;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.ColumnIdentifier;
-import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.result_receiver.ColumnNameMismatchException;
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
 import it.unimi.dsi.fastutil.PriorityQueue;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
@@ -18,24 +15,24 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-class Spider {
+public class Spider {
 
 
   private final TableInfoFactory tableInfoFactory;
   private final ExternalRepository externalRepository;
 
   private SpiderConfiguration configuration;
-  private Int2ObjectMap<Attribute> attributeIndex;
+  private Attribute[] attributeIndex;
   private PriorityQueue<Attribute> priorityQueue;
 
 
-  Spider() {
+  public Spider() {
     tableInfoFactory = new TableInfoFactory();
     externalRepository = new ExternalRepository();
   }
 
 
-  void execute(final SpiderConfiguration configuration) throws AlgorithmExecutionException {
+  public void execute(final SpiderConfiguration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
     final List<TableInfo> table = tableInfoFactory
         .create(configuration.getRelationalInputGenerators(),
@@ -50,7 +47,7 @@ class Spider {
       throws AlgorithmExecutionException {
 
     final int columnCount = getTotalColumnCount(tables);
-    attributeIndex = new Int2ObjectOpenHashMap<>(columnCount);
+    attributeIndex = new Attribute[columnCount];
     priorityQueue = new ObjectHeapPriorityQueue<>(columnCount, this::compareAttributes);
     createAndEnqueueAttributes(tables);
     initializeRoles();
@@ -65,8 +62,10 @@ class Spider {
       attributeId += attributes.length;
 
       for (final Attribute attribute : attributes) {
-        attributeIndex.put(attribute.getId(), attribute);
-        priorityQueue.enqueue(attribute);
+        attributeIndex[attribute.getId()] = attribute;
+        if (attribute.getReadPointer().hasNext()) {
+          priorityQueue.enqueue(attribute);
+        }
       }
     }
   }
@@ -85,12 +84,21 @@ class Spider {
   }
 
   private void initializeRoles() {
-    for (final Attribute attribute : attributeIndex.values()) {
-      attribute.addDependent(attributeIndex.keySet());
+    final IntSet allIds = allIds();
+    for (final Attribute attribute : attributeIndex) {
+      attribute.addDependent(allIds);
       attribute.removeDependent(attribute.getId());
-      attribute.addReferenced(attributeIndex.keySet());
+      attribute.addReferenced(allIds);
       attribute.removeReferenced(attribute.getId());
     }
+  }
+
+  private IntSet allIds() {
+    final IntSet ids = new IntOpenHashSet(attributeIndex.length);
+    for (int index = 0; index < attributeIndex.length; ++index) {
+      ids.add(index);
+    }
+    return ids;
   }
 
   private int getTotalColumnCount(final List<TableInfo> tables) {
@@ -128,11 +136,11 @@ class Spider {
       }
 
       for (final int topAttribute : topAttributes) {
-        attributeIndex.get(topAttribute).intersectReferenced(topAttributes, attributeIndex);
+        attributeIndex[topAttribute].intersectReferenced(topAttributes, attributeIndex);
       }
 
       for (final int topAttribute : topAttributes) {
-        final Attribute attribute = attributeIndex.get(topAttribute);
+        final Attribute attribute = attributeIndex[topAttribute];
         attribute.nextValue();
         if (!attribute.isFinished()) {
           priorityQueue.enqueue(attribute);
@@ -148,23 +156,19 @@ class Spider {
   }
 
   private void collectResults() throws CouldNotReceiveResultException, ColumnNameMismatchException {
-    for (final Attribute dep : attributeIndex.values()) {
+    for (final Attribute dep : attributeIndex) {
 
       if (dep.getReferenced().isEmpty()) {
         continue;
       }
 
-      final ColumnIdentifier depIdentifier = new ColumnIdentifier(dep.getTableName(),
-          dep.getColumnName());
-
       for (final int refId : dep.getReferenced()) {
-        final Attribute ref = attributeIndex.get(refId);
-        final ColumnIdentifier refIdentifier = new ColumnIdentifier(ref.getTableName(),
-            ref.getColumnName());
+        final Attribute ref = attributeIndex[refId];
 
-        final InclusionDependency ind = new InclusionDependency(
-            new ColumnPermutation(depIdentifier),
-            new ColumnPermutation(refIdentifier));
+        final InclusionDependency ind = InclusionDependencyBuilder
+            .dependent().column(dep.getTableName(), dep.getColumnName())
+            .referenced().column(ref.getTableName(), ref.getColumnName()).build();
+
         configuration.getResultReceiver().receiveResult(ind);
       }
     }
@@ -172,10 +176,9 @@ class Spider {
 
   private void shutdown() throws AlgorithmExecutionException {
     try {
-      for (final Attribute attribute : attributeIndex.values()) {
+      for (final Attribute attribute : attributeIndex) {
         attribute.close();
       }
-      externalRepository.close(configuration);
     } catch (final IOException e) {
       throw new AlgorithmExecutionException("failed to close attribute", e);
     }
