@@ -1,7 +1,6 @@
 package de.metanome.algorithms.sindd.database.metadata;
 
-import de.metanome.algorithm_integration.AlgorithmConfigurationException;
-import de.metanome.algorithm_integration.input.InputGenerationException;
+import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithms.sindd.Configuration;
 import de.metanome.algorithms.sindd.util.CommonObjects;
 import de.metanome.util.TableInfo;
@@ -16,55 +15,50 @@ public class MetadataBuilder {
   public static void build(final Configuration configuration) {
 
     try {
+      final List<TableInfo> tables = createTables(configuration);
+      CommonObjects.setTables(tables);
 
-      List<TableInfo> tables = createTables(configuration);
-
-      List<Attribute> attributes = createAttributes(tables);
+      final List<Attribute> attributes = createAttributes(tables);
       CommonObjects.setAttributes(attributes);
 
-      Map<String, Attribute> id2attMap = createId2attributeMpa(attributes);
+      final Map<String, Attribute> id2attMap = createId2attributeMap(attributes);
       CommonObjects.setId2attributeMap(id2attMap);
-    } catch (InputGenerationException e) {
-      e.printStackTrace();
-    } catch (AlgorithmConfigurationException e) {
-      e.printStackTrace();
+    } catch (final AlgorithmExecutionException e) {
+      throw new RuntimeException(e);
     }
-
   }
 
-  private static Map<String, Attribute> createId2attributeMpa(List<Attribute> attributes) {
-    Map<String, Attribute> id2attMap = new HashMap<String, Attribute>();
-    for (Attribute att : attributes) {
-      String id = att.getId();
-
-      id2attMap.put(id, att);
+  private static Map<String, Attribute> createId2attributeMap(final List<Attribute> attributes) {
+    final Map<String, Attribute> id2attMap = new HashMap<String, Attribute>();
+    for (final Attribute att : attributes) {
+      id2attMap.put(att.getId(), att);
     }
-
     return id2attMap;
   }
 
   private static List<TableInfo> createTables(final Configuration configuration)
-      throws InputGenerationException, AlgorithmConfigurationException {
+      throws AlgorithmExecutionException {
+
     final TableInfoFactory tableInfoFactory = new TableInfoFactory();
-    List<TableInfo> tableInfos = tableInfoFactory
+    return tableInfoFactory
         .create(configuration.getRelationalInputGenerators(),
             configuration.getTableInputGenerators());
-    List<TableInfo> tables = new ArrayList<TableInfo>();
-    for (final TableInfo tableInfo : tableInfos) {
-      tables.add(tableInfo);
-    }
-    return tables;
   }
 
-  private static List<Attribute> createAttributes(List<TableInfo> tables) {
-    List<Attribute> attributes = new ArrayList<Attribute>();
-
+  private static List<Attribute> createAttributes(final List<TableInfo> tables) {
+    final List<Attribute> attributes = new ArrayList<>();
     for (final TableInfo table : tables) {
-      for (String column : table.getColumnNames()) {
-        Attribute att = new Attribute(column, table);
-        attributes.add(att);
-      }
+      attributes.addAll(createAttributes(table));
     }
+    return attributes;
+  }
+
+  private static List<Attribute> createAttributes(final TableInfo table) {
+    final List<Attribute> attributes = new ArrayList<>(table.getColumnCount());
+    for (final String column : table.getColumnNames()) {
+      attributes.add(new Attribute(column, table));
+    }
+    CommonObjects.addTableToAttribute(table, attributes);
     return attributes;
   }
 }
