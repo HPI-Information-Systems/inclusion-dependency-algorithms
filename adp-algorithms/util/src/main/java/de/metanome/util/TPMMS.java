@@ -1,143 +1,196 @@
 package de.metanome.util;
 
-import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import lombok.RequiredArgsConstructor;
 
 public class TPMMS {
 
-  private final int inputRowLimit;
-  private final long maxMemoryUsage;
-  private final int memoryCheckInterval;
+  public interface Output extends Closeable {
+
+    void open(Path to) throws IOException;
+
+    void write(String value) throws IOException;
+  }
+
+  private final TPMMSConfiguration configuration;
 
   public TPMMS(final TPMMSConfiguration configuration) {
-    this.inputRowLimit = configuration.getInputRowLimit();
-    this.maxMemoryUsage = getMaxMemoryUsage(configuration);
-    this.memoryCheckInterval = configuration.getMemoryCheckInterval();
-  }
-
-  private static long getMaxMemoryUsage(final TPMMSConfiguration configuration) {
-    final long available = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
-    return (long) (available * (configuration.getMaxMemoryUsagePercentage() / 100.0d));
-  }
-
-  public void uniqueAndSort(final Path[] paths) throws AlgorithmExecutionException {
-    try {
-      for (final Path path : paths) {
-        uniqueAndSort(path);
-      }
-    } catch (final IOException e) {
-      throw new AlgorithmExecutionException("Error during uniqueAndSort", e);
-    }
+    this.configuration = configuration;
   }
 
   public void uniqueAndSort(final Path path) throws IOException {
-    int totalValues = 0;
-    int valuesSinceLastMemoryCheck = 0;
-    final List<String> spilledFiles = new ArrayList<>();
-    final SortedSet<String> values = new TreeSet<>();
-
-    try (BufferedReader reader = Files.newBufferedReader(path)) {
-      String line;
-      while ((line = reader.readLine()) != null) {
-        ++totalValues;
-        if (inputRowLimit > 0 && totalValues > inputRowLimit) {
-          break;
-        }
-
-        values.add(line);
-        ++valuesSinceLastMemoryCheck;
-
-        if (valuesSinceLastMemoryCheck >= memoryCheckInterval) {
-          valuesSinceLastMemoryCheck = 0;
-          if (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() > maxMemoryUsage) {
-            final String spillFilePath = path + "#" + spilledFiles.size();
-            write(spillFilePath, values);
-            spilledFiles.add(spillFilePath);
-            values.clear();
-            System.gc();
-          }
-        }
-      }
-    }
-
-    if (spilledFiles.isEmpty()) {
-      write(path.toString(), values);
-    } else {
-      // Write last file
-      if (!values.isEmpty()) {
-        final String spillFilePath = path + "#" + spilledFiles.size();
-        write(spillFilePath, values);
-        spilledFiles.add(spillFilePath);
-        values.clear();
-
-        System.gc();
-      }
-
-      // Read, merge and write
-      merge(path.toString(), spilledFiles);
-    }
+    uniqueAndSort(path, new DefaultOutput());
   }
 
-  private void write(final String filePath, final Set<String> values) throws IOException {
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, false))) {
-      final Iterator<String> valueIterator = values.iterator();
-      while (valueIterator.hasNext()) {
-        writer.write(valueIterator.next());
-        writer.newLine();
-      }
-      writer.flush();
-    }
+  public void uniqueAndSort(final Path path, final Output output) throws IOException {
+    new Execution(configuration, path, output).uniqueAndSort();
   }
 
-  private void merge(final String filePath, final List<String> spilledFiles) throws IOException {
-    final BufferedReader[] readers = new BufferedReader[spilledFiles.size()];
-    final PriorityQueue<TPMMSTuple> values = new ObjectHeapPriorityQueue<>(spilledFiles.size());
+  private static class Execution {
 
-    try {
-      for (int readerNumber = 0; readerNumber < spilledFiles.size(); ++readerNumber) {
-        final BufferedReader reader = new BufferedReader(
-            new FileReader(new File(spilledFiles.get(readerNumber))));
-        readers[readerNumber] = reader;
-        final String value = reader.readLine();
+    private final TPMMSConfiguration configuration;
+    private final Output output;
+    private final Path origin;
+    private final long maxMemoryUsage;
 
-        if (value != null) {
-          values.enqueue(new TPMMSTuple(value, readerNumber));
+    private final SortedSet<String> values = new TreeSet<>();
+    private final List<Path> spilledFiles = new ArrayList<>();
+    private int totalValues = 0;
+    private int valuesSinceLastMemoryCheck = 0;
+
+    private Execution(final TPMMSConfiguration configuration, final Path origin,
+        final Output output) {
+
+      this.configuration = configuration;
+      this.output = output;
+      this.origin = origin;
+      this.maxMemoryUsage = getMaxMemoryUsage(configuration);
+    }
+
+    private static long getMaxMemoryUsage(final TPMMSConfiguration configuration) {
+      final long available = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
+      return (long) (available * (configuration.getMaxMemoryUsagePercentage() / 100.0d));
+    }
+
+    private void uniqueAndSort() throws IOException {
+      writeSpillFiles();
+
+      if (spilledFiles.isEmpty()) {
+        writeOutput();
+      } else {
+        if (!values.isEmpty()) {
+          writeSpillFile();
+        }
+
+        new Merger(output).merge(spilledFiles, origin);
+      }
+    }
+
+    private void writeSpillFiles() throws IOException {
+      try (BufferedReader reader = Files.newBufferedReader(origin)) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          if (isInputLimitExceeded()) {
+            break;
+          }
+          values.add(line);
+          maybeWriteSpillFile();
         }
       }
-      try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, false))) {
-        String previousValue = null;
-        while (!values.isEmpty()) {
-          final TPMMSTuple tuple = values.dequeue();
-          if (previousValue == null || !previousValue.equals(tuple.getValue())) {
-            writer.write(tuple.getValue());
-            writer.newLine();
-          }
+    }
 
-          previousValue = tuple.getValue();
-          tuple.setValue(readers[tuple.getReaderNumber()].readLine());
-          if (tuple.getValue() != null) {
-            values.enqueue(tuple);
-          }
+    private boolean isInputLimitExceeded() {
+      ++totalValues;
+      return configuration.getInputRowLimit() > 0 && totalValues > configuration.getInputRowLimit();
+    }
+
+    private void maybeWriteSpillFile() throws IOException {
+      ++valuesSinceLastMemoryCheck;
+      if (valuesSinceLastMemoryCheck > configuration.getMemoryCheckInterval()
+          && shouldWriteSpillFile()) {
+        valuesSinceLastMemoryCheck = 0;
+        writeSpillFile();
+      }
+    }
+
+    private boolean shouldWriteSpillFile() {
+      return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() > maxMemoryUsage;
+    }
+
+    private void writeSpillFile() throws IOException {
+      final Path target = Paths.get(origin + "#" + spilledFiles.size());
+      write(target, values);
+      spilledFiles.add(target);
+      values.clear();
+      System.gc();
+    }
+
+    private void write(final Path path, final Set<String> values) throws IOException {
+      try (BufferedWriter writer = Files
+          .newBufferedWriter(path, StandardOpenOption.CREATE,
+              StandardOpenOption.TRUNCATE_EXISTING)) {
+        for (final String value : values) {
+          writer.write(value);
+          writer.newLine();
         }
         writer.flush();
       }
-    } finally {
+    }
+
+    private void writeOutput() throws IOException {
+      output.open(origin);
+      try {
+        for (final String value : values) {
+          output.write(value);
+        }
+      } finally {
+        output.close();
+      }
+    }
+  }
+
+  @RequiredArgsConstructor
+  private static class Merger {
+
+    private final Output output;
+
+    private ObjectHeapPriorityQueue<TPMMSTuple> values;
+    private BufferedReader[] readers;
+
+    private void init(final List<Path> files) throws IOException {
+      values = new ObjectHeapPriorityQueue<>(files.size());
+      readers = new BufferedReader[files.size()];
+
+      for (int index = 0; index < files.size(); ++index) {
+        final BufferedReader reader = Files.newBufferedReader(files.get(index));
+        readers[index] = reader;
+        final String firstLine = reader.readLine();
+        if (firstLine != null) {
+          values.enqueue(new TPMMSTuple(firstLine, index));
+        }
+      }
+    }
+
+    private void merge(final List<Path> files, final Path to) throws IOException {
+      init(files);
+
+      output.open(to);
+      try {
+        String previousValue = null;
+        while (!values.isEmpty()) {
+          final TPMMSTuple current = values.dequeue();
+          if (previousValue == null || !previousValue.equals(current.getValue())) {
+            output.write(current.getValue());
+          }
+
+          previousValue = current.getValue();
+          final String nextValue = readers[current.getReaderNumber()].readLine();
+          if (nextValue != null) {
+            current.setValue(nextValue);
+            values.enqueue(current);
+          }
+        }
+      } finally {
+        output.close();
+        closeReaders();
+      }
+    }
+
+    private void closeReaders() throws IOException {
       for (BufferedReader reader : readers) {
         if (reader != null) {
           reader.close();
@@ -146,4 +199,24 @@ public class TPMMS {
     }
   }
 
+  private static class DefaultOutput implements Output {
+
+    private BufferedWriter writer;
+
+    @Override
+    public void open(Path to) throws IOException {
+      writer = Files.newBufferedWriter(to, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    @Override
+    public void write(String value) throws IOException {
+      writer.write(value);
+      writer.newLine();
+    }
+
+    @Override
+    public void close() throws IOException {
+      writer.close();
+    }
+  }
 }

@@ -5,6 +5,7 @@ import de.metanome.algorithm_integration.algorithm_execution.FileCreationExcepti
 import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.util.TPMMS;
+import de.metanome.util.TPMMSConfiguration;
 import de.metanome.util.TableInfo;
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -19,9 +20,21 @@ class ExternalRepository {
       throws AlgorithmExecutionException {
 
     final Path[] paths = store(configuration, table);
-    final TPMMS tpmms = new TPMMS(configuration.getTpmmsConfiguration());
-    tpmms.uniqueAndSort(paths);
-    return open(paths);
+    try {
+      uniqueAndSort(paths, configuration.getTpmmsConfiguration());
+      return open(paths);
+    } catch (final IOException e) {
+      throw new AlgorithmExecutionException("TPMMS failure", e);
+    }
+  }
+
+  private void uniqueAndSort(final Path[] paths, final TPMMSConfiguration configuration)
+      throws IOException {
+
+    final TPMMS tpmms = new TPMMS(configuration);
+    for (final Path path : paths) {
+      tpmms.uniqueAndSort(path);
+    }
   }
 
   private Path[] store(final SpiderConfiguration configuration, final TableInfo table)
