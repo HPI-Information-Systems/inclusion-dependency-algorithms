@@ -69,9 +69,6 @@ class Sindd {
   private void printUnaryINDs() throws AlgorithmExecutionException {
     List<Attribute> attributes = CommonObjects.getAttributes();
     for (Attribute att : attributes) {
-      StringBuffer sb = new StringBuffer();
-      sb.append(att.getQName());
-      sb.append("--> [");
       Set<Attribute> refAtts = att.getRefAttributes();
       if (refAtts.size() > 1) {
         for (Attribute refAtt : refAtts) {
@@ -79,11 +76,7 @@ class Sindd {
             continue;
           }
           receiveIND(att, refAtt);
-          sb.append(refAtt.getQName());
-          sb.append(", ");
         }
-        sb.replace(sb.length() - 2, sb.length(), "]");
-        System.out.println(sb);
       }
     }
   }
