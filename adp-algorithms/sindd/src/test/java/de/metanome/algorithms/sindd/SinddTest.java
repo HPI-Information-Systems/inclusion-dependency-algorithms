@@ -69,6 +69,7 @@ class SinddTest {
         .resultReceiver(resultReceiver)
         .openFileNr(3)
         .partitionNr(2)
+        .includeEmptyColumns(true)
         .tpmmsConfiguration(TPMMSConfiguration.withDefaults())
         .build();
   }

@@ -50,7 +50,6 @@ class Sindd {
 
   private void initAttributes(){
     List<Attribute> attributes = CommonObjects.getAttributes();
-    attributes.get(0).getRefAttributes();
     for(Attribute att : attributes){
       att.initRefAttributes(attributes);
     }
@@ -84,7 +83,8 @@ class Sindd {
   private void discoverUnaryINDs() throws IOException, InterruptedException {
     LOGGER.info("......discoverying ... ");
 
-    initAttributes();
+    if(configuration.isIncludeEmptyColumns())
+      initAttributes();
 
     int openFileNumber = configuration.getOpenFileNr();
     Merger merger = new Merger(openFileNumber);

@@ -24,6 +24,8 @@ public class Configuration {
   private final int openFileNr;
   private final int partitionNr;
 
+  private final boolean includeEmptyColumns;
+
   private final TPMMSConfiguration tpmmsConfiguration;
 
   public static Configuration withDefaults() {
@@ -33,6 +35,7 @@ public class Configuration {
         .tableInputGenerators(Collections.emptyList())
         .openFileNr(100)
         .partitionNr(1)
+        .includeEmptyColumns(true)
         .tpmmsConfiguration(TPMMSConfiguration.withDefaults())
         .build();
   }
