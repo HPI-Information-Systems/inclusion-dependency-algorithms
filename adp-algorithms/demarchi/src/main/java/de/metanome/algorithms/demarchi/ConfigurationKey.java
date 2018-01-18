@@ -1,5 +1,6 @@
 package de.metanome.algorithms.demarchi;
 
 public enum ConfigurationKey {
-  TABLE
+  TABLE,
+  PROCES_EMPTY_COLUMNS
 }

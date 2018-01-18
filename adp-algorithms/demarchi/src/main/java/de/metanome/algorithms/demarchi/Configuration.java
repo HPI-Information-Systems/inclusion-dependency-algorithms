@@ -22,11 +22,14 @@ public class Configuration {
   @Singular
   private List<RelationalInputGenerator> relationalInputGenerators;
 
+  private boolean processEmptyColumns;
+
   private InclusionDependencyResultReceiver resultReceiver;
 
   public static Configuration withDefaults() {
     return builder().tableInputGenerators(Collections.emptyList())
         .relationalInputGenerators(Collections.emptyList())
+        .processEmptyColumns(true)
         .resultReceiver(null)
         .build();
   }

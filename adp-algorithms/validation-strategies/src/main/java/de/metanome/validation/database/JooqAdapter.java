@@ -35,6 +35,13 @@ class JooqAdapter {
         .collect(toList());
   }
 
+  static Condition isNull(final ColumnPermutation columns) {
+    return columns.getColumnIdentifiers().stream()
+        .map(column -> toField(column).isNull())
+        .reduce(Condition::and)
+        .orElseThrow(IllegalArgumentException::new);
+  }
+
   static Condition notNull(final ColumnPermutation columns) {
     return columns.getColumnIdentifiers().stream()
         .map(column -> toField(column).isNotNull())
@@ -42,7 +49,23 @@ class JooqAdapter {
         .orElseThrow(IllegalArgumentException::new);
   }
 
+  static Condition oneNotNull(final ColumnPermutation columns) {
+    return columns.getColumnIdentifiers().stream()
+        .map(column -> toField(column).isNotNull())
+        .reduce(Condition::or)
+        .orElseThrow(IllegalArgumentException::new);
+  }
+
   static Field<Object> toField(final ColumnIdentifier column) {
     return field(name(column.getTableIdentifier(), column.getColumnIdentifier()));
+  }
+
+  static Condition[] columnsEqual(final ColumnPermutation lhs, final ColumnPermutation rhs) {
+    final Condition[] conditions = new Condition[lhs.getColumnIdentifiers().size()];
+    for (int index = 0; index < lhs.getColumnIdentifiers().size(); ++index) {
+      conditions[index] = toField(lhs.getColumnIdentifiers().get(index))
+          .eq(toField(rhs.getColumnIdentifiers().get(index)));
+    }
+    return conditions;
   }
 }

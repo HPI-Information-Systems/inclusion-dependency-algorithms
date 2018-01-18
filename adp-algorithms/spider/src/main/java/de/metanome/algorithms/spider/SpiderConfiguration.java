@@ -4,6 +4,7 @@ import de.metanome.algorithm_integration.algorithm_execution.FileGenerator;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+import de.metanome.util.TPMMSConfiguration;
 import java.util.Collections;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -18,13 +19,11 @@ import lombok.Singular;
 @Builder
 public class SpiderConfiguration {
 
+  private boolean processEmptyColumns;
   private FileGenerator tempFileGenerator;
   private InclusionDependencyResultReceiver resultReceiver;
 
-  private int inputRowLimit;
-  private int maxMemoryUsage;
-  private int memoryCheckInterval;
-
+  private TPMMSConfiguration tpmmsConfiguration;
   @Singular
   private List<TableInputGenerator> tableInputGenerators;
   @Singular
@@ -32,10 +31,10 @@ public class SpiderConfiguration {
 
   public static SpiderConfiguration withDefaults() {
     return builder()
+        .processEmptyColumns(true)
+        .tempFileGenerator(null)
         .resultReceiver(null)
-        .inputRowLimit(-1)
-        .maxMemoryUsage(2048 * 10214)
-        .memoryCheckInterval(500)
+        .tpmmsConfiguration(TPMMSConfiguration.withDefaults())
         .tableInputGenerators(Collections.emptyList())
         .relationalInputGenerators(Collections.emptyList())
         .build();

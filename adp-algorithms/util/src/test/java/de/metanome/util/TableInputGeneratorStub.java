@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
+import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
@@ -76,6 +77,11 @@ public class TableInputGeneratorStub implements TableInputGenerator {
   @Override
   public ResultSet select() throws InputGenerationException, AlgorithmConfigurationException {
     throw new UnsupportedOperationException("Not implemented yet");
+  }
+
+  @Override
+  public DatabaseConnectionGenerator getDatabaseConnectionGenerator() {
+    return null;
   }
 
   @Override

@@ -1,6 +1,5 @@
 package de.metanome.algorithms.spider;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -54,7 +53,7 @@ class Attribute {
     }
   }
 
-  void intersectReferenced(final IntSet attributes, final Int2ObjectMap<Attribute> attributeIndex) {
+  void intersectReferenced(final IntSet attributes, final Attribute[] attributeIndex) {
     final IntIterator referencedIterator = referenced.iterator();
     while (referencedIterator.hasNext()) {
       final int ref = referencedIterator.nextInt();
@@ -63,7 +62,7 @@ class Attribute {
       }
 
       referencedIterator.remove();
-      attributeIndex.get(ref).removeDependent(id);
+      attributeIndex[ref].removeDependent(id);
     }
   }
 

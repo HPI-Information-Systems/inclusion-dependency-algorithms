@@ -1,5 +1,6 @@
 package de.metanome.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.name;
 import static org.jooq.impl.DSL.table;
@@ -19,6 +20,8 @@ import lombok.Builder;
 import lombok.Getter;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.Loader;
+import org.jooq.Record;
 import org.jooq.SQLDialect;
 import org.jooq.conf.RenderNameStyle;
 import org.jooq.conf.Settings;
@@ -50,10 +53,12 @@ public class TestDatabase {
         .execute();
 
     try (InputStream in = resourceClass.getResourceAsStream(csvPath)) {
-      context.loadInto(table(name(relationName)))
+      final Loader<Record> loader = context.loadInto(table(name(relationName)))
           .loadCSV(in)
           .fields(fields)
           .execute();
+
+      assertThat(loader.errors()).isEmpty();
     }
   }
 

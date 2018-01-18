@@ -19,6 +19,7 @@ import de.metanome.algorithms.mind2.utils.AttributeIterator;
 import de.metanome.algorithms.mind2.utils.UindCoordinatesReader;
 
 import javax.inject.Inject;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +31,7 @@ import java.util.Set;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.util.Collectors.toImmutableList;
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class CoordinatesRepository {
 
@@ -55,24 +57,15 @@ public class CoordinatesRepository {
     public void storeUindCoordinates() throws AlgorithmExecutionException {
         ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes =
                 getRelationalInputMap(config.getInputGenerators());
-
         for (InclusionDependency uind : config.getUnaryInds()) {
             SetMultimap<Integer, Integer> uindCoordinates = generateCoordinates(uind, attributes);
-
-            StringBuilder sb = new StringBuilder();
-            ImmutableList<Integer> lhsCoordinates = uindCoordinates.keySet().stream()
-                    .sorted().collect(toImmutableList());
-            for (Integer index : lhsCoordinates) {
-                UindCoordinates coordinates = new UindCoordinates(uind, index, uindCoordinates.get(index));
-                sb.append(format("%s\n", coordinates.toLine()));
-                Path path = getPath();
-                try {
-                    writeToFile(path, sb.toString());
-                    uindToPath.put(uind, path);
-                } catch (IOException e) {
-                    throw new AlgorithmExecutionException(
-                            format("Error writing uind coordinates for uind %s to file %s", uind, path), e);
-                }
+            Path path = getPath();
+            try {
+                writeToFile(uind, uindCoordinates, path);
+                uindToPath.put(uind, path);
+            } catch (IOException e) {
+                throw new AlgorithmExecutionException(
+                        format("Error writing uind coordinates for uind %s to file %s", uind, path), e);
             }
         }
     }
@@ -151,15 +144,24 @@ public class CoordinatesRepository {
         return ImmutableMap.copyOf(relationalInputs);
     }
 
-    private void writeToFile(Path path, String content) throws IOException {
-        Files.write(path, content.getBytes());
-    }
-
     private Path getPath() throws FileCreationException {
         return config.getTempFileGenerator().getTemporaryFile().toPath();
     }
 
     private ColumnIdentifier getUnaryIdentifier(ColumnPermutation columnPermutation) {
         return getOnlyElement(columnPermutation.getColumnIdentifiers());
+    }
+
+    private void writeToFile(InclusionDependency uind, SetMultimap<Integer, Integer> uindCoordinates, Path path)
+            throws IOException {
+        ImmutableList<Integer> lhsCoordinates = uindCoordinates.keySet().stream()
+                .sorted().collect(toImmutableList());
+        try (BufferedWriter writer = Files.newBufferedWriter(path, UTF_8)) {
+            for (Integer index : lhsCoordinates) {
+                UindCoordinates coordinates = new UindCoordinates(uind, index, uindCoordinates.get(index));
+                writer.write(coordinates.toLine());
+                writer.newLine();
+            }
+        }
     }
 }

@@ -11,6 +11,7 @@ import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultEx
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
+import de.metanome.algorithms.bellbrockhausen.models.Attribute;
 import de.metanome.algorithms.bellbrockhausen.models.IndTest;
 
 import java.util.ArrayList;
@@ -33,25 +34,28 @@ public class IndGraph {
     private final InclusionDependencyResultReceiver resultReceiver;
     private final DataAccessObject dataAccessObject;
     private final ImmutableList<ColumnIdentifier> candidates;
+    private final Map<ColumnIdentifier, Attribute> attributes;
     private final Map<ColumnIdentifier, Set<ColumnIdentifier>> fromEdges;
     private final Map<ColumnIdentifier, Set<ColumnIdentifier>> toEdges;
     private final Map<ColumnIdentifier, List<IndTest>> tests;
 
+    private int dbTests = 0;
+
     public IndGraph(
             InclusionDependencyResultReceiver resultReceiver,
             DataAccessObject dataAccessObject,
-            ImmutableList<ColumnIdentifier> candidates) {
+            ImmutableList<Attribute> attributes) {
         this.resultReceiver = resultReceiver;
         this.dataAccessObject = dataAccessObject;
-        this.candidates = candidates;
+        this.candidates = attributes.stream().map(Attribute::getColumnIdentifier).collect(toImmutableList());
+        this.attributes = attributes.stream().collect(toMap(Attribute::getColumnIdentifier, a -> a));
         fromEdges = candidates.stream().collect(toMap(c -> c, c -> new HashSet<>()));
         toEdges = candidates.stream().collect(toMap(c -> c, c -> new HashSet<>()));
         tests = new HashMap<>();
+        buildTests(attributes);
     }
 
     public void testCandidates() throws AlgorithmExecutionException {
-        buildTests();
-
         for (int i = 0; i < candidates.size() - 1; i++) {
             ColumnIdentifier testGroupIndex = candidates.get(i);
             List<IndTest> testGroup = tests.get(testGroupIndex);
@@ -63,16 +67,16 @@ public class IndGraph {
         }
     }
 
-    private void buildTests() {
+    private void buildTests(ImmutableList<Attribute> candidates) {
         for (int i = 0; i < candidates.size(); i++) {
-            ColumnIdentifier candidateA = candidates.get(i);
+            Attribute candidateA = candidates.get(i);
             for (int j = i + 1; j < candidates.size(); j++) {
-                ColumnIdentifier candidateB = candidates.get(j);
-                if (!tests.containsKey(candidateA)) {
-                    tests.put(candidateA, new ArrayList<>());
+                Attribute candidateB = candidates.get(j);
+                if (!tests.containsKey(candidateA.getColumnIdentifier())) {
+                    tests.put(candidateA.getColumnIdentifier(), new ArrayList<>());
                 }
-                tests.get(candidateA).add(new IndTest(toInd(candidateA, candidateB)));
-                tests.get(candidateA).add(new IndTest(toInd(candidateB, candidateA)));
+                tests.get(candidateA.getColumnIdentifier()).add(IndTest.fromAttributes(candidateA, candidateB));
+                tests.get(candidateA.getColumnIdentifier()).add(IndTest.fromAttributes(candidateB, candidateA));
             }
         }
     }
@@ -84,14 +88,15 @@ public class IndGraph {
         // Run test if not: has edge A_ref -> A_k with k < i and no edge A_depend -> A_k
         if (fromEdges.get(referenced).stream()
                 .noneMatch(node -> getCandidateIndex(node) < dependantIndex && !hasEdge(dependant, node))) {
+            dbTests++;
             if (dataAccessObject.isValidUIND(test)) {
                 updateGraph(test);
-                // TODO(fwindheuser): Check value ranges first
-                // Only run test when A[min, max] subset B[min, max]
-                // Only run = test when A[min, max] = B[min, max]
-                InclusionDependency reversedTest = reverseInd(test);
-                if (dataAccessObject.isValidUIND(reversedTest)) {
-                    updateGraph(reversedTest);
+                if (hasEqualRange(test)) {
+                    InclusionDependency reversedTest = reverseInd(test);
+                    dbTests++;
+                    if (dataAccessObject.isValidUIND(reversedTest)) {
+                        updateGraph(reversedTest);
+                    }
                 }
             }
         }
@@ -222,5 +227,15 @@ public class IndGraph {
 
     private InclusionDependency reverseInd(final InclusionDependency ind) {
         return new InclusionDependency(ind.getReferenced(), ind.getDependant());
+    }
+
+    private boolean hasEqualRange(final InclusionDependency ind) {
+        Attribute dependant = attributes.get(getDependant(ind));
+        Attribute referenced = attributes.get(getReferenced(ind));
+        return dependant.getValueRange().equals(referenced.getValueRange());
+    }
+
+    public int getDBTests() {
+        return dbTests;
     }
 }
