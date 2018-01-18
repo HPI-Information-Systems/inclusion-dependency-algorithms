@@ -1,0 +1,26 @@
+
+dependencies {
+    extraLibs(project(':util')) {
+        transitive = false
+    }
+
+    extraLibs(project(':validation-strategies')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
+    }
+
+    testCompile(project(path: ':util', configuration: 'tests')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
+    }
+}
+
+jar {
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.find2.FIND2Algorithm'
+    }
+    classifier 'file'
+}
+
+test {
+    testLogging.showStandardStreams = true
+}
