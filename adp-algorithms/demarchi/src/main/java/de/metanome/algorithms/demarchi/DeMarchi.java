@@ -90,7 +90,7 @@ public class DeMarchi {
     for (final int attribute : attributes) {
       final Collection<String> values = getValues(attribute);
 
-      if (values.isEmpty()) {
+      if (configuration.isProcessEmptyColumns() && values.isEmpty()) {
         handleEmptyAttribute(attribute, attributes);
       } else {
         for (final String value : values) {
