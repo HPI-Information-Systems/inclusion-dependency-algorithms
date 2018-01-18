@@ -154,13 +154,10 @@ public class Zigzag {
   }
 
   private Set<Set<ColumnIdentifier>> generalizeSet(Set<Set<ColumnIdentifier>> possibleSmallerIND) {
-    Set<Set<ColumnIdentifier>> generalizedINDs = new HashSet<>();
-    for(Set<ColumnIdentifier> indNode : possibleSmallerIND) {
-      Set<Set<ColumnIdentifier>> powerSet = new HashSet<>(Sets.powerSet(indNode));
-      powerSet.removeIf(x -> x.size() != indNode.size() - 1);
-      generalizedINDs.addAll(powerSet);
-    }
-    return generalizedINDs;
+      return possibleSmallerIND.stream()
+              .map(indNode -> Sets.combinations(indNode, indNode.size() - 1))
+              .flatMap(Collection::stream)
+              .collect(Collectors.toSet());
   }
 
   private boolean isOptimisticBorderFinal(Set<Set<ColumnIdentifier>> optimisticBorder, Set<Set<ColumnIdentifier>> positiveBorder) {
