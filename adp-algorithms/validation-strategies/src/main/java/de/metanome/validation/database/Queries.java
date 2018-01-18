@@ -88,7 +88,7 @@ class Queries {
         .leftOuterJoin(rhsAlias)
         .on(columnsEqual(lhs, rhsAliasColumns))
         .where(isNull(rhsAliasColumns))
-        .and(oneNotNull(lhs))
+        .and(notNull(lhs))
         .limit(1)
         .execute();
 
