@@ -8,8 +8,6 @@ import static org.quicktheories.generators.Generate.pick;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.validation.ValidationResult;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -25,13 +23,11 @@ class DatabaseValidationTest implements WithQuickTheories {
 
   private DSLContext context;
 
-  private final DSLContextFactory contextFactory = new DSLContextFactory();
   private final Queries queries = new Queries();
 
   @BeforeEach
   void setUp() throws Exception {
-    final Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:myDb");
-    context = contextFactory.create(connection);
+    context = Helper.createInMemoryContext();
 
     context.createTable("tableA")
         .column("A", SQLDataType.INTEGER)
