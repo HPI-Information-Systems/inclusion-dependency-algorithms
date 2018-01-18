@@ -25,6 +25,7 @@ class SpiderTest {
 
   private static final String COL_A = "A";
   private static final String COL_B = "B";
+  private static final  String COL_C = "C";
 
   @Mock
   private RelationalInputGenerator generator;
@@ -42,10 +43,10 @@ class SpiderTest {
 
     input = RelationalInputStub.builder()
         .relationName("Test")
-        .columnName(COL_A).columnName(COL_B)
-        .row(Row.of("x", "z"))
-        .row(Row.of("x", "y"))
-        .row(Row.of("y", "x"))
+        .columnName(COL_A).columnName(COL_B).columnName(COL_C)
+        .row(Row.of("x", "z", null))
+        .row(Row.of("x", "y", null))
+        .row(Row.of("y", "x", null))
         .build();
 
     given(generator.generateNewCopy()).willReturn(input);
@@ -69,6 +70,18 @@ class SpiderTest {
         .hasSize(1)
         .first()
         .isEqualTo(expectedInd());
+  }
+
+  @Test
+  void runSpiderWithEmptyColumn() throws Exception {
+    final Spider spider = new Spider();
+    configuration.setProcessEmptyColumns(true);
+
+    spider.execute(configuration);
+
+    verify(resultReceiver, atLeastOnce()).receiveResult(ind.capture());
+    assertThat(ind.getAllValues())
+        .hasSize(3);
   }
 
   private InclusionDependency expectedInd() {
