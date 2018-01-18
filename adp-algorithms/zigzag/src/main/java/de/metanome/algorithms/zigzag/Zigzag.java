@@ -144,13 +144,10 @@ public class Zigzag {
   }
 
   private Set<Set<ColumnIdentifier>> getCandidatesOnNextLevel(Set<Set<ColumnIdentifier>> pessDI) {
-    int nextLevel = currentLevel + 1;
-    Set<Set<ColumnIdentifier>> generalizedINDs = pessDI.stream()
-        .map(Sets::powerSet)
+    return pessDI.stream()
+        .map(indNode -> Sets.combinations(indNode, currentLevel + 1))
         .flatMap(Collection::stream)
-        .filter(x -> x.size() == nextLevel)
         .collect(Collectors.toSet());
-    return generalizedINDs;
   }
 
   private Set<Set<ColumnIdentifier>> generalizeSet(Set<Set<ColumnIdentifier>> possibleSmallerIND) {
