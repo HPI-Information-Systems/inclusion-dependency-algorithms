@@ -15,14 +15,14 @@ import lombok.Singular;
 @Builder
 public class ZigzagConfiguration {
 
-  private final InclusionDependencyResultReceiver resultReceiver;
-  private final Set<InclusionDependency> unaryInds;
-  private final ValidationParameters validationParameters;
-  private final Integer k;
-  private final Integer epsilon;
+    private final InclusionDependencyResultReceiver resultReceiver;
+    private final Set<InclusionDependency> unaryInds;
+    private final ValidationParameters validationParameters;
+    private final Integer k;
+    private final Integer epsilon;
 
-  @Singular
-  private final List<TableInputGenerator> tableInputGenerators;
-  @Singular
-  private final List<RelationalInputGenerator> relationalInputGenerators;
+    @Singular
+    private final List<TableInputGenerator> tableInputGenerators;
+    @Singular
+    private final List<RelationalInputGenerator> relationalInputGenerators;
 }
