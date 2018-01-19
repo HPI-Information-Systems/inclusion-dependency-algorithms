@@ -13,7 +13,6 @@ import de.metanome.validation.ErrorMarginValidationResult;
 import de.metanome.validation.ValidationStrategy;
 import de.metanome.validation.ValidationStrategyFactory;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -117,20 +116,28 @@ public class Zigzag {
           .map(this::nodeToInd)
           .collect(Collectors.toSet()));
     }
-    satisfiedINDs = positiveBorder.stream()
-        .flatMap(ind -> Sets.powerSet(ind).stream())
-        .map(this::nodeToInd)
-        .collect(Collectors.toSet());
-    collectResults();
+    addResultFromPositiveBorder(positiveBorder);
 
     validationStrategy.close();
     System.out.println("Total DB Checks: " + dbChecks);
   }
 
-  private void collectResults() throws CouldNotReceiveResultException, ColumnNameMismatchException {
-    for (InclusionDependency ind : satisfiedINDs) {
-      configuration.getResultReceiver().receiveResult(ind);
-    }
+  private void addResultFromPositiveBorder(Set<Set<ColumnIdentifier>> positiveBorder)
+          throws ColumnNameMismatchException, CouldNotReceiveResultException {
+    Set<InclusionDependency> satisfiedInds = positiveBorder.stream()
+              .flatMap(ind -> Sets.powerSet(ind).stream())
+              .map(this::nodeToInd)
+              .collect(Collectors.toSet());
+    // Add unary INDs in case some were pruned out earlier e.g. INDs in the same table
+    satisfiedInds.addAll(configuration.getUnaryInds());
+    addToResultSet(satisfiedInds);
+  }
+
+  private void addToResultSet(Set<InclusionDependency> satisfiedInds)
+          throws CouldNotReceiveResultException, ColumnNameMismatchException {
+      for (InclusionDependency satisfiedInd : satisfiedInds) {
+          configuration.getResultReceiver().receiveResult(satisfiedInd);
+      }
   }
 
   private boolean isSatisfiedByBorder(Set<ColumnIdentifier> ind,
@@ -145,15 +152,13 @@ public class Zigzag {
 
   private Set<Set<ColumnIdentifier>> getCandidatesOnNextLevel(Set<Set<ColumnIdentifier>> pessDI) {
     return pessDI.stream()
-        .map(indNode -> Sets.combinations(indNode, currentLevel + 1))
-        .flatMap(Collection::stream)
+        .flatMap(indNode -> Sets.combinations(indNode, currentLevel + 1).stream())
         .collect(Collectors.toSet());
   }
 
   private Set<Set<ColumnIdentifier>> generalizeSet(Set<Set<ColumnIdentifier>> possibleSmallerIND) {
       return possibleSmallerIND.stream()
-              .map(indNode -> Sets.combinations(indNode, indNode.size() - 1))
-              .flatMap(Collection::stream)
+              .flatMap(indNode -> Sets.combinations(indNode, indNode.size() - 1).stream())
               .collect(Collectors.toSet());
   }
 
@@ -206,6 +211,13 @@ public class Zigzag {
     return new InclusionDependency(dep, ref);
   }
 
+  /* Duplicate dependants are removed here because of the map.
+   * This does impact the finding of INDs. Example:
+   * UINDs: A->B, A->C, D->E, AA->BC is pruned out
+   * But there can only be one IND with A as dependant:
+   * AD->BE or AD->CE, only one can is used
+   * TODO Use a sets of unary INDs to generate all INDs
+  */
   private Map<ColumnIdentifier,ColumnIdentifier> convertUnaryINDsToMap(Set<InclusionDependency> unaryINDs) {
     System.out.println("Unary INDs: " + unaryINDs);
     Map<ColumnIdentifier,ColumnIdentifier> uINDs = new HashMap<>();
