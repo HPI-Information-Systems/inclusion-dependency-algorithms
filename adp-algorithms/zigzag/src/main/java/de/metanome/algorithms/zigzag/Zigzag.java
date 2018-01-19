@@ -349,13 +349,15 @@ public class Zigzag {
     }
 
     private Set<InclusionDependency> generateCandidatesForLevel(int i) {
-        Set<InclusionDependency> unaryIndNodes = new HashSet<>();
         // Filter out unary INDs from the same table to prevent generating tons of invalid INDs
-        unaryIndNodes = unaryInds.stream()
+        Set<InclusionDependency> unaryIndNodes = unaryInds.stream()
                 .filter(ind -> notInTheSameTable(ind.getDependant().getColumnIdentifiers().get(0),
                         ind.getReferenced().getColumnIdentifiers().get(0)))
                 .collect(Collectors.toSet());
 
+        if (unaryIndNodes.size() < i) {
+            return new HashSet<>();
+        }
         Set<Set<InclusionDependency>> indsForLevel = Sets.combinations(unaryIndNodes, i);
         return indsForLevel.stream()
                 .map(this::nodeToInd)
