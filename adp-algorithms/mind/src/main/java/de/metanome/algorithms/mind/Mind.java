@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-class Mind {
+public class Mind {
 
   private Configuration configuration;
   private ValidationStrategy validationStrategy;
@@ -26,12 +26,12 @@ class Mind {
   private final TableInfoFactory tableInfoFactory;
   private final ValidationStrategyFactory validationStrategyFactory;
 
-  Mind() {
+  public Mind() {
     tableInfoFactory = new TableInfoFactory();
     validationStrategyFactory = new ValidationStrategyFactory();
   }
 
-  void execute(final Configuration configuration) throws AlgorithmExecutionException {
+  public void execute(final Configuration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
     validationStrategy = validationStrategyFactory
         .forDatabase(configuration.getValidationParameters());
@@ -41,7 +41,7 @@ class Mind {
 
     int depth = 1;
 
-    while (!candidates.isEmpty()) {
+    while (!candidates.isEmpty() && (configuration.getMaxDepth() < 0 || depth <= configuration.getMaxDepth())) {
       final List<ColumnPermutation[]> inds = new ArrayList<>();
       for (final ColumnPermutation[] candidate : candidates) {
         final ColumnPermutation lhs = candidate[0];

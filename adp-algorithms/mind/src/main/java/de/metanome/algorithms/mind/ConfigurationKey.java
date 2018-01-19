@@ -1,5 +1,6 @@
 package de.metanome.algorithms.mind;
 
 enum ConfigurationKey {
-  TABLE
+  TABLE,
+  MAX_DEPTH
 }

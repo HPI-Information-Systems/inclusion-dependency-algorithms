@@ -2,10 +2,13 @@ package de.metanome.algorithms.mind;
 
 import static java.util.Arrays.asList;
 
+import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
+import de.metanome.algorithm_integration.algorithm_types.IntegerParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
+import de.metanome.algorithm_integration.configuration.ConfigurationRequirementInteger;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
@@ -17,13 +20,16 @@ import java.util.ArrayList;
 
 public class MindAlgorithm implements InclusionDependencyAlgorithm,
     TableInputParameterAlgorithm,
-    InclusionDependencyValidationAlgorithm {
+    InclusionDependencyValidationAlgorithm,
+    IntegerParameterAlgorithm{
 
   private final Configuration.ConfigurationBuilder builder;
   private final ValidationParameters validationParameters;
+  private final Configuration defaultValues;
 
   public MindAlgorithm() {
     builder = Configuration.builder();
+    defaultValues = Configuration.withDefaults();
     validationParameters = new ValidationParameters();
   }
 
@@ -32,6 +38,10 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
     final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
     requirements.add(tableInput());
     requirements.addAll(ValidationConfigurationRequirements.validationStrategy());
+    requirements.add(new ConfigurationRequirementInteger(
+        ConfigurationKey.MAX_DEPTH.name(),
+        defaultValues.getMaxDepth()
+    ));
     return requirements;
   }
 
@@ -83,5 +93,12 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
   @Override
   public String getDescription() {
     return "MIND";
+  }
+
+  @Override
+  public void setIntegerConfigurationValue(String identifier, Integer... values) throws AlgorithmConfigurationException {
+    if(identifier.equals(ConfigurationKey.MAX_DEPTH.name())){
+      builder.maxDepth(values[0]);
+    }
   }
 }
