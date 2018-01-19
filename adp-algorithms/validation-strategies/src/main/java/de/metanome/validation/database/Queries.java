@@ -50,6 +50,7 @@ class Queries {
             .from(tables(lhs, rhs))
             .where(notNull(lhs))
             .and(row(fields(lhs)).notIn(select(fields(rhs)).from(tables(rhs)).where(notNull(rhs))))
+            .limit(1)
             .asTable("indCheck"))
         .fetchOne().value1();
 
@@ -66,7 +67,9 @@ class Queries {
 
     final int violators = context.selectCount().from(
         selectFrom(lhsAlias).whereNotExists(
-            context.selectOne().from(tables(rhs)).where(row(fields(rhs)).eq(row(lhsAlias.fields())))
+            context.selectOne()
+                .from(tables(rhs))
+                .where(row(fields(rhs)).eq(row(lhsAlias.fields())))
         ).limit(1)
     ).fetchOne().value1();
 
@@ -85,7 +88,7 @@ class Queries {
         .leftOuterJoin(rhsAlias)
         .on(columnsEqual(lhs, rhsAliasColumns))
         .where(isNull(rhsAliasColumns))
-        .and(oneNotNull(lhs))
+        .and(notNull(lhs))
         .limit(1)
         .execute();
 
@@ -97,9 +100,12 @@ class Queries {
 
     final int violators =
         context.selectCount().from(
-            select(fields(lhs)).from(tables(lhs)).where(notNull(lhs))
-                .except(select(fields(rhs)).from(tables(rhs))).limit(1))
-            .fetchOne().value1();
+            select(fields(lhs))
+                .from(tables(lhs))
+                .where(notNull(lhs))
+                .except(select(fields(rhs)).from(tables(rhs)))
+                .limit(1)
+        ).fetchOne().value1();
 
     return new DefaultValidationResult(violators == 0);
   }
@@ -131,8 +137,10 @@ class Queries {
 
     final double errorCount = context.selectCount().from(
         selectFrom(lhsAlias).whereNotExists(
-            context.selectOne().from(tables(rhs)).where(row(fields(rhs)).eq(row(lhsAlias.fields())))
-        )
+            context.selectOne()
+                .from(tables(rhs))
+                .where(row(fields(rhs)).eq(row(lhsAlias.fields())))
+        ).limit(1)
     ).fetchOne().value1();
 
     final double rowCount = context.fetchCount(lhsAlias);

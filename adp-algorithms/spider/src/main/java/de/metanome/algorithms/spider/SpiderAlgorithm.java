@@ -4,10 +4,12 @@ import com.google.common.base.Joiner;
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_execution.FileGenerator;
+import de.metanome.algorithm_integration.algorithm_types.BooleanParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.IntegerParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.TempFileAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
+import de.metanome.algorithm_integration.configuration.ConfigurationRequirementBoolean;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithms.spider.SpiderConfiguration.SpiderConfigurationBuilder;
 import de.metanome.util.TPMMSConfiguration;
@@ -17,6 +19,7 @@ import java.util.List;
 
 abstract class SpiderAlgorithm implements InclusionDependencyAlgorithm,
     IntegerParameterAlgorithm,
+    BooleanParameterAlgorithm,
     TempFileAlgorithm {
 
   final SpiderConfigurationBuilder builder;
@@ -33,8 +36,16 @@ abstract class SpiderAlgorithm implements InclusionDependencyAlgorithm,
 
   List<ConfigurationRequirement<?>> common() {
     final List<ConfigurationRequirement<?>> requirements = new ArrayList<>();
+    requirements.add(processEmptyColumns());
     requirements.addAll(TPMMSConfigurationRequirements.tpmms());
     return requirements;
+  }
+
+  private ConfigurationRequirement<?> processEmptyColumns() {
+    final ConfigurationRequirementBoolean requirement = new ConfigurationRequirementBoolean(
+        ConfigurationKey.PROCESS_EMPTY_COLUMNS.name());
+    requirement.setDefaultValues(new Boolean[]{defaultValues.isProcessEmptyColumns()});
+    return requirement;
   }
 
   @SafeVarargs
@@ -70,6 +81,17 @@ abstract class SpiderAlgorithm implements InclusionDependencyAlgorithm,
     }
 
     handleUnknownConfiguration(identifier, values);
+  }
+
+  @Override
+  public void setBooleanConfigurationValue(final String identifier, final Boolean... values)
+      throws AlgorithmConfigurationException {
+
+    if (identifier.equals(ConfigurationKey.PROCESS_EMPTY_COLUMNS.name())) {
+      builder.processEmptyColumns(values[0]);
+    } else {
+      handleUnknownConfiguration(identifier, values);
+    }
   }
 
   @Override

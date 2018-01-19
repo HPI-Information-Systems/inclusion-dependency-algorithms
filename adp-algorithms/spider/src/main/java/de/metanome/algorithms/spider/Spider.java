@@ -64,6 +64,12 @@ public class Spider {
       for (final Attribute attribute : attributes) {
         attributeIndex[attribute.getId()] = attribute;
         if (attribute.getReadPointer().hasNext()) {
+          // Has next value: always process.
+          priorityQueue.enqueue(attribute);
+        } else if (!configuration.isProcessEmptyColumns()) {
+          // When ignoring empty columns, insert empty columns into queue.
+          // Only during normal processing the dependent and referenced set of empty attributes
+          // will be cleared.
           priorityQueue.enqueue(attribute);
         }
       }

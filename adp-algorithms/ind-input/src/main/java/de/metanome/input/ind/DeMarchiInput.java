@@ -25,6 +25,7 @@ class DeMarchiInput {
 
   private Configuration prepareConfiguration(final InclusionDependencyParameters parameters) {
     final Configuration configuration = Configuration.withDefaults();
+    configuration.setProcessEmptyColumns(false);
     ConfigurationMapper.applyFrom(parameters.getConfigurationString(), configuration);
     configuration.setRelationalInputGenerators(
         Optional.ofNullable(parameters.getRelationalInputGenerators()).orElse(ImmutableList.of()));

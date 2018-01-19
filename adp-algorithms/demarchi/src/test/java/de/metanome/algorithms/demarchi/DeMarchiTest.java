@@ -4,6 +4,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
 import de.metanome.algorithm_integration.input.TableInputGenerator;
@@ -40,25 +41,26 @@ class DeMarchiTest {
   private List<String> columnTypes;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
 
-    columnNames = asList("a", "b", "c");
-    columnTypes = asList("str", "int", "int");
+    columnNames = asList("a", "b", "c", "d");
+    columnTypes = asList("str", "int", "int", "str");
     generator = TableInputGeneratorStub.builder()
         .relationName("Test")
         .columnNames(columnNames)
-        .row(Row.of("1", "1", "1"))
-        .row(Row.of("1", "1", "3"))
-        .row(Row.of(null, "2", "2"))
+        .row(Row.of("1", "1", "1", null))
+        .row(Row.of("1", "1", "3", null))
+        .row(Row.of(null, "2", "2", null))
         .build();
+
+    given(tableInfoFactory.create(anyList(), anyList())).willReturn(tableFixture());
 
     impl = new DeMarchi(tableInfoFactory);
   }
 
   @Test
   void runDeMarchi() throws Exception {
-    given(tableInfoFactory.create(anyList(), anyList())).willReturn(tableFixture());
 
     impl.execute(getConfiguration());
 
@@ -67,6 +69,20 @@ class DeMarchiTest {
         .hasSize(1)
         .first()
         .isEqualTo(expectedInd());
+  }
+
+  @Test
+  void runDeMarchiProcessEmptyColumns() throws Exception {
+    final Configuration configuration = getConfiguration();
+    configuration.setProcessEmptyColumns(true);
+
+    impl.execute(configuration);
+
+    verify(resultReceiver, atLeastOnce()).receiveResult(ind.capture());
+    assertThat(ind.getAllValues())
+        .as("empty column should only form IND with column of same type")
+        .hasSize(2)
+        .contains(emptyColumnOnLhs());
   }
 
   private List<TableInfo> tableFixture() {
@@ -85,5 +101,10 @@ class DeMarchiTest {
   private InclusionDependency expectedInd() {
     return InclusionDependencyBuilder.dependent().column(TABLE_NAME, "b")
         .referenced().column(TABLE_NAME, "c").build();
+  }
+
+  private InclusionDependency emptyColumnOnLhs() {
+    return InclusionDependencyBuilder.dependent().column(TABLE_NAME, "d")
+        .referenced().column(TABLE_NAME, "a").build();
   }
 }

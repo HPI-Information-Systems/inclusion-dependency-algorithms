@@ -25,6 +25,7 @@ class SpiderInput {
 
   private SpiderConfiguration prepareConfiguration(final InclusionDependencyParameters parameters) {
     final SpiderConfiguration configuration = SpiderConfiguration.withDefaults();
+    configuration.setProcessEmptyColumns(false);
     ConfigurationMapper.applyFrom(parameters.getConfigurationString(), configuration);
     configuration.setRelationalInputGenerators(
         Optional.ofNullable(parameters.getRelationalInputGenerators()).orElse(ImmutableList.of()));

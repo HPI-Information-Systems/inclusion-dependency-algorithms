@@ -19,6 +19,7 @@ import lombok.Singular;
 @Builder
 public class SpiderConfiguration {
 
+  private boolean processEmptyColumns;
   private FileGenerator tempFileGenerator;
   private InclusionDependencyResultReceiver resultReceiver;
 
@@ -30,6 +31,8 @@ public class SpiderConfiguration {
 
   public static SpiderConfiguration withDefaults() {
     return builder()
+        .processEmptyColumns(true)
+        .tempFileGenerator(null)
         .resultReceiver(null)
         .tpmmsConfiguration(TPMMSConfiguration.withDefaults())
         .tableInputGenerators(Collections.emptyList())

@@ -1,5 +1,6 @@
 package de.metanome.algorithms.spider;
 
 enum ConfigurationKey {
-  TABLE
+  TABLE,
+  PROCESS_EMPTY_COLUMNS
 }

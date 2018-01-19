@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 public class Zigzag {
 
   private int dbChecks = 0;
+  private final boolean INCLUDE_INDS_FROM_ONE_TABLE = true;
 
   private final ZigzagConfiguration configuration;
   private ValidationStrategy validationStrategy;
@@ -57,7 +58,7 @@ public class Zigzag {
     validationStrategy = validationStrategyFactory
         .forDatabase(configuration.getValidationParameters());
 
-    initialCandidateCheck(configuration.getK());
+    checkKaryInputInds(configuration.getK());
 
     Set<Set<ColumnIdentifier>> positiveBorder = indToNodes(satisfiedINDs); // Bd+(I)
     System.out.println("Postive Border: " + positiveBorder);
@@ -323,10 +324,10 @@ public class Zigzag {
         .map(ColumnIdentifier::getTableIdentifier)
         .collect(Collectors.toSet())
         .size();
-    return depTableCount != 1 || refTableCount != 1;
+    return depTableCount > 1 || refTableCount > 1;
   }
 
-  private void initialCandidateCheck(int k) {
+  private void checkKaryInputInds(int k) {
     for(int i = 2; i <= k; i++) {
       Set<InclusionDependency> candidates = generateCandidatesForLevel(i);
       for(InclusionDependency ind : candidates) {
@@ -344,13 +345,19 @@ public class Zigzag {
 
   private Set<InclusionDependency> generateCandidatesForLevel(int i) {
     Set<ColumnIdentifier> unaryIndNodes = new HashSet<>();
-    for(Entry<ColumnIdentifier, ColumnIdentifier> entry : unaryIndMap.entrySet()) {
-      if(!entry.getKey().getTableIdentifier().equals(entry.getValue().getTableIdentifier())) {
-        unaryIndNodes.add(entry.getKey());
-      }
+    // INDs from one table (dep & ref from same table) generate invalid INDs
+    if (INCLUDE_INDS_FROM_ONE_TABLE) {
+        unaryIndNodes = unaryIndMap.keySet();
+    } else {
+        unaryIndNodes = unaryIndMap.entrySet().stream()
+                .filter(e -> !e.getKey().getTableIdentifier().equals(e.getValue().getTableIdentifier()))
+                .map(Entry::getKey)
+                .collect(Collectors.toSet());
     }
-    System.out.println("Combinations for level " + i + " : " + Sets.combinations(unaryIndNodes,i).toString());
-    return Sets.combinations(unaryIndNodes,i).stream()
+
+    Set<Set<ColumnIdentifier>> indsForLevel = Sets.combinations(unaryIndNodes,i);
+    System.out.println("Combinations for level " + i + " : " + indsForLevel.toString());
+    return indsForLevel.stream()
         .map(this::nodeToInd)
         .collect(Collectors.toSet());
   }
