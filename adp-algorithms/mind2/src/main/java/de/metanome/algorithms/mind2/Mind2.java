@@ -21,10 +21,12 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static de.metanome.algorithms.mind2.utils.IndComparators.RhsComrapator;
 import static de.metanome.algorithms.mind2.utils.IndComparators.UindCoordinatesReaderComparator;
 import static de.metanome.util.Collectors.toImmutableList;
+import static de.metanome.util.Collectors.toImmutableSet;
 import static java.lang.String.format;
 
 public class Mind2 {
@@ -54,8 +56,10 @@ public class Mind2 {
         for (InclusionDependency uind : config.getUnaryInds()) {
             coordinatesQueue.add(repository.getReader(uind));
         }
+        Set<Set<InclusionDependency>> maxInds = config.getUnaryInds().stream()
+                .map(ImmutableSet::of)
+                .collect(Collectors.toSet());
 
-        Set<Set<InclusionDependency>> maxInds = new HashSet<>(ImmutableSet.of(config.getUnaryInds()));
         while (!coordinatesQueue.isEmpty()) {
             Set<UindCoordinates> sameIndexCoords = new HashSet<>();
             Set<UindCoordinatesReader> readers = new HashSet<>();
@@ -86,7 +90,7 @@ public class Mind2 {
                 }
             }
             if (maxInds.isEmpty()) {
-                return ImmutableSet.of(config.getUnaryInds());
+                return config.getUnaryInds().stream().map(ImmutableSet::of).collect(toImmutableSet());
             }
 
             Set<InclusionDependency> activeU = new HashSet<>();
