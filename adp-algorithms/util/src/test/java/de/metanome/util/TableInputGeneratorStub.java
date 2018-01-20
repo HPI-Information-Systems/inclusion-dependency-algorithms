@@ -80,11 +80,6 @@ public class TableInputGeneratorStub implements TableInputGenerator {
   }
 
   @Override
-  public DatabaseConnectionGenerator getDatabaseConnectionGenerator() {
-    return null;
-  }
-
-  @Override
   public RelationalInput generateNewCopy()
       throws InputGenerationException, AlgorithmConfigurationException {
 
