@@ -43,9 +43,9 @@ public class ValidationConfigurationRequirements {
     return false;
   }
 
-  public static void acceptDatabaseConnectionGenerator(final DatabaseConnectionGenerator[] values,
+  public static void acceptDatabaseConnectionGenerator(final DatabaseConnectionGenerator value,
       final ValidationParameters parameters) {
 
-    parameters.setConnectionGenerator(values[0]);
+    parameters.setConnectionGenerator(value);
   }
 }

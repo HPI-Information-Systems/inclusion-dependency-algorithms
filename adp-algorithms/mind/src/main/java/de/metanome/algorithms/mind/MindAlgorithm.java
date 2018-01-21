@@ -2,12 +2,13 @@ package de.metanome.algorithms.mind;
 
 import static java.util.Arrays.asList;
 
-import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
+import de.metanome.algorithm_integration.algorithm_types.BooleanParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.IntegerParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
+import de.metanome.algorithm_integration.configuration.ConfigurationRequirementBoolean;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementInteger;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
@@ -21,7 +22,8 @@ import java.util.ArrayList;
 public class MindAlgorithm implements InclusionDependencyAlgorithm,
     TableInputParameterAlgorithm,
     InclusionDependencyValidationAlgorithm,
-    IntegerParameterAlgorithm{
+    IntegerParameterAlgorithm,
+    BooleanParameterAlgorithm {
 
   private final Configuration.ConfigurationBuilder builder;
   private final ValidationParameters validationParameters;
@@ -38,10 +40,8 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
     final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
     requirements.add(tableInput());
     requirements.addAll(ValidationConfigurationRequirements.validationStrategy());
-    requirements.add(new ConfigurationRequirementInteger(
-        ConfigurationKey.MAX_DEPTH.name(),
-        defaultValues.getMaxDepth()
-    ));
+    requirements.add(maxDepth());
+    requirements.add(processEmptyColumns());
     return requirements;
   }
 
@@ -51,6 +51,19 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
         ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES);
   }
 
+  private ConfigurationRequirement<?> maxDepth() {
+    final ConfigurationRequirementInteger requirement = new ConfigurationRequirementInteger(
+        ConfigurationKey.MAX_DEPTH.name());
+    requirement.setDefaultValues(new Integer[]{defaultValues.getMaxDepth()});
+    return requirement;
+  }
+
+  private ConfigurationRequirement<?> processEmptyColumns() {
+    final ConfigurationRequirementBoolean requirement = new ConfigurationRequirementBoolean(
+        ConfigurationKey.PROCESS_EMPTY_COLUMNS.name());
+    requirement.setDefaultValues(new Boolean[]{defaultValues.isProcessEmptyColumns()});
+    return requirement;
+  }
 
   @Override
   public void setResultReceiver(final InclusionDependencyResultReceiver resultReceiver) {
@@ -62,7 +75,8 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
       final TableInputGenerator... values) {
 
     if (identifier.equals(ConfigurationKey.TABLE.name())) {
-      DatabaseConnectionGenerator[] databaseConnectionGenerators = { values[0].getDatabaseConnectionGenerator() };
+      final DatabaseConnectionGenerator databaseConnectionGenerators = values[0]
+          .getDatabaseConnectionGenerator();
       ValidationConfigurationRequirements
           .acceptDatabaseConnectionGenerator(databaseConnectionGenerators, validationParameters);
       builder.tableInputGenerators(asList(values));
@@ -96,9 +110,16 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
   }
 
   @Override
-  public void setIntegerConfigurationValue(String identifier, Integer... values) throws AlgorithmConfigurationException {
-    if(identifier.equals(ConfigurationKey.MAX_DEPTH.name())){
+  public void setIntegerConfigurationValue(final String identifier, final Integer... values) {
+    if (identifier.equals(ConfigurationKey.MAX_DEPTH.name())) {
       builder.maxDepth(values[0]);
+    }
+  }
+
+  @Override
+  public void setBooleanConfigurationValue(final String identifier, final Boolean... values) {
+    if (identifier.equals(ConfigurationKey.PROCESS_EMPTY_COLUMNS.name())) {
+      builder.processEmptyColumns(values[0]);
     }
   }
 }

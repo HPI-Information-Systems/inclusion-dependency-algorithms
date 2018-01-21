@@ -41,7 +41,7 @@ class MindTest {
 
     testDatabase = TestDatabase.builder()
         .resourceClass(MindTest.class)
-        .columnNames(asList("A", "B", "C", "D"))
+        .columnNames(asList("A", "B", "C", "D", "E"))
         .csvPath("test.csv")
         .relationName("TEST")
         .build();
@@ -55,6 +55,7 @@ class MindTest {
         .resultReceiver(resultReceiver)
         .validationParameters(validationParameters())
         .maxDepth(-1)
+        .processEmptyColumns(false)
         .build();
 
     mind = new Mind();

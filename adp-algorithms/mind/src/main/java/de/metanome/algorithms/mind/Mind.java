@@ -5,6 +5,7 @@ import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.input.InputGenerationException;
+import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
@@ -13,11 +14,14 @@ import de.metanome.validation.ValidationStrategyFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 
 public class Mind {
 
   private Configuration configuration;
   private ValidationStrategy validationStrategy;
+  private DSLContext context;
   private List<String> relationNames;
 
   private List<TableInfo> tables;
@@ -33,6 +37,7 @@ public class Mind {
 
   public void execute(final Configuration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
+    context = getContext();
     validationStrategy = validationStrategyFactory
         .forDatabase(configuration.getValidationParameters());
 
@@ -41,7 +46,8 @@ public class Mind {
 
     int depth = 1;
 
-    while (!candidates.isEmpty() && (configuration.getMaxDepth() < 0 || depth <= configuration.getMaxDepth())) {
+    while (!candidates.isEmpty() && (configuration.getMaxDepth() < 0 || depth <= configuration
+        .getMaxDepth())) {
       final List<ColumnPermutation[]> inds = new ArrayList<>();
       for (final ColumnPermutation[] candidate : candidates) {
         final ColumnPermutation lhs = candidate[0];
@@ -60,12 +66,20 @@ public class Mind {
     validationStrategy.close();
   }
 
+  private DSLContext getContext() {
+    // Tables can only be taken from the very same source database
+    final TableInputGenerator firstInput = configuration.getTableInputGenerators().get(0);
+    return DSL.using(firstInput.getDatabaseConnectionGenerator().getConnection());
+  }
+
   private List<ColumnPermutation[]> genLevel1Candidates() {
     final List<ColumnIdentifier> attributes = new ArrayList<>();
     final List<ColumnPermutation[]> candidates = new ArrayList<>();
     for (final TableInfo table : tables) {
       for (String column : table.getColumnNames()) {
-        attributes.add(new ColumnIdentifier(table.getTableName(), column));
+        if (shouldAdd(table, column)) {
+          attributes.add(new ColumnIdentifier(table.getTableName(), column));
+        }
       }
     }
 
@@ -80,6 +94,20 @@ public class Mind {
     }
 
     return candidates;
+  }
+
+  private boolean shouldAdd(final TableInfo table, final String column) {
+    if (configuration.isProcessEmptyColumns()) {
+      return true;
+    }
+
+    return isNonEmpty(table, column);
+  }
+
+  private boolean isNonEmpty(final TableInfo table, final String column) {
+    return context.selectCount().from(
+        context.selectDistinct(DSL.field(DSL.name(column))).from(DSL.name(table.getTableName()))
+    ).fetchOne().value1() > 1; /* NULL is one distinct value */
   }
 
   private List<ColumnPermutation[]> genNextLevelCandidates(

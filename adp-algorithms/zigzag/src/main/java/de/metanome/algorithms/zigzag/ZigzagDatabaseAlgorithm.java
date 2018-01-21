@@ -6,7 +6,6 @@ import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
-import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration.ZigzagConfigurationBuilder;
@@ -43,10 +42,8 @@ public class ZigzagDatabaseAlgorithm extends ZigzagAlgorithm implements TableInp
             configurationBuilder.tableInputGenerator(values[0]);
             InclusionDependencyInputConfigurationRequirements
                     .acceptTableInputGenerator(values, indInputParams);
-            DatabaseConnectionGenerator[] databaseConnectionGenerators = {
-                    values[0].getDatabaseConnectionGenerator()};
             ValidationConfigurationRequirements
-                    .acceptDatabaseConnectionGenerator(databaseConnectionGenerators,
+                    .acceptDatabaseConnectionGenerator(values[0].getDatabaseConnectionGenerator(),
                             validationParameters);
         }
     }

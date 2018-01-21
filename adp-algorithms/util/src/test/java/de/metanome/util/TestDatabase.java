@@ -56,6 +56,7 @@ public class TestDatabase {
       final Loader<Record> loader = context.loadInto(table(name(relationName)))
           .loadCSV(in)
           .fields(fields)
+          .nullString("*")
           .execute();
 
       assertThat(loader.errors()).isEmpty();
