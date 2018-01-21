@@ -1,0 +1,121 @@
+Zigzag from git hash: 7f607bac40894c8e620463133d7e023405a8314a
+Executed in WSL on Windows 10 with 14GB RAM, Intel i5-3570K CPU @ 3.40GHz
+
+SCOP: classification & description
+==================================
+Total DB Checks: 23
+Elapsed time: 0:00:17.740 (17740 ms).
+Results:
+[classification._12][=[description._1]
+[classification._9][=[description._1]
+[classification._8][=[description._1]
+[classification._11][=[description._1]
+[classification._7][=[description._1]
+[classification._6][=[description._1]
+[classification._5, classification._12][=[classification._12, classification._5]
+[classification._5][=[description._1]
+[classification._10][=[description._1]
+[classification._4][=[description._3]
+[classification._4, classification._1][=[description._3, description._4]
+[classification._5][=[classification._12]
+[classification._1][=[description._4]
+[classification._5, classification._4][=[description._1, description._3]
+[classification._9, classification._4][=[description._1, description._3]
+[classification._5, classification._1][=[description._1, description._4]
+[classification._12][=[classification._5]
+[classification._10, classification._4][=[description._1, description._3]
+[classification._11, classification._4][=[description._1, description._3]
+[classification._12, classification._1][=[description._1, description._4]
+[classification._12, classification._4, classification._1][=[description._1, description._3, description._4]
+[classification._5, classification._4, classification._1][=[description._1, description._3, description._4]
+[classification._12, classification._4][=[description._1, description._3]
+
+
+SCOP: classification & comments
+===============================
+Total DB Checks: 0
+Elapsed time: 0:00:06.311 (6311 ms).
+Results:
+[classification._12][=[classification._5]
+[classification._5][=[classification._12]
+
+
+SCOP: comments & hierarchie
+=================================
+Total DB Checks: 0
+Elapsed time: 0:00:06.311 (6311 ms).
+Results:
+[classification._12][=[classification._5]
+[classification._5][=[classification._12]
+
+
+SCOP: description & hierarchie
+=================================
+Total DB Checks: 2
+Elapsed time: 0:00:05.545 (5545 ms).
+Results:
+[description._1][=[hierarchie._3]
+[description._1][=[hierarchie._1]
+
+
+SCOP: description & hierarchie
+=================================
+Total DB Checks: 0
+Elapsed time: 0:00:02.480 (2480 ms).
+Results:
+[comments._1][=[description._1]
+
+Total DB Checks: 148
+Elapsed time: 1:02:46.603 (3766603 ms).
+Results:
+[classification._5, classification._12][=[classification._12, classification._5]
+[classification._8, classification._7][=[hierarchie._1, hierarchie._2]
+[classification._9][=[hierarchie._3]
+[classification._11][=[hierarchie._2]
+[classification._6][=[hierarchie._1]
+[classification._5, classification._11][=[hierarchie._1, hierarchie._2]
+[classification._8][=[hierarchie._1]
+[classification._9, classification._8, classification._7][=[hierarchie._3, hierarchie._1, hierarchie._2]
+[classification._10, classification._11, classification._5][=[hierarchie._2, hierarchie._1, hierarchie._3]
+[classification._10, classification._11, classification._12][=[hierarchie._2, hierarchie._1, hierarchie._3]
+[classification._6][=[hierarchie._2]
+[classification._9, classification._7][=[hierarchie._3, hierarchie._2]
+[classification._9, classification._10][=[hierarchie._1, hierarchie._3]
+[classification._7, classification._6][=[hierarchie._1, hierarchie._2]
+[classification._12][=[hierarchie._1]
+[classification._10][=[hierarchie._1]
+[classification._11][=[hierarchie._3]
+[classification._7][=[hierarchie._2]
+[classification._9][=[hierarchie._2]
+[classification._10, classification._11, classification._9][=[hierarchie._1, hierarchie._3, hierarchie._2]
+[classification._11, classification._9][=[hierarchie._3, hierarchie._2]
+[classification._12][=[classification._5]
+[classification._5][=[hierarchie._3]
+[classification._10, classification._5][=[hierarchie._2, hierarchie._3]
+[classification._7][=[hierarchie._3]
+[classification._8, classification._6][=[hierarchie._3, hierarchie._2]
+[classification._7, classification._6][=[hierarchie._3, hierarchie._1]
+[classification._8, classification._10][=[hierarchie._2, hierarchie._3]
+[classification._7][=[hierarchie._1]
+[classification._10][=[hierarchie._2]
+[classification._5][=[classification._12]
+[classification._8][=[hierarchie._3]
+[classification._9][=[hierarchie._1]
+[classification._7, classification._8, classification._6][=[hierarchie._1, hierarchie._3, hierarchie._2]
+[classification._10, classification._9][=[hierarchie._1, hierarchie._2]
+[classification._11, classification._12][=[hierarchie._1, hierarchie._3]
+[classification._11, classification._5][=[hierarchie._1, hierarchie._3]
+[classification._9, classification._8][=[hierarchie._1, hierarchie._2]
+[classification._11][=[hierarchie._1]
+[classification._8][=[hierarchie._2]
+[classification._9, classification._8, classification._10][=[hierarchie._1, hierarchie._2, hierarchie._3]
+[classification._12][=[hierarchie._3]
+[classification._10][=[hierarchie._3]
+[classification._12, classification._11][=[hierarchie._1, hierarchie._2]
+[classification._10, classification._12][=[hierarchie._2, hierarchie._3]
+[classification._10, classification._11][=[hierarchie._2, hierarchie._1]
+[classification._10, classification._11][=[hierarchie._1, hierarchie._3]
+[classification._5][=[hierarchie._1]
+[classification._6][=[hierarchie._3]
+[classification._7, classification._8][=[hierarchie._1, hierarchie._3]
+[classification._9, classification._8][=[hierarchie._3, hierarchie._1]
