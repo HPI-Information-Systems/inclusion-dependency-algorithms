@@ -7,7 +7,7 @@ import de.metanome.algorithms.mind2.model.UindCoordinates;
 import java.io.BufferedReader;
 import java.io.IOException;
 
-public class UindCoordinatesReader {
+public class UindCoordinatesReader implements AutoCloseable {
 
     private final InclusionDependency uind;
     private final BufferedReader reader;
@@ -41,6 +41,15 @@ public class UindCoordinatesReader {
             return reader.readLine();
         } catch (IOException e) {
             throw new AlgorithmExecutionException("Error reading uind coordinate from file.", e);
+        }
+    }
+
+    @Override
+    public void close() throws AlgorithmExecutionException {
+        try {
+            reader.close();
+        } catch (IOException e) {
+            throw new AlgorithmExecutionException("Error closing BufferedReader", e);
         }
     }
 }

@@ -16,38 +16,40 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ZigzagDatabaseAlgorithm extends ZigzagAlgorithm implements
-    TableInputParameterAlgorithm {
+        TableInputParameterAlgorithm {
 
-  private final ZigzagConfigurationBuilder configurationBuilder;
+    private final ZigzagConfigurationBuilder configurationBuilder;
 
-  public ZigzagDatabaseAlgorithm() {
-    configurationBuilder = ZigzagConfiguration.builder();
-  }
-
-  @Override
-  public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() {
-    final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
-    requirements.addAll(common());
-    requirements.addAll(database());
-    return requirements;
-  }
-
-  private List<ConfigurationRequirement<?>> database() {
-    final List<ConfigurationRequirement<?>> requirements = new ArrayList<>();
-    requirements.add(new ConfigurationRequirementTableInput(TABLE.name()));
-    return requirements;
-  }
-
-  @Override
-  public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values)
-      throws AlgorithmConfigurationException {
-    if (identifier.equals(TABLE.name())) {
-      configurationBuilder.tableInputGenerator(values[0]);
-      InclusionDependencyInputConfigurationRequirements
-          .acceptTableInputGenerator(values, indInputParams);
-      DatabaseConnectionGenerator[] databaseConnectionGenerators = {values[0].getDatabaseConnectionGenerator()};
-      ValidationConfigurationRequirements
-          .acceptDatabaseConnectionGenerator(databaseConnectionGenerators, validationParameters);
+    public ZigzagDatabaseAlgorithm() {
+        configurationBuilder = ZigzagConfiguration.builder();
     }
-  }
+
+    @Override
+    public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() {
+        final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
+        requirements.addAll(common());
+        requirements.addAll(database());
+        return requirements;
+    }
+
+    private List<ConfigurationRequirement<?>> database() {
+        final List<ConfigurationRequirement<?>> requirements = new ArrayList<>();
+        requirements.add(new ConfigurationRequirementTableInput(TABLE.name()));
+        return requirements;
+    }
+
+    @Override
+    public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values)
+            throws AlgorithmConfigurationException {
+        if (identifier.equals(TABLE.name())) {
+            configurationBuilder.tableInputGenerator(values[0]);
+            InclusionDependencyInputConfigurationRequirements
+                    .acceptTableInputGenerator(values, indInputParams);
+            DatabaseConnectionGenerator[] databaseConnectionGenerators = {
+                    values[0].getDatabaseConnectionGenerator()};
+            ValidationConfigurationRequirements
+                    .acceptDatabaseConnectionGenerator(databaseConnectionGenerators,
+                            validationParameters);
+        }
+    }
 }

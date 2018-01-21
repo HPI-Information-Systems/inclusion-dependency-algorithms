@@ -29,81 +29,82 @@ import java.util.List;
 import java.util.Set;
 
 public abstract class ZigzagAlgorithm implements InclusionDependencyAlgorithm,
-    IntegerParameterAlgorithm,
-    InclusionDependencyInputParameterAlgorithm,
-    InclusionDependencyValidationAlgorithm {
+        IntegerParameterAlgorithm,
+        InclusionDependencyInputParameterAlgorithm,
+        InclusionDependencyValidationAlgorithm {
 
-  private final ZigzagConfigurationBuilder configurationBuilder;
-  final ValidationParameters validationParameters;
-  final InclusionDependencyParameters indInputParams = new InclusionDependencyParameters();
+    private final ZigzagConfigurationBuilder configurationBuilder;
+    final ValidationParameters validationParameters;
+    final InclusionDependencyParameters indInputParams = new InclusionDependencyParameters();
 
-  public ZigzagAlgorithm() {
-    configurationBuilder = ZigzagConfiguration.builder();
-    validationParameters = new ValidationParameters();
-  }
-
-  List<ConfigurationRequirement<?>> common() {
-    final List<ConfigurationRequirement<?>> requirements = new ArrayList<>();
-    requirements.add(new ConfigurationRequirementInteger(K.name()));
-    requirements.add(new ConfigurationRequirementInteger(EPSILON.name()));
-    requirements.addAll(InclusionDependencyInputConfigurationRequirements.indInput());
-    requirements.addAll(ValidationConfigurationRequirements.validationStrategy());
-    return requirements;
-  }
-
-  @Override
-  public void setIntegerConfigurationValue(String identifier, Integer... values)
-      throws AlgorithmConfigurationException {
-    if (identifier.equals(K.name())) {
-      configurationBuilder.k(values[0]);
-    } else if (identifier.equals(EPSILON.name())) {
-      configurationBuilder.epsilon(values[0]);
+    public ZigzagAlgorithm() {
+        configurationBuilder = ZigzagConfiguration.builder();
+        validationParameters = new ValidationParameters();
     }
-  }
 
-  @Override
-  public void setListBoxConfigurationValue(String identifier, String... selectedValues)
-      throws AlgorithmConfigurationException {
-    InclusionDependencyInputConfigurationRequirements.acceptListBox(identifier, selectedValues,
-        indInputParams);
-    ValidationConfigurationRequirements
-        .acceptListBox(identifier, selectedValues, validationParameters);
-  }
+    List<ConfigurationRequirement<?>> common() {
+        final List<ConfigurationRequirement<?>> requirements = new ArrayList<>();
+        requirements.add(new ConfigurationRequirementInteger(K.name()));
+        requirements.add(new ConfigurationRequirementInteger(EPSILON.name()));
+        requirements.addAll(InclusionDependencyInputConfigurationRequirements.indInput());
+        requirements.addAll(ValidationConfigurationRequirements.validationStrategy());
+        return requirements;
+    }
 
-  @Override
-  public void setStringConfigurationValue(String identifier, String... values)
-      throws AlgorithmConfigurationException {
-    InclusionDependencyInputConfigurationRequirements.acceptString(identifier, values,
-        indInputParams);
-  }
+    @Override
+    public void setIntegerConfigurationValue(String identifier, Integer... values)
+            throws AlgorithmConfigurationException {
+        if (identifier.equals(K.name())) {
+            configurationBuilder.k(values[0]);
+        } else if (identifier.equals(EPSILON.name())) {
+            configurationBuilder.epsilon(values[0]);
+        }
+    }
 
-  @Override
-  public void setResultReceiver(InclusionDependencyResultReceiver resultReceiver) {
-    configurationBuilder.resultReceiver(resultReceiver);
-  }
+    @Override
+    public void setListBoxConfigurationValue(String identifier, String... selectedValues)
+            throws AlgorithmConfigurationException {
+        InclusionDependencyInputConfigurationRequirements.acceptListBox(identifier, selectedValues,
+                indInputParams);
+        ValidationConfigurationRequirements
+                .acceptListBox(identifier, selectedValues, validationParameters);
+    }
 
-  @Override
-  public void execute() throws AlgorithmExecutionException {
-    // Hardcode for now until this works with metanome-cli
-    indInputParams.setAlgorithmType(AlgorithmType.DE_MARCHI);
-    validationParameters.setQueryType(QueryType.ERROR_MARGIN);
+    @Override
+    public void setStringConfigurationValue(String identifier, String... values)
+            throws AlgorithmConfigurationException {
+        InclusionDependencyInputConfigurationRequirements.acceptString(identifier, values,
+                indInputParams);
+    }
 
-    InclusionDependencyInput uindInput = new InclusionDependencyInputGenerator().get(indInputParams);
-    Set<InclusionDependency> uinds = new HashSet<>(uindInput.execute());
-    ZigzagConfiguration configuration = configurationBuilder
-        .unaryInds(uinds)
-        .validationParameters(validationParameters)
-        .build();
-    new Zigzag(configuration).execute();
-  }
+    @Override
+    public void setResultReceiver(InclusionDependencyResultReceiver resultReceiver) {
+        configurationBuilder.resultReceiver(resultReceiver);
+    }
 
-  @Override
-  public String getAuthors() {
-    return "Fabian Windheuser, Nils Strelow";
-  }
+    @Override
+    public void execute() throws AlgorithmExecutionException {
+        // Hardcode for now until this works with metanome-cli
+        indInputParams.setAlgorithmType(AlgorithmType.DE_MARCHI);
+        validationParameters.setQueryType(QueryType.ERROR_MARGIN);
 
-  @Override
-  public String getDescription() {
-    return "Implementation of 'Zigzag : a new algorithm for discovering large inclusion dependencies in relational databases' by De Marchi, Petit, 2003";
-  }
+        InclusionDependencyInput uindInput = new InclusionDependencyInputGenerator()
+                .get(indInputParams);
+        Set<InclusionDependency> uinds = new HashSet<>(uindInput.execute());
+        ZigzagConfiguration configuration = configurationBuilder
+                .unaryInds(uinds)
+                .validationParameters(validationParameters)
+                .build();
+        new Zigzag(configuration).execute();
+    }
+
+    @Override
+    public String getAuthors() {
+        return "Fabian Windheuser, Nils Strelow";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Implementation of 'Zigzag : a new algorithm for discovering large inclusion dependencies in relational databases' by De Marchi, Petit, 2003";
+    }
 }

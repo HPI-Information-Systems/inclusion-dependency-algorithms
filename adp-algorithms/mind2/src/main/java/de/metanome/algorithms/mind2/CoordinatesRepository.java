@@ -137,6 +137,7 @@ public class CoordinatesRepository {
             try (RelationalInput input = generator.generateNewCopy()) {
                 input.columnNames().forEach(columnName -> relationalInputs.put(
                         new ColumnIdentifier(input.relationName(), columnName), generator));
+                generator.close();
             } catch (Exception e) {
                 throw new InputGenerationException(format("Error getting copy of %s", generator), e);
             }

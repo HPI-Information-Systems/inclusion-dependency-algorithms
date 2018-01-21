@@ -20,12 +20,16 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import static de.metanome.algorithms.mind2.utils.IndComparators.RhsComrapator;
 import static de.metanome.algorithms.mind2.utils.IndComparators.UindCoordinatesReaderComparator;
 import static de.metanome.util.Collectors.toImmutableList;
+import static java.lang.String.format;
 
 public class Mind2 {
+
+    private final static Logger log = Logger.getLogger(Mind2.class.getName());
 
     private final Mind2Configuration config;
     private CoordinatesRepository repository;
@@ -36,8 +40,11 @@ public class Mind2 {
     }
 
     public void execute() throws AlgorithmExecutionException {
+        log.info(format("Start calculating max INDs for %d UINDs", config.getUnaryInds().size()));
         repository = new CoordinatesRepository(config);
         repository.storeUindCoordinates();
+        log.info("Finished calculating UIND coordinates");
+
         Set<Set<InclusionDependency>> maxInds = generateMaxInds();
         collectInds(maxInds);
     }
@@ -73,12 +80,13 @@ public class Mind2 {
             maxInds = removeSubsets(generateIntersections(maxInds, subMaxInd));
 
             for (InclusionDependency uind : config.getUnaryInds()) {
-                if (maxInds.contains(ImmutableSet.of(uind))) {
-                    maxInds.remove(ImmutableSet.of(uind));
+                ImmutableSet<InclusionDependency> uindSet = ImmutableSet.of(uind);
+                if (maxInds.contains(uindSet)) {
+                    maxInds.remove(uindSet);
                 }
             }
             if (maxInds.isEmpty()) {
-                return new HashSet<>(ImmutableSet.of(config.getUnaryInds()));
+                return ImmutableSet.of(config.getUnaryInds());
             }
 
             Set<InclusionDependency> activeU = new HashSet<>();
@@ -87,6 +95,8 @@ public class Mind2 {
                 if (nextReader.hasNext() && activeU.contains(nextReader.current().getUind())) {
                     nextReader.next();
                     coordinatesQueue.add(nextReader);
+                } else if (!nextReader.hasNext()) {
+                    nextReader.close();
                 }
             }
         }
@@ -146,13 +156,16 @@ public class Mind2 {
 
     // phi Operator
     private Set<Set<InclusionDependency>> removeSubsets(Set<Set<InclusionDependency>> inds) {
-        // TODO(fwindheuser): Clean up
+        ImmutableList<Set<InclusionDependency>> orderedInds = ImmutableList.copyOf(inds);
         Set<Set<InclusionDependency>> maxSets = new HashSet<>(inds);
-        inds.forEach(ind -> {
-            if (inds.stream().anyMatch(ind2 -> !ind.equals(ind2) && ind2.containsAll(ind))) {
-                maxSets.remove(ind);
+        for (int i = 0; i < orderedInds.size(); i++) {
+            for (int j = 0; j < orderedInds.size(); j++) {
+                if (i != j && orderedInds.get(j).containsAll(orderedInds.get(i))) {
+                    maxSets.remove(orderedInds.get(i));
+                    break;
+                }
             }
-        });
+        }
         return maxSets;
     }
 
@@ -161,9 +174,8 @@ public class Mind2 {
             Set<Set<InclusionDependency>> indsA, Set<Set<InclusionDependency>> indsB) {
         Set<Set<InclusionDependency>> intersections = new HashSet<>();
         Sets.cartesianProduct(ImmutableList.of(indsA, indsB)).forEach(indPair -> {
-            Set<InclusionDependency> s1 = indPair.get(0);
-            Set<InclusionDependency> s2 = indPair.get(1);
-            Set<InclusionDependency> intersection = Sets.intersection(s1, s2);
+            ImmutableSet<InclusionDependency> intersection = Sets.intersection(indPair.get(0), indPair.get(1))
+                    .immutableCopy();
             if (!intersection.isEmpty()) {
                 intersections.add(intersection);
             }

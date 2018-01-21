@@ -140,7 +140,7 @@ class Queries {
             context.selectOne()
                 .from(tables(rhs))
                 .where(row(fields(rhs)).eq(row(lhsAlias.fields())))
-        ).limit(1)
+        )
     ).fetchOne().value1();
 
     final double rowCount = context.fetchCount(lhsAlias);
