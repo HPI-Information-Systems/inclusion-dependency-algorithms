@@ -84,6 +84,8 @@ public class TestDatabase {
 
   public TableInputGenerator asTableInputGenerator() {
     final TableInputGenerator generator = mock(TableInputGenerator.class);
+    final DatabaseConnectionGenerator connectionGenerator = asConnectionGenerator();
+    given(generator.getDatabaseConnectionGenerator()).willReturn(connectionGenerator);
 
     try {
       willAnswer(invocation ->

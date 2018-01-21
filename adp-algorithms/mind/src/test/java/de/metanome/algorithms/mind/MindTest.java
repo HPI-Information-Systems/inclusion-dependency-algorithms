@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
-import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
+import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.InclusionDependencyBuilder;
@@ -30,7 +30,7 @@ class MindTest {
   private ArgumentCaptor<InclusionDependency> ind;
 
   private TestDatabase testDatabase;
-  private DatabaseConnectionGenerator connectionGenerator;
+  private TableInputGenerator tableInputGenerator;
 
   private Configuration configuration;
   private Mind mind;
@@ -47,12 +47,14 @@ class MindTest {
         .build();
 
     testDatabase.setUp();
-    connectionGenerator = testDatabase.asConnectionGenerator();
+
+    tableInputGenerator = testDatabase.asTableInputGenerator();
 
     configuration = Configuration.builder()
-        .tableInputGenerator(testDatabase.asTableInputGenerator())
+        .tableInputGenerator(tableInputGenerator)
         .resultReceiver(resultReceiver)
         .validationParameters(validationParameters())
+        .maxDepth(-1)
         .build();
 
     mind = new Mind();
@@ -61,7 +63,7 @@ class MindTest {
   private ValidationParameters validationParameters() {
     final ValidationParameters parameters = new ValidationParameters();
     parameters.setQueryType(QueryType.NOT_IN);
-    parameters.setConnectionGenerator(connectionGenerator);
+    parameters.setConnectionGenerator(tableInputGenerator.getDatabaseConnectionGenerator());
     return parameters;
   }
 

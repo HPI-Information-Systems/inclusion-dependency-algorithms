@@ -27,10 +27,9 @@ public class TableInputGeneratorStub implements TableInputGenerator {
   private final List<Row> rows;
 
   @Builder
-  public TableInputGeneratorStub(
-          final String relationName,
-          @Singular final List<String> columnNames,
-          @Singular final List<Row> rows) {
+  public TableInputGeneratorStub(final String relationName,
+      @Singular final List<String> columnNames,
+      @Singular final List<Row> rows) {
     this.relationName = relationName;
     this.columnNames = columnNames;
     this.rows = rows;
@@ -76,6 +75,11 @@ public class TableInputGeneratorStub implements TableInputGenerator {
 
   @Override
   public ResultSet select() throws InputGenerationException, AlgorithmConfigurationException {
+    throw new UnsupportedOperationException("Not implemented yet");
+  }
+
+  @Override
+  public DatabaseConnectionGenerator getDatabaseConnectionGenerator() {
     throw new UnsupportedOperationException("Not implemented yet");
   }
 
