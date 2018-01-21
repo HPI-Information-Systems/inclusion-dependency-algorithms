@@ -76,8 +76,10 @@ public class CoordinatesRepository {
         SetMultimap<Integer, Integer> uindCoordinates = MultimapBuilder.hashKeys().hashSetValues().build();
         ColumnIdentifier lhs = getUnaryIdentifier(unaryInd.getDependant());
         ColumnIdentifier rhs = getUnaryIdentifier(unaryInd.getReferenced());
-        AttributeIterator cursorA =  new AttributeIterator(config.getSortedRelationalInput(attributes.get(lhs), lhs), lhs);
-        AttributeIterator cursorB = new AttributeIterator(config.getSortedRelationalInput(attributes.get(rhs), rhs), rhs);
+        AttributeIterator cursorA =  new AttributeIterator(
+                config.getSortedRelationalInput(attributes.get(lhs), lhs), lhs, config.getIndexColumn());
+        AttributeIterator cursorB = new AttributeIterator(
+                config.getSortedRelationalInput(attributes.get(rhs), rhs), rhs, config.getIndexColumn());
         cursorA.next();
         cursorB.next();
 
@@ -135,9 +137,10 @@ public class CoordinatesRepository {
         Map<ColumnIdentifier, TableInputGenerator> relationalInputs = new HashMap<>();
         for (TableInputGenerator generator : inputGenerators) {
             try (RelationalInput input = generator.generateNewCopy()) {
-                input.columnNames().forEach(columnName -> relationalInputs.put(
-                        new ColumnIdentifier(input.relationName(), columnName), generator));
-                generator.close();
+                input.columnNames().stream()
+                        .filter(columnName -> !columnName.equals(config.getIndexColumn()))
+                        .forEach(columnName -> relationalInputs.put(
+                                new ColumnIdentifier(input.relationName(), columnName), generator));
             } catch (Exception e) {
                 throw new InputGenerationException(format("Error getting copy of %s", generator), e);
             }

@@ -21,8 +21,8 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.algorithms.mind2.utils.IndComparators.RhsComrapator;
 import static de.metanome.algorithms.mind2.utils.IndComparators.UindCoordinatesReaderComparator;
 import static de.metanome.util.Collectors.toImmutableList;
@@ -42,7 +42,6 @@ public class Mind2 {
     }
 
     public void execute() throws AlgorithmExecutionException {
-        log.info(format("Start calculating max INDs for %d UINDs", config.getUnaryInds().size()));
         repository = new CoordinatesRepository(config);
         repository.storeUindCoordinates();
         log.info("Finished calculating UIND coordinates");
@@ -56,14 +55,14 @@ public class Mind2 {
         for (InclusionDependency uind : config.getUnaryInds()) {
             coordinatesQueue.add(repository.getReader(uind));
         }
-        Set<Set<InclusionDependency>> maxInds = config.getUnaryInds().stream()
-                .map(ImmutableSet::of)
-                .collect(Collectors.toSet());
+
+        // TODO: SET<UINDS> or SET<SET<UIND>>?
+        Set<Set<InclusionDependency>> maxInds = ImmutableSet.of(config.getUnaryInds());
 
         while (!coordinatesQueue.isEmpty()) {
             Set<UindCoordinates> sameIndexCoords = new HashSet<>();
             Set<UindCoordinatesReader> readers = new HashSet<>();
-            UindCoordinatesReader reader = coordinatesQueue.remove();
+            UindCoordinatesReader reader = coordinatesQueue.poll();
             readers.add(reader);
 
             UindCoordinates currentCoords = reader.current();
@@ -74,7 +73,7 @@ public class Mind2 {
                 if (!currentCoords.getLhsIndex().equals(nextCoords.getLhsIndex())) {
                     break;
                 }
-                reader = coordinatesQueue.remove();
+                reader = coordinatesQueue.poll();
                 readers.add(reader);
                 currentCoords = reader.current();
                 sameIndexCoords.add(currentCoords);
@@ -121,7 +120,7 @@ public class Mind2 {
         Set<Set<InclusionDependency>> maxIndSubsets = new HashSet<>();
         while (!positionsQueue.isEmpty()) {
             Set<CurrentIterator<RhsPosition>> readers = new HashSet<>();
-            CurrentIterator<RhsPosition> reader = positionsQueue.remove();
+            CurrentIterator<RhsPosition> reader = positionsQueue.poll();
             readers.add(reader);
             RhsPosition currentRhsPosition = reader.current();
             Set<InclusionDependency> subMaxInds = new HashSet<>(ImmutableSet.of(currentRhsPosition.getUind()));
@@ -132,7 +131,7 @@ public class Mind2 {
                 if (!currentRhsPosition.getRhs().equals(nextRhsPosition.getRhs())) {
                     break;
                 }
-                reader = positionsQueue.remove();
+                reader = positionsQueue.poll();
                 readers.add(reader);
                 currentRhsPosition = reader.current();
                 subMaxInds.add(currentRhsPosition.getUind());
@@ -187,6 +186,19 @@ public class Mind2 {
         return intersections;
     }
 
+    private ImmutableSet<InclusionDependency> filterUinds(Set<InclusionDependency> uinds) {
+        return uinds.stream()
+                .filter(uind -> {
+                    ColumnIdentifier lhs = getOnlyElement(uind.getDependant().getColumnIdentifiers());
+                    ColumnIdentifier rhs = getOnlyElement(uind.getReferenced().getColumnIdentifiers());
+                    boolean isIndexColumn = lhs.getColumnIdentifier().equals(config.getIndexColumn()) ||
+                            lhs.getColumnIdentifier().equals(config.getIndexColumn());
+                    boolean isFromSameTable = lhs.getTableIdentifier().equals(rhs.getTableIdentifier());
+                    return !isIndexColumn && !isFromSameTable;
+                })
+                .collect(toImmutableSet());
+    }
+
     private void collectInds(Set<Set<InclusionDependency>> maxInds) throws AlgorithmExecutionException {
         InclusionDependencyResultReceiver resultReceiver = config.getResultReceiver();
         for (Set<InclusionDependency> maxInd : maxInds) {
@@ -206,5 +218,11 @@ public class Mind2 {
             dependant.setColumnIdentifiers(dependantIds);
             resultReceiver.receiveResult(new InclusionDependency(dependant, referenced));
         }
+    }
+
+    private void logUinds(ImmutableSet<InclusionDependency> uinds) {
+        StringBuilder sb = new StringBuilder("UINDS:");
+        uinds.forEach(uind -> sb.append(format("\n%s", uind)));
+        log.info(sb.toString());
     }
 }

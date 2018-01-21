@@ -16,25 +16,27 @@ public class AttributeIterator extends CheckedAbstractIterator<AttributeValuePos
 
     private final RelationalInput relationalInput;
     private final int columnIndex;
-    private int rowIndex = 0; // 0 for starting at 1 to map row index of paper
+    private final int indexColumnIndex;
 
-    public AttributeIterator(RelationalInput relationalInput, ColumnIdentifier columnIdentifier)
+    public AttributeIterator(RelationalInput relationalInput, ColumnIdentifier columnIdentifier, String indexColumnIdentifier)
             throws AlgorithmConfigurationException {
         this.relationalInput = relationalInput;
         columnIndex = relationalInput.columnNames().indexOf(columnIdentifier.getColumnIdentifier());
-        if (columnIndex == -1) {
+        indexColumnIndex = relationalInput.columnNames().indexOf(indexColumnIdentifier);
+        if (columnIndex == -1 || indexColumnIndex == -1) {
             throw new AlgorithmConfigurationException(
-                    format("Invalid column %s for relational input %s", columnIdentifier, relationalInput));
+                    format("Invalid column %s or %s for relational input %s with columns %s",
+                            columnIdentifier, indexColumnIndex, relationalInput, relationalInput.columnNames()));
         }
     }
 
     protected AttributeValuePosition computeNext() throws InputIterationException {
         while (relationalInput.hasNext()) {
             List<String> row = relationalInput.next();
-            rowIndex++;
             String value = row.get(columnIndex);
-            if (value != null) {
-                return new AttributeValuePosition(value, rowIndex);
+            int index = Integer.valueOf(row.get(indexColumnIndex));
+            if (value != null ) {
+                return new AttributeValuePosition(value, index);
             }
         }
         return endOfData();
