@@ -22,8 +22,7 @@ import org.junit.runner.RunWith;
 public class ZigzagTest {
 
     private InclusionDependencyResultReceiverStub resultReceiver;
-    @Inject
-    private Zigzag zigzag;
+    @Inject private Zigzag zigzag;
 
     @Before
     public void setupMocks(ZigzagConfiguration config) {
@@ -35,8 +34,7 @@ public class ZigzagTest {
     }
 
     @Test
-    public void testCalculateOptimisticBorder(ZigzagConfiguration config)
-            throws AlgorithmExecutionException {
+    public void testCalculateOptimisticBorder(ZigzagConfiguration config) {
         zigzag = new Zigzag(config);
 
         Set<InclusionDependency> unsatisfiedINDs = new HashSet<>();

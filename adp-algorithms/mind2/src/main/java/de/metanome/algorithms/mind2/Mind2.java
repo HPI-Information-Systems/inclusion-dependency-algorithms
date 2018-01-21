@@ -186,19 +186,6 @@ public class Mind2 {
         return intersections;
     }
 
-    private ImmutableSet<InclusionDependency> filterUinds(Set<InclusionDependency> uinds) {
-        return uinds.stream()
-                .filter(uind -> {
-                    ColumnIdentifier lhs = getOnlyElement(uind.getDependant().getColumnIdentifiers());
-                    ColumnIdentifier rhs = getOnlyElement(uind.getReferenced().getColumnIdentifiers());
-                    boolean isIndexColumn = lhs.getColumnIdentifier().equals(config.getIndexColumn()) ||
-                            lhs.getColumnIdentifier().equals(config.getIndexColumn());
-                    boolean isFromSameTable = lhs.getTableIdentifier().equals(rhs.getTableIdentifier());
-                    return !isIndexColumn && !isFromSameTable;
-                })
-                .collect(toImmutableSet());
-    }
-
     private void collectInds(Set<Set<InclusionDependency>> maxInds) throws AlgorithmExecutionException {
         InclusionDependencyResultReceiver resultReceiver = config.getResultReceiver();
         for (Set<InclusionDependency> maxInd : maxInds) {
@@ -218,11 +205,5 @@ public class Mind2 {
             dependant.setColumnIdentifiers(dependantIds);
             resultReceiver.receiveResult(new InclusionDependency(dependant, referenced));
         }
-    }
-
-    private void logUinds(ImmutableSet<InclusionDependency> uinds) {
-        StringBuilder sb = new StringBuilder("UINDS:");
-        uinds.forEach(uind -> sb.append(format("\n%s", uind)));
-        log.info(sb.toString());
     }
 }

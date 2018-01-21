@@ -15,8 +15,7 @@ import de.metanome.validation.ValidationConfigurationRequirements;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ZigzagDatabaseAlgorithm extends ZigzagAlgorithm implements
-        TableInputParameterAlgorithm {
+public class ZigzagDatabaseAlgorithm extends ZigzagAlgorithm implements TableInputParameterAlgorithm {
 
     private final ZigzagConfigurationBuilder configurationBuilder;
 
@@ -39,8 +38,7 @@ public class ZigzagDatabaseAlgorithm extends ZigzagAlgorithm implements
     }
 
     @Override
-    public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values)
-            throws AlgorithmConfigurationException {
+    public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values) {
         if (identifier.equals(TABLE.name())) {
             configurationBuilder.tableInputGenerator(values[0]);
             InclusionDependencyInputConfigurationRequirements

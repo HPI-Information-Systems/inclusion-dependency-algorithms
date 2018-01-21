@@ -1,6 +1,6 @@
 package de.metanome.algorithms.zigzag;
 
-
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
@@ -16,21 +16,23 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static java.lang.String.format;
 
 public class Zigzag {
 
-    private int dbChecks = 0;
+    private final static Logger log = Logger.getLogger(Zigzag.class.getName());
 
     private final ZigzagConfiguration configuration;
-    private ValidationStrategy validationStrategy;
+    private final Set<InclusionDependency> unaryInds;
     private final ValidationStrategyFactory validationStrategyFactory;
-
+    private final Set<InclusionDependency> satisfiedINDs;
+    private final Set<InclusionDependency> unsatisfiedINDs;
+    private ValidationStrategy validationStrategy;
     private int currentLevel;
-    private Set<InclusionDependency> satisfiedINDs;
-    private Set<InclusionDependency> unsatisfiedINDs;
-
-    private Set<InclusionDependency> unaryInds;
+    private int dbChecks = 0;
 
     public Zigzag(ZigzagConfiguration configuration) {
         this.configuration = configuration;
@@ -52,13 +54,12 @@ public class Zigzag {
         checkKaryInputInds(configuration.getK());
 
         Set<Set<InclusionDependency>> positiveBorder = indToNodes(satisfiedINDs); // Bd+(I)
-        System.out.println("Postive Border: " + positiveBorder + "\n");
+        log.info(format("Positive Border: %s", positiveBorder));
         Set<Set<InclusionDependency>> negativeBorder = indToNodes(unsatisfiedINDs); // Bd-(I)
-        System.out.println("Negative Border: " + negativeBorder + "\n");
+        log.info(format("Negative Border: %s", negativeBorder));
 
-        Set<Set<InclusionDependency>> optimisticBorder = calculateOptimisticBorder(
-                new HashSet<>(unsatisfiedINDs)); // Bd+(I opt)
-        System.out.println("First optimistic Border: " + optimisticBorder + "\n");
+        Set<Set<InclusionDependency>> optimisticBorder = calculateOptimisticBorder(new HashSet<>(unsatisfiedINDs)); // Bd+(I opt)
+        log.info(format("First optimistic border %s", optimisticBorder));
 
         while (!isOptimisticBorderFinal(optimisticBorder, positiveBorder)) {
             Set<Set<InclusionDependency>> possibleSmallerINDs = new HashSet<>(); // optDI, all g3' < epsilon
@@ -78,9 +79,9 @@ public class Zigzag {
                     }
                 }
             }
+
             while (!possibleSmallerINDs.isEmpty()) {
-                Set<Set<InclusionDependency>> candidatesBelowOptimisticBorder = generalizeSet(
-                        possibleSmallerINDs);
+                Set<Set<InclusionDependency>> candidatesBelowOptimisticBorder = generalizeSet(possibleSmallerINDs);
                 for (Set<InclusionDependency> indNode : candidatesBelowOptimisticBorder) {
                     if (isIND(nodeToInd(indNode))) {
                         positiveBorder.add(indNode);
@@ -107,7 +108,7 @@ public class Zigzag {
             negativeBorder = removeSpecializations(negativeBorder);
 
             currentLevel += 1;
-            System.out.println("Calculating next border...");
+            log.info(format("Calculating next border for level: %d", currentLevel));
             optimisticBorder = calculateOptimisticBorder(negativeBorder.stream()
                     .map(this::nodeToInd)
                     .collect(Collectors.toSet()));
@@ -115,7 +116,7 @@ public class Zigzag {
         addResultFromPositiveBorder(positiveBorder);
 
         validationStrategy.close();
-        System.out.println("Total DB Checks: " + dbChecks);
+        log.info(format("Total DB checks: %s", dbChecks));
     }
 
     private void addResultFromPositiveBorder(Set<Set<InclusionDependency>> positiveBorder)
@@ -137,8 +138,7 @@ public class Zigzag {
         }
     }
 
-    private boolean isSatisfiedByBorder(Set<InclusionDependency> ind,
-            Set<Set<InclusionDependency>> positiveBorder) {
+    private boolean isSatisfiedByBorder(Set<InclusionDependency> ind, Set<Set<InclusionDependency>> positiveBorder) {
         for (Set<InclusionDependency> borderInds : positiveBorder) {
             if (borderInds.containsAll(ind)) {
                 return true;
@@ -155,15 +155,14 @@ public class Zigzag {
                 .collect(Collectors.toSet());
     }
 
-    private Set<Set<InclusionDependency>> generalizeSet(
-            Set<Set<InclusionDependency>> possibleSmallerIND) {
+    private Set<Set<InclusionDependency>> generalizeSet(Set<Set<InclusionDependency>> possibleSmallerIND) {
         return possibleSmallerIND.stream()
                 .flatMap(indNode -> Sets.combinations(indNode, indNode.size() - 1).stream())
                 .collect(Collectors.toSet());
     }
 
-    private boolean isOptimisticBorderFinal(Set<Set<InclusionDependency>> optimisticBorder,
-            Set<Set<InclusionDependency>> positiveBorder) {
+    private boolean isOptimisticBorderFinal(
+            Set<Set<InclusionDependency>> optimisticBorder, Set<Set<InclusionDependency>> positiveBorder) {
         optimisticBorder.removeAll(positiveBorder);
         return optimisticBorder.isEmpty();
     }
@@ -171,27 +170,27 @@ public class Zigzag {
     // Currently very inefficient for many unsatisfied INDs, e.g. when generating many invalid ones
     // This stems from combining all of them with cartesianProducts
     // This algorithm is from the HPI data profiling lecture from SS17
-    public Set<Set<InclusionDependency>> calculateOptimisticBorder(
-            Set<InclusionDependency> unsatisfiedINDs) {
+    public Set<Set<InclusionDependency>> calculateOptimisticBorder(Set<InclusionDependency> unsatisfiedINDs) {
         Set<Set<InclusionDependency>> solution = new HashSet<>();
         Set<Set<InclusionDependency>> unsatisfiedNodes = indToNodes(unsatisfiedINDs);
         for (Set<InclusionDependency> head : unsatisfiedNodes) {
-            System.out.println("Adding to cartesianProduct: " + head);
-            Set<Set<InclusionDependency>> unpackedHead = head.stream().map(Sets::newHashSet)
+            log.info(format("Adding to cartesian product: %s", head));
+            Set<Set<InclusionDependency>> unpackedHead = head.stream()
+                    .map(Sets::newHashSet)
                     .collect(Collectors.toSet());
             if (solution.size() == 0) {
                 solution = unpackedHead;
             } else {
-                solution = unpackCartesianProduct(
-                        Sets.cartesianProduct(solution, unpackedHead));
+                solution = unpackCartesianProduct(solution, unpackedHead);
                 solution = removeSpecializations(solution);
             }
         }
         return solution.stream().map(this::invertIND).collect(Collectors.toSet());
     }
 
-    private Set<Set<InclusionDependency>> unpackCartesianProduct(Set<List<Set<InclusionDependency>>> x) {
-        return x.stream()
+    private Set<Set<InclusionDependency>> unpackCartesianProduct(
+            Set<Set<InclusionDependency>> solution, Set<Set<InclusionDependency>> head) {
+        return Sets.cartesianProduct(ImmutableList.of(solution, head)).stream()
                 .map(list -> Sets.union(list.get(0), list.get(1)))
                 .collect(Collectors.toSet());
     }
@@ -201,12 +200,12 @@ public class Zigzag {
         Set<InclusionDependency> indNode = new HashSet<>();
         List<ColumnIdentifier> dep = ind.getDependant().getColumnIdentifiers();
         List<ColumnIdentifier> ref = ind.getReferenced().getColumnIdentifiers();
-
         for (int i = 0; i < dep.size(); i++) {
             indNode.add(makeUnaryInd(dep.get(i), ref.get(i)));
         }
         return indNode;
     }
+
     private Set<Set<InclusionDependency>> indToNodes(Set<InclusionDependency> inds) {
         return inds.stream()
                 .map(this::indToNode)
@@ -221,7 +220,6 @@ public class Zigzag {
         List<ColumnIdentifier> depList = new ArrayList<>();
         List<ColumnIdentifier> refList = new ArrayList<>();
         for (InclusionDependency unaryInd : indNode) {
-            // Unary INDs only have one ColId per side. We could make a unary IND class
             depList.add(unaryInd.getDependant().getColumnIdentifiers().get(0));
             refList.add(unaryInd.getReferenced().getColumnIdentifiers().get(0));
         }
@@ -232,7 +230,7 @@ public class Zigzag {
         return new InclusionDependency(dep, ref);
     }
 
-    private boolean notInTheSameTable(ColumnIdentifier dep, ColumnIdentifier ref) {
+    private boolean isNotInTheSameTable(ColumnIdentifier dep, ColumnIdentifier ref) {
         return !dep.getTableIdentifier().equals(ref.getTableIdentifier());
     }
 
@@ -268,21 +266,21 @@ public class Zigzag {
         return invertedIND;
     }
 
-    private boolean isSpecialization(Set<InclusionDependency> specialization,
-            Set<InclusionDependency> generalization) {
+    private boolean isSpecialization(
+            Set<InclusionDependency> specialization, Set<InclusionDependency> generalization) {
         return specialization.size() > generalization.size()
                 && specialization.containsAll(generalization);
     }
 
-    private boolean isGeneralization(Set<InclusionDependency> generalization,
-            Set<InclusionDependency> specialization) {
+    private boolean isGeneralization(
+            Set<InclusionDependency> generalization, Set<InclusionDependency> specialization) {
         return generalization.size() < specialization.size()
                 && specialization.containsAll(generalization);
     }
 
     private double g3(InclusionDependency ind) {
         if (hasMultipleTablesPerSide(ind)) {
-            System.out.println("INVALID. IND has multiple tables on one side: " + ind);
+            log.info(format("Invalid: IND has multiple tables on one side (IND: %s)", ind));
             return configuration.getEpsilon() + 1;
         }
         // INVALID if it has duplicates
@@ -291,14 +289,14 @@ public class Zigzag {
             return configuration.getEpsilon() + 1;
         }
         dbChecks++;
-        System.out.println("G3 Checking: " + ind);
+        log.info(format("G3 checking: %s", ind));
         return ((ErrorMarginValidationResult) validationStrategy.validate(ind)).getErrorMargin();
     }
 
     // equivalent to d |= i in paper
     private boolean isIND(InclusionDependency ind) {
         if (hasMultipleTablesPerSide(ind)) {
-            System.out.println("INVALID. IND has multiple tables on one side: " + ind);
+            log.info(format("Invalid: IND has multiple tables on one side (IND: %s)", ind));
             return false;
         }
         // INVALID if it has duplicates
@@ -311,7 +309,7 @@ public class Zigzag {
     }
 
     private <T> boolean hasDuplicate(Iterable<T> all) {
-        Set<T> set = new HashSet<T>();
+        Set<T> set = new HashSet<>();
         // Set#add returns false if the set does not change, which
         // indicates that a duplicate element has been added.
         for (T each : all) {
@@ -327,7 +325,6 @@ public class Zigzag {
                 .map(ColumnIdentifier::getTableIdentifier)
                 .collect(Collectors.toSet())
                 .size();
-
         int refTableCount = ind.getReferenced().getColumnIdentifiers().stream()
                 .map(ColumnIdentifier::getTableIdentifier)
                 .collect(Collectors.toSet())
@@ -341,10 +338,10 @@ public class Zigzag {
             for (InclusionDependency ind : candidates) {
                 if (isIND(ind)) {
                     satisfiedINDs.add(ind);
-                    System.out.println("New satisfied IND: " + ind);
+                    log.info(format("New satisfied IND: %s", ind));
                 } else {
                     unsatisfiedINDs.add(ind);
-                    System.out.println("New unsatisfied IND: " + ind);
+                    log.info(format("New unsatisfied IND: %s", ind));
                 }
             }
         }
@@ -353,10 +350,10 @@ public class Zigzag {
     private Set<InclusionDependency> generateCandidatesForLevel(int i) {
         // Filter out unary INDs from the same table to prevent generating tons of invalid INDs
         Set<InclusionDependency> unaryIndNodes = unaryInds.stream()
-                .filter(ind -> notInTheSameTable(ind.getDependant().getColumnIdentifiers().get(0),
+                .filter(ind -> isNotInTheSameTable(
+                        ind.getDependant().getColumnIdentifiers().get(0),
                         ind.getReferenced().getColumnIdentifiers().get(0)))
                 .collect(Collectors.toSet());
-
         if (unaryIndNodes.size() < i) {
             return new HashSet<>();
         }

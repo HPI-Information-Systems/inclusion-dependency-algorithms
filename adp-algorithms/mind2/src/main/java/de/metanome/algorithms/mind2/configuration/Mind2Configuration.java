@@ -25,6 +25,7 @@ public class Mind2Configuration {
     private final FileGenerator tempFileGenerator;
     private final String indexColumn;
 
+    // In config for mocking
     public RelationalInput getSortedRelationalInput(TableInputGenerator inputGenerator, ColumnIdentifier column)
             throws AlgorithmExecutionException {
         try {

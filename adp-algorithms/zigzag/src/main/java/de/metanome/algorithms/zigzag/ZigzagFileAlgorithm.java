@@ -14,8 +14,7 @@ import de.metanome.input.ind.InclusionDependencyInputConfigurationRequirements;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ZigzagFileAlgorithm extends ZigzagAlgorithm implements
-        RelationalInputParameterAlgorithm {
+public class ZigzagFileAlgorithm extends ZigzagAlgorithm implements RelationalInputParameterAlgorithm {
 
     // DISCLAIMER Not working, since Zigzag uses validation-strategy, which only works for databases
     // TODO Adapt validation-strategy to work with RelationalInput
@@ -41,8 +40,7 @@ public class ZigzagFileAlgorithm extends ZigzagAlgorithm implements
     }
 
     @Override
-    public void setRelationalInputConfigurationValue(String identifier,
-            RelationalInputGenerator... values) throws AlgorithmConfigurationException {
+    public void setRelationalInputConfigurationValue(String identifier, RelationalInputGenerator... values) {
         if (identifier.equals(TABLE.name())) {
             configurationBuilder.relationalInputGenerators(asList(values));
             InclusionDependencyInputConfigurationRequirements
