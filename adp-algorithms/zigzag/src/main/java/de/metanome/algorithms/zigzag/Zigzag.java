@@ -107,6 +107,7 @@ public class Zigzag {
             negativeBorder = removeSpecializations(negativeBorder);
 
             currentLevel += 1;
+            System.out.println("Calculating next border...");
             optimisticBorder = calculateOptimisticBorder(negativeBorder.stream()
                     .map(this::nodeToInd)
                     .collect(Collectors.toSet()));
@@ -175,6 +176,7 @@ public class Zigzag {
         Set<Set<InclusionDependency>> solution = new HashSet<>();
         Set<Set<InclusionDependency>> unsatisfiedNodes = indToNodes(unsatisfiedINDs);
         for (Set<InclusionDependency> head : unsatisfiedNodes) {
+            System.out.println("Adding to cartesianProduct: " + head);
             Set<Set<InclusionDependency>> unpackedHead = head.stream().map(Sets::newHashSet)
                     .collect(Collectors.toSet());
             if (solution.size() == 0) {
