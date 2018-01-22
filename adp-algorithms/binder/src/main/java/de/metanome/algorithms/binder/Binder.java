@@ -166,10 +166,6 @@ class Binder {
 		
 		// Clean temp if there are files from previous runs that may pollute this run
 		FileUtils.cleanDirectory(this.tempFolder);
-		
-		// Initialize memory management
-		long availableMemory = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
-		long maxMemoryUsage = (long)(availableMemory * (this.maxMemoryUsagePercentage / 100.0f));
 
 		// Build an index that assigns the columns to their tables, because the n-ary detection can only group those attributes that belong to the same table and the foreign key detection also only groups attributes from different tables.
 		int currentStartIndex = 0;
@@ -854,6 +850,8 @@ class Binder {
 	private int[] refineBucketLevel(BitSet activeAttributes, int attributeOffset, int level) throws IOException { // The offset is used for n-ary INDs, because their buckets are placed behind the unary buckets on disk, which is important if the unary buckets have not been deleted before
 		// Empty sub bucket cache, because it will be refilled in the following
 		this.attribute2subBucketsCache = null;
+		long availableMemory = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
+		long maxMemoryUsage = (long)(availableMemory * (this.maxMemoryUsagePercentage / 100.0f));
 
 		// Give a hint to the gc
 		System.gc();
@@ -876,8 +874,8 @@ class Binder {
 		}
 		
 		// Define the number of sub buckets
-		long maxBucketSize = this.maxMemoryUsage / numAttributes;
-		int numSubBuckets = (int)(levelSize / this.maxMemoryUsage) + 1;
+		long maxBucketSize = maxMemoryUsage / numAttributes;
+		int numSubBuckets = (int)(levelSize / maxMemoryUsage) + 1;
 
 		int[] subBucketNumbers = new int[numSubBuckets];
 		
@@ -921,7 +919,7 @@ class Binder {
 							numValuesSinceLastMemoryCheck = 0;
 							
 							// Spill to disk if necessary
-							if (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() > this.maxMemoryUsage) {								
+							if (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() > maxMemoryUsage) {
 								for (int subBucket = 0; subBucket < numSubBuckets; subBucket++) {
 									bucketMetadata.setColumnSizes(this.writeBucket(attributeIndex, level, subBucket, subBuckets.get(subBucket), bucketMetadata.getColumnSizes()));
 									subBuckets.set(subBucket, new ArrayList<>());
