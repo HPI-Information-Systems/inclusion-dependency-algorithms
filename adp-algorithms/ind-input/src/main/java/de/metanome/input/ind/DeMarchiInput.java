@@ -1,19 +1,21 @@
 package de.metanome.input.ind;
 
-import com.google.common.collect.ImmutableList;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.demarchi.Configuration;
 import de.metanome.algorithms.demarchi.DeMarchi;
 import java.util.List;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
-class DeMarchiInput {
+@RequiredArgsConstructor
+class DeMarchiInput implements InclusionDependencyInput {
 
-  List<InclusionDependency> execute(final InclusionDependencyParameters parameters)
-      throws AlgorithmExecutionException {
+  private final InclusionDependencyParameters parameters;
 
-    final Configuration configuration = prepareConfiguration(parameters);
+  @Override
+  public List<InclusionDependency> execute() throws AlgorithmExecutionException {
+
+    final Configuration configuration = prepareConfiguration();
     final CollectingResultReceiver resultReceiver = new CollectingResultReceiver();
     configuration.setResultReceiver(resultReceiver);
 
@@ -23,14 +25,19 @@ class DeMarchiInput {
     return resultReceiver.getReceived();
   }
 
-  private Configuration prepareConfiguration(final InclusionDependencyParameters parameters) {
+  private Configuration prepareConfiguration() {
     final Configuration configuration = Configuration.withDefaults();
     configuration.setProcessEmptyColumns(false);
     ConfigurationMapper.applyFrom(parameters.getConfigurationString(), configuration);
-    configuration.setRelationalInputGenerators(
-        Optional.ofNullable(parameters.getRelationalInputGenerators()).orElse(ImmutableList.of()));
-    configuration.setTableInputGenerators(
-        Optional.ofNullable(parameters.getTableInputGenerators()).orElse(ImmutableList.of()));
+
+    if (parameters.getRelationalInputGenerators() != null) {
+      configuration.setRelationalInputGenerators(parameters.getRelationalInputGenerators());
+    }
+
+    if (parameters.getTableInputGenerators() != null) {
+      configuration.setTableInputGenerators(parameters.getTableInputGenerators());
+    }
+
     return configuration;
   }
 }

@@ -2,5 +2,6 @@ package de.metanome.input.ind;
 
 public enum AlgorithmType {
   SPIDER,
-  DE_MARCHI
+  DE_MARCHI,
+  FILE
 }
