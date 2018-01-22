@@ -5,10 +5,10 @@ import static de.metanome.algorithms.sindd.ConfigurationKey.PARTITION_NR;
 import static java.util.Arrays.asList;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
+import de.metanome.algorithm_integration.algorithm_types.BooleanParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.IntegerParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.RelationalInputParameterAlgorithm;
-import de.metanome.algorithm_integration.algorithm_types.BooleanParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementBoolean;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementInteger;
@@ -53,11 +53,11 @@ public class SinddAlgorithm implements
     partitions.setDefaultValues(new Integer[]{defaultValues.getPartitionNr()});
     requirements.add(partitions);
 
-    final ConfigurationRequirementBoolean includeEmptyColumns = new ConfigurationRequirementBoolean(
-        ConfigurationKey.INCLUDE_EMPTY_COLUMNS.name());
+    final ConfigurationRequirementBoolean processEmptyColumns = new ConfigurationRequirementBoolean(
+        ConfigurationKey.PROCESS_EMPTY_COLUMNS.name());
 
-    includeEmptyColumns.setDefaultValues(new Boolean[]{defaultValues.isIncludeEmptyColumns()});
-    requirements.add(includeEmptyColumns);
+    processEmptyColumns.setDefaultValues(new Boolean[]{defaultValues.isProcessEmptyColumns()});
+    requirements.add(processEmptyColumns);
 
     return requirements;
   }
@@ -81,10 +81,11 @@ public class SinddAlgorithm implements
       builder.relationalInputGenerators(asList(values));
     }
   }
+
   @Override
   public void setBooleanConfigurationValue(String identifier, Boolean... values) {
-    if (identifier.equals(ConfigurationKey.INCLUDE_EMPTY_COLUMNS.name())) {
-      builder.includeEmptyColumns(values[0]);
+    if (identifier.equals(ConfigurationKey.PROCESS_EMPTY_COLUMNS.name())) {
+      builder.processEmptyColumns(values[0]);
     }
   }
 

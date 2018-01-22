@@ -83,7 +83,7 @@ class Sindd {
   private void discoverUnaryINDs() throws IOException, InterruptedException {
     LOGGER.info("......discoverying ... ");
 
-    if(configuration.isIncludeEmptyColumns())
+    if(configuration.isProcessEmptyColumns())
       initAttributes();
 
     int openFileNumber = configuration.getOpenFileNr();
