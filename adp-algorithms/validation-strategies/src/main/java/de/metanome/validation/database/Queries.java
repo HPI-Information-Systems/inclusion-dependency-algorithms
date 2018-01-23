@@ -48,7 +48,7 @@ class Queries {
     final int violators = context.selectCount().from(
         context.select(fields(lhs))
             .from(tables(lhs, rhs))
-            .where(notNull(lhs))
+            .where(oneNotNull(lhs))
             .and(row(fields(lhs)).notIn(select(fields(rhs)).from(tables(rhs)).where(notNull(rhs))))
             .limit(1)
             .asTable("indCheck"))
@@ -62,7 +62,7 @@ class Queries {
 
     final Table<Record> lhsAlias = context.select(fields(lhs))
         .from(tables(lhs))
-        .where(notNull(lhs))
+        .where(oneNotNull(lhs))
         .asTable();
 
     final int violators = context.selectCount().from(
@@ -88,7 +88,7 @@ class Queries {
         .leftOuterJoin(rhsAlias)
         .on(columnsEqual(lhs, rhsAliasColumns))
         .where(isNull(rhsAliasColumns))
-        .and(notNull(lhs))
+        .and(oneNotNull(lhs))
         .limit(1)
         .execute();
 
@@ -102,7 +102,7 @@ class Queries {
         context.selectCount().from(
             select(fields(lhs))
                 .from(tables(lhs))
-                .where(notNull(lhs))
+                .where(oneNotNull(lhs))
                 .except(select(fields(rhs)).from(tables(rhs)))
                 .limit(1)
         ).fetchOne().value1();
@@ -132,7 +132,7 @@ class Queries {
 
     final Table<Record> lhsAlias = context.select(fields(lhs))
         .from(tables(lhs))
-        .where(notNull(lhs))
+        .where(oneNotNull(lhs))
         .asTable();
 
     final double errorCount = context.selectCount().from(
