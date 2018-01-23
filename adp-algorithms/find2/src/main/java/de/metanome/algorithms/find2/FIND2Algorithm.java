@@ -77,7 +77,7 @@ public class FIND2Algorithm
     if (identifier.equals(ConfigurationKey.DATABASE.name()) && values.length > 0) {
       configurationBuilder.databaseConnectionGenerator(values[0]);
       ValidationConfigurationRequirements.acceptDatabaseConnectionGenerator(
-          values, validationParameters);
+          values[0], validationParameters);
     }
   }
 
