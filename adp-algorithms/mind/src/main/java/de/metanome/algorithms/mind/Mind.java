@@ -1,48 +1,38 @@
 package de.metanome.algorithms.mind;
 
-import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
-import de.metanome.algorithm_integration.input.InputGenerationException;
-import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.results.InclusionDependency;
-import de.metanome.util.TableInfo;
-import de.metanome.util.TableInfoFactory;
+import de.metanome.input.ind.InclusionDependencyInput;
+import de.metanome.input.ind.InclusionDependencyInputGenerator;
 import de.metanome.validation.ValidationStrategy;
 import de.metanome.validation.ValidationStrategyFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.jooq.DSLContext;
-import org.jooq.impl.DSL;
 
 public class Mind {
 
   private Configuration configuration;
   private ValidationStrategy validationStrategy;
-  private DSLContext context;
-  private List<String> relationNames;
 
-  private List<TableInfo> tables;
   private final List<ColumnPermutation[]> results = new ArrayList<>();
 
-  private final TableInfoFactory tableInfoFactory;
+  private final InclusionDependencyInputGenerator inclusionDependencyInputGenerator;
   private final ValidationStrategyFactory validationStrategyFactory;
 
   public Mind() {
-    tableInfoFactory = new TableInfoFactory();
+    inclusionDependencyInputGenerator = new InclusionDependencyInputGenerator();
     validationStrategyFactory = new ValidationStrategyFactory();
   }
 
   public void execute(final Configuration configuration) throws AlgorithmExecutionException {
     this.configuration = configuration;
-    context = getContext();
     validationStrategy = validationStrategyFactory
         .forDatabase(configuration.getValidationParameters());
 
-    initialize();
-    List<ColumnPermutation[]> candidates = genLevel1Candidates();
+    List<ColumnPermutation[]> candidates = genNextLevelCandidates(genLevel1Candidates());
 
     int depth = 1;
 
@@ -52,7 +42,7 @@ public class Mind {
       for (final ColumnPermutation[] candidate : candidates) {
         final ColumnPermutation lhs = candidate[0];
         final ColumnPermutation rhs = candidate[1];
-        if (isInd(lhs, rhs, depth)) {
+        if (isInd(lhs, rhs)) {
           final InclusionDependency ind = new InclusionDependency(lhs, rhs);
           configuration.getResultReceiver().receiveResult(ind);
           results.add(candidate);
@@ -66,48 +56,35 @@ public class Mind {
     validationStrategy.close();
   }
 
-  private DSLContext getContext() {
-    // Tables can only be taken from the very same source database
-    final TableInputGenerator firstInput = configuration.getTableInputGenerators().get(0);
-    return DSL.using(firstInput.getDatabaseConnectionGenerator().getConnection());
+
+  private List<ColumnPermutation[]> genLevel1Candidates() throws AlgorithmExecutionException {
+    final List<InclusionDependency> inds = retrieveInputInds();
+    receiveResult(inds);
+    final List<ColumnPermutation[]> internal = toInternalRepresentation(inds);
+    results.addAll(internal);
+    return internal;
   }
 
-  private List<ColumnPermutation[]> genLevel1Candidates() {
-    final List<ColumnIdentifier> attributes = new ArrayList<>();
-    final List<ColumnPermutation[]> candidates = new ArrayList<>();
-    for (final TableInfo table : tables) {
-      for (String column : table.getColumnNames()) {
-        if (shouldAdd(table, column)) {
-          attributes.add(new ColumnIdentifier(table.getTableName(), column));
-        }
-      }
-    }
-
-    for (final ColumnIdentifier lhs : attributes) {
-      for (final ColumnIdentifier rhs : attributes) {
-        if (!lhs.equals(rhs)) {
-          final ColumnPermutation[] candidate = {new ColumnPermutation(lhs),
-              new ColumnPermutation(rhs)};
-          candidates.add(candidate);
-        }
-      }
-    }
-
-    return candidates;
+  private List<InclusionDependency> retrieveInputInds() throws AlgorithmExecutionException {
+    final InclusionDependencyInput input = inclusionDependencyInputGenerator
+        .get(configuration.getInclusionDependencyParameters());
+    return input.execute();
   }
 
-  private boolean shouldAdd(final TableInfo table, final String column) {
-    if (configuration.isProcessEmptyColumns()) {
-      return true;
-    }
+  private void receiveResult(final List<InclusionDependency> inds)
+      throws AlgorithmExecutionException {
 
-    return isNonEmpty(table, column);
+    for (final InclusionDependency ind : inds) {
+      configuration.getResultReceiver().receiveResult(ind);
+    }
   }
 
-  private boolean isNonEmpty(final TableInfo table, final String column) {
-    return context.selectCount().from(
-        context.selectDistinct(DSL.field(DSL.name(column))).from(DSL.name(table.getTableName()))
-    ).fetchOne().value1() > 1; /* NULL is one distinct value */
+  private List<ColumnPermutation[]> toInternalRepresentation(final List<InclusionDependency> inds) {
+    final List<ColumnPermutation[]> columnPermutations = new ArrayList<>(inds.size());
+    for (final InclusionDependency ind : inds) {
+      columnPermutations.add(new ColumnPermutation[]{ind.getDependant(), ind.getReferenced()});
+    }
+    return columnPermutations;
   }
 
   private List<ColumnPermutation[]> genNextLevelCandidates(
@@ -208,18 +185,7 @@ public class Mind {
     return true;
   }
 
-  private void initialize() throws InputGenerationException, AlgorithmConfigurationException {
-    this.relationNames = new ArrayList<>();
-
-    tables = tableInfoFactory
-        .createFromTableInputs(configuration.getTableInputGenerators());
-
-    for (final TableInfo table : tables) {
-      this.relationNames.add(table.getTableName());
-    }
-  }
-
-  private boolean isInd(final ColumnPermutation lhs, final ColumnPermutation rhs, int depth) {
+  private boolean isInd(final ColumnPermutation lhs, final ColumnPermutation rhs) {
     return validationStrategy.validate(new InclusionDependency(lhs, rhs)).isValid();
   }
 }

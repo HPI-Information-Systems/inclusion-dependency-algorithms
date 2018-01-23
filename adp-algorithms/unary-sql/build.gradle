@@ -1,0 +1,16 @@
+
+dependencies {
+    extraLibs(project(':util'))
+    extraLibs(project(':validation-strategies'))
+    
+    testCompile(project(path: ':util', configuration: 'tests')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
+    }
+}
+
+jar {
+    from configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+    manifest {
+        attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.unarysql.UnarySQLAlgorithm'
+    }
+}

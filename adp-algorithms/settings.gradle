@@ -4,6 +4,7 @@ include 'util'
 include 'validation-strategies'
 include 'ind-input'
 
+include 'unary-sql'
 include 'spider'
 include 'demarchi'
 include 'binder'

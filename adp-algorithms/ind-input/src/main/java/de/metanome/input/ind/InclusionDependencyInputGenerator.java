@@ -19,6 +19,7 @@ public class InclusionDependencyInputGenerator {
         .put(AlgorithmType.DE_MARCHI, DeMarchiInput::new)
         .put(AlgorithmType.SPIDER, SpiderInput::new)
         .put(AlgorithmType.FILE, FileInput::new)
+        .put(AlgorithmType.SQL, UnarySQLInput::new)
         .build();
   }
 
