@@ -1,29 +1,32 @@
 package de.metanome.input.ind;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+import java.util.Objects;
+
 public class InclusionDependencyInputGenerator {
 
-  private final DeMarchiInput deMarchi;
-  private final SpiderInput spider;
-  private final MindInput mind;
+  @FunctionalInterface
+  interface InputFactory {
 
+    InclusionDependencyInput create(InclusionDependencyParameters parameters);
+  }
+
+  private final Map<AlgorithmType, InputFactory> inputs;
 
   public InclusionDependencyInputGenerator() {
-    deMarchi = new DeMarchiInput();
-    spider = new SpiderInput();
-    mind = new MindInput();
+    inputs = ImmutableMap.<AlgorithmType, InputFactory>builder()
+        .put(AlgorithmType.DE_MARCHI, DeMarchiInput::new)
+        .put(AlgorithmType.SPIDER, SpiderInput::new)
+        .put(AlgorithmType.FILE, FileInput::new)
+        .put(AlgorithmType.SQL, UnarySQLInput::new)
+        .build();
   }
 
   public InclusionDependencyInput get(final InclusionDependencyParameters parameters) {
-    switch (parameters.getAlgorithmType()) {
-      case DE_MARCHI:
-        return () -> deMarchi.execute(parameters);
-      case SPIDER:
-        return () -> spider.execute(parameters);
-      case MIND:
-        return () -> mind.execute(parameters);
-      default:
-        throw new IllegalArgumentException(
-            "unknown algorithm type " + parameters.getAlgorithmType());
-    }
+    final InputFactory inputFactory = inputs.get(parameters.getAlgorithmType());
+    Objects.requireNonNull(inputFactory,
+        "no input configured for type " + parameters.getAlgorithmType());
+    return inputFactory.create(parameters);
   }
 }

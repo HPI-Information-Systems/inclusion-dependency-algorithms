@@ -10,10 +10,15 @@ import static org.mockito.Mockito.mock;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
+import de.metanome.algorithm_integration.input.InputIterationException;
+import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
@@ -65,6 +70,7 @@ public class TestDatabase {
 
   public void tearDown() {
     if (context != null) {
+      context.dropTableIfExists(name(relationName)).execute();
       context.close();
     }
   }
@@ -93,10 +99,37 @@ public class TestDatabase {
           connection.prepareStatement(String.format("select * from %s;", relationName))
               .executeQuery()
       ).given(generator).select();
+
+      given(generator.generateNewCopy()).willAnswer(invocation -> asRelationalInput());
     } catch (final AlgorithmExecutionException ignored) {
     }
 
     return generator;
   }
 
+  private RelationalInput asRelationalInput() throws InputIterationException {
+    return RelationalInputStub.builder()
+        .relationName(relationName)
+        .columnNames(columnNames)
+        .rows(collectRows())
+        .build();
+  }
+
+  private List<Row> collectRows() throws InputIterationException {
+    try {
+      final List<Row> rows = new ArrayList<>();
+      final PreparedStatement ps = connection.prepareStatement("select * from " + relationName);
+      final ResultSet set = ps.executeQuery();
+      while (set.next()) {
+        final String[] values = new String[columnNames.size()];
+        for (int index = 0; index < columnNames.size(); ++index) {
+          values[index] = set.getString(columnNames.get(index));
+        }
+        rows.add(Row.of(values));
+      }
+      return rows;
+    } catch (final SQLException e) {
+      throw new InputIterationException("query failure", e);
+    }
+  }
 }

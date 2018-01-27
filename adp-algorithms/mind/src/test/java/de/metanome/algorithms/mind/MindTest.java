@@ -10,6 +10,8 @@ import static org.mockito.Mockito.verify;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.input.ind.AlgorithmType;
+import de.metanome.input.ind.InclusionDependencyParameters;
 import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.util.TestDatabase;
 import de.metanome.validation.ValidationParameters;
@@ -53,9 +55,9 @@ class MindTest {
     configuration = Configuration.builder()
         .tableInputGenerator(tableInputGenerator)
         .resultReceiver(resultReceiver)
+        .inclusionDependencyParameters(inclusionDependencyParameters())
         .validationParameters(validationParameters())
         .maxDepth(-1)
-        .processEmptyColumns(false)
         .build();
 
     mind = new Mind();
@@ -65,6 +67,13 @@ class MindTest {
     final ValidationParameters parameters = new ValidationParameters();
     parameters.setQueryType(QueryType.NOT_IN);
     parameters.setConnectionGenerator(tableInputGenerator.getDatabaseConnectionGenerator());
+    return parameters;
+  }
+
+  private InclusionDependencyParameters inclusionDependencyParameters() {
+    final InclusionDependencyParameters parameters = new InclusionDependencyParameters();
+    parameters.setAlgorithmType(AlgorithmType.DE_MARCHI);
+    parameters.setTableInputGenerators(asList(tableInputGenerator));
     return parameters;
   }
 

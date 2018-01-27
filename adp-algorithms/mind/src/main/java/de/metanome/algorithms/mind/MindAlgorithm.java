@@ -3,17 +3,18 @@ package de.metanome.algorithms.mind;
 import static java.util.Arrays.asList;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.algorithm_types.BooleanParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.IntegerParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
-import de.metanome.algorithm_integration.configuration.ConfigurationRequirementBoolean;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementInteger;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+import de.metanome.input.ind.InclusionDependencyInputConfigurationRequirements;
+import de.metanome.input.ind.InclusionDependencyInputParameterAlgorithm;
+import de.metanome.input.ind.InclusionDependencyParameters;
 import de.metanome.validation.InclusionDependencyValidationAlgorithm;
 import de.metanome.validation.ValidationConfigurationRequirements;
 import de.metanome.validation.ValidationParameters;
@@ -21,17 +22,19 @@ import java.util.ArrayList;
 
 public class MindAlgorithm implements InclusionDependencyAlgorithm,
     TableInputParameterAlgorithm,
+    InclusionDependencyInputParameterAlgorithm,
     InclusionDependencyValidationAlgorithm,
-    IntegerParameterAlgorithm,
-    BooleanParameterAlgorithm {
+    IntegerParameterAlgorithm {
 
   private final Configuration.ConfigurationBuilder builder;
+  private final InclusionDependencyParameters inclusionDependencyParameters;
   private final ValidationParameters validationParameters;
   private final Configuration defaultValues;
 
   public MindAlgorithm() {
     builder = Configuration.builder();
     defaultValues = Configuration.withDefaults();
+    inclusionDependencyParameters = new InclusionDependencyParameters();
     validationParameters = new ValidationParameters();
   }
 
@@ -39,9 +42,9 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
   public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() {
     final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
     requirements.add(tableInput());
+    requirements.addAll(InclusionDependencyInputConfigurationRequirements.indInput());
     requirements.addAll(ValidationConfigurationRequirements.validationStrategy());
     requirements.add(maxDepth());
-    requirements.add(processEmptyColumns());
     return requirements;
   }
 
@@ -58,13 +61,6 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
     return requirement;
   }
 
-  private ConfigurationRequirement<?> processEmptyColumns() {
-    final ConfigurationRequirementBoolean requirement = new ConfigurationRequirementBoolean(
-        ConfigurationKey.PROCESS_EMPTY_COLUMNS.name());
-    requirement.setDefaultValues(new Boolean[]{defaultValues.isProcessEmptyColumns()});
-    return requirement;
-  }
-
   @Override
   public void setResultReceiver(final InclusionDependencyResultReceiver resultReceiver) {
     builder.resultReceiver(resultReceiver);
@@ -77,6 +73,8 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
     if (identifier.equals(ConfigurationKey.TABLE.name())) {
       final DatabaseConnectionGenerator databaseConnectionGenerators = values[0]
           .getDatabaseConnectionGenerator();
+      InclusionDependencyInputConfigurationRequirements
+          .acceptTableInputGenerator(values, inclusionDependencyParameters);
       ValidationConfigurationRequirements
           .acceptDatabaseConnectionGenerator(databaseConnectionGenerators, validationParameters);
       builder.tableInputGenerators(asList(values));
@@ -87,13 +85,32 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
   public void setListBoxConfigurationValue(final String identifier,
       final String... selectedValues) {
 
+    InclusionDependencyInputConfigurationRequirements
+        .acceptListBox(identifier, selectedValues, inclusionDependencyParameters);
     ValidationConfigurationRequirements
         .acceptListBox(identifier, selectedValues, validationParameters);
   }
 
   @Override
+  public void setStringConfigurationValue(final String identifier, final String... values) {
+
+    InclusionDependencyInputConfigurationRequirements
+        .acceptString(identifier, values, inclusionDependencyParameters);
+  }
+
+  @Override
+  public void setIntegerConfigurationValue(final String identifier, final Integer... values) {
+    if (identifier.equals(ConfigurationKey.MAX_DEPTH.name())) {
+      builder.maxDepth(values[0]);
+    }
+  }
+
+  @Override
   public void execute() throws AlgorithmExecutionException {
-    final Configuration configuration = builder.validationParameters(validationParameters).build();
+    final Configuration configuration = builder
+        .inclusionDependencyParameters(inclusionDependencyParameters)
+        .validationParameters(validationParameters)
+        .build();
 
     final Mind mind = new Mind();
     mind.execute(configuration);
@@ -107,19 +124,5 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
   @Override
   public String getDescription() {
     return "MIND";
-  }
-
-  @Override
-  public void setIntegerConfigurationValue(final String identifier, final Integer... values) {
-    if (identifier.equals(ConfigurationKey.MAX_DEPTH.name())) {
-      builder.maxDepth(values[0]);
-    }
-  }
-
-  @Override
-  public void setBooleanConfigurationValue(final String identifier, final Boolean... values) {
-    if (identifier.equals(ConfigurationKey.PROCESS_EMPTY_COLUMNS.name())) {
-      builder.processEmptyColumns(values[0]);
-    }
   }
 }
