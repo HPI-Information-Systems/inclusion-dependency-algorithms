@@ -15,6 +15,7 @@ To reduce the number of invalid INDs, we can limit the following:
 * Use only two tables. Prevents invalid INDs with multiple tables per side.
 * One table provides only dependants, the other only referenced. Prevents invalid INDs with multiple tables per side.
 * Only allow one column to be part of one IND. Prevents invalid: A->B, A->C => AA->BC
+
 To reduce the generation time of the optimistic border, another algorithm could be used, which is not relying on the cartesianProduct for all unsatisfied INDs. Explore minimal transversal algorithms like the paper mentions. This could require performing operations on a graph structure.
 
 ## To-Dos
