@@ -69,12 +69,12 @@ class NullHandlingTest {
 
   @ParameterizedTest
   @EnumSource(QueryType.class)
-  void oneNullComponentShouldRefuteINDGivenAnyQuery(final QueryType queryType) {
+  void allQueriesShouldSkipTupleWithNullGivenNary(final QueryType queryType) {
     final DatabaseValidation validation = new DatabaseValidation(context, queries.get(queryType));
 
     final ValidationResult result = validation.validate(getValidNaryWithNulls());
 
-    assertThat(result.isValid()).isFalse();
+    assertThat(result.isValid()).isTrue();
   }
 
   private InclusionDependency getValidNaryWithNulls() {
