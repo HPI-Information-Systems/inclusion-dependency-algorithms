@@ -21,3 +21,9 @@ de.metanome.cli.App \
 --temp /tmp/mind2
 --algorithm-config ind-input-algorithm:DE_MARCHI INDEX:MIND2_INDEX \
 ```
+
+## Todos
+
+- [ ] Fix hardcoded [IND input algorithm](https://github.com/HPI-Information-Systems/AdvancedDataProfilingSeminar/blob/e50b43137dbb382be60c4f7b64beb67dd8c67358/adp-algorithms/mind2/src/main/java/de/metanome/algorithms/mind2/Mind2Algorithm.java#L94).
+- [ ] Use SQL row number function instead of index column.
+- [ ] Use `Set<Set<Int>>` instead of `Set<Set<IND>>` to handle max INDS for potentially faster set operations.
