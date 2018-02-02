@@ -15,7 +15,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
+import static de.metanome.util.UindUtils.getDependant;
+import static de.metanome.util.UindUtils.getReferenced;
 import static java.lang.String.format;
 
 public class PostgresDataAccessObject implements DataAccessObject {
@@ -42,9 +43,7 @@ public class PostgresDataAccessObject implements DataAccessObject {
                 candidate.getDependant().getColumnIdentifiers().size() != 1) {
             throw new AlgorithmExecutionException(format("Algorithm can only handle UINDs. Got nIND: %s", candidate));
         }
-        return isInd(
-                getOnlyElement(candidate.getDependant().getColumnIdentifiers()),
-                getOnlyElement(candidate.getReferenced().getColumnIdentifiers()));
+        return isInd(getDependant(candidate), getReferenced(candidate));
     }
 
     // TODO: Encapsulate schemaName and tableName to Class

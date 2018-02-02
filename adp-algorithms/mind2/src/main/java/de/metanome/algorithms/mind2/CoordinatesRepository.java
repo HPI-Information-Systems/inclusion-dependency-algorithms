@@ -2,6 +2,7 @@ package de.metanome.algorithms.mind2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
@@ -36,11 +37,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class CoordinatesRepository {
 
     private final Mind2Configuration config;
+    private final ImmutableSet<InclusionDependency> uinds;
     private final Map<InclusionDependency, Path> uindToPath = new HashMap<>();
 
     @Inject
-    public CoordinatesRepository(Mind2Configuration config) {
+    public CoordinatesRepository(Mind2Configuration config, ImmutableSet<InclusionDependency> uinds) {
         this.config = config;
+        this.uinds = uinds;
     }
 
     public UindCoordinatesReader getReader(InclusionDependency uind) throws AlgorithmExecutionException {
@@ -57,7 +60,7 @@ public class CoordinatesRepository {
     public void storeUindCoordinates() throws AlgorithmExecutionException {
         ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes =
                 getRelationalInputMap(config.getInputGenerators());
-        for (InclusionDependency uind : config.getUnaryInds()) {
+        for (InclusionDependency uind : uinds) {
             SetMultimap<Integer, Integer> uindCoordinates = generateCoordinates(uind, attributes);
             Path path = getPath();
             try {

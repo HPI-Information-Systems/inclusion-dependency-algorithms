@@ -21,7 +21,6 @@ public class Mind2Configuration {
 
     private final InclusionDependencyResultReceiver resultReceiver;
     private final ImmutableList<TableInputGenerator> inputGenerators;
-    private final ImmutableSet<InclusionDependency> unaryInds;
     private final FileGenerator tempFileGenerator;
     private final String indexColumn;
 

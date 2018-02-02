@@ -85,14 +85,13 @@ public class Mind2Test {
                 new InclusionDependency(new ColumnPermutation(a4, a5), new ColumnPermutation(b4, b5)));
 
         when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
-        when(config.getUnaryInds()).thenReturn(unaryInds);
         when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
         when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
         when(config.getSortedRelationalInput(same(tableRGenerator), any())).then(in -> tableR.generateNewCopy());
         when(config.getSortedRelationalInput(same(tableSGenerator), any())).then(in -> tableS.generateNewCopy());
 
         // WHEN
-        mind2.execute();
+        mind2.execute(unaryInds);
 
         // THEN
         assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(maximumInds));
@@ -129,14 +128,13 @@ public class Mind2Test {
                 new InclusionDependency(new ColumnPermutation(a1, a2, a3), new ColumnPermutation(b1, b2, b3)));
 
         when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
-        when(config.getUnaryInds()).thenReturn(unaryInds);
         when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
         when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
         when(config.getSortedRelationalInput(same(tableRGenerator), any())).then(in -> tableR.generateNewCopy());
         when(config.getSortedRelationalInput(same(tableSGenerator), any())).then(in -> tableS.generateNewCopy());
 
         // WHEN
-        mind2.execute();
+        mind2.execute(unaryInds);
 
         // THEN
         assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(maximumInds));
@@ -172,14 +170,13 @@ public class Mind2Test {
                 new InclusionDependency(new ColumnPermutation(a2), new ColumnPermutation(b2)));
 
         when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
-        when(config.getUnaryInds()).thenReturn(unaryInds);
         when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
         when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
         when(config.getSortedRelationalInput(same(tableRGenerator), any())).then(in -> tableR.generateNewCopy());
         when(config.getSortedRelationalInput(same(tableSGenerator), any())).then(in -> tableS.generateNewCopy());
 
         // WHEN
-        mind2.execute();
+        mind2.execute(unaryInds);
 
         // THEN
         assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(maximumInds));
@@ -225,14 +222,13 @@ public class Mind2Test {
                 new InclusionDependency(new ColumnPermutation(a4, a5), new ColumnPermutation(b4, b5)));
 
         when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
-        when(config.getUnaryInds()).thenReturn(unaryInds);
         when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
         when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
         when(config.getSortedRelationalInput(same(tableRGenerator), any())).then(in -> tableR.generateNewCopy());
         when(config.getSortedRelationalInput(same(tableSGenerator), any())).then(in -> tableS.generateNewCopy());
 
         // WHEN
-        mind2.execute();
+        mind2.execute(unaryInds);
 
         // THEN
         assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(maximumInds));

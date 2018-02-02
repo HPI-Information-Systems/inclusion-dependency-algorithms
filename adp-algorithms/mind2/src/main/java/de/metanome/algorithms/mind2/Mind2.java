@@ -22,42 +22,40 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.algorithms.mind2.utils.IndComparators.RhsComrapator;
 import static de.metanome.algorithms.mind2.utils.IndComparators.UindCoordinatesReaderComparator;
 import static de.metanome.util.Collectors.toImmutableList;
 import static de.metanome.util.Collectors.toImmutableSet;
-import static java.lang.String.format;
 
 public class Mind2 {
 
     private final static Logger log = Logger.getLogger(Mind2.class.getName());
 
     private final Mind2Configuration config;
-    private CoordinatesRepository repository;
 
     @Inject
     public Mind2(Mind2Configuration config) {
         this.config = config;
     }
 
-    public void execute() throws AlgorithmExecutionException {
-        repository = new CoordinatesRepository(config);
+    public void execute(ImmutableSet<InclusionDependency> uinds) throws AlgorithmExecutionException {
+        CoordinatesRepository repository = new CoordinatesRepository(config, uinds);
         repository.storeUindCoordinates();
         log.info("Finished calculating UIND coordinates");
 
-        Set<Set<InclusionDependency>> maxInds = generateMaxInds();
+        Set<Set<InclusionDependency>> maxInds = generateMaxInds(repository, uinds);
         collectInds(maxInds);
     }
 
-    private Set<Set<InclusionDependency>> generateMaxInds() throws AlgorithmExecutionException {
+    private Set<Set<InclusionDependency>> generateMaxInds(
+            CoordinatesRepository repository,
+            ImmutableSet<InclusionDependency> uinds) throws AlgorithmExecutionException {
         Queue<UindCoordinatesReader> coordinatesQueue = new PriorityQueue<>(new UindCoordinatesReaderComparator());
-        for (InclusionDependency uind : config.getUnaryInds()) {
+        for (InclusionDependency uind : uinds) {
             coordinatesQueue.add(repository.getReader(uind));
         }
 
-        // TODO: SET<UINDS> or SET<SET<UIND>>?
-        Set<Set<InclusionDependency>> maxInds = ImmutableSet.of(config.getUnaryInds());
+        Set<Set<InclusionDependency>> maxInds = ImmutableSet.of(uinds);
 
         while (!coordinatesQueue.isEmpty()) {
             Set<UindCoordinates> sameIndexCoords = new HashSet<>();
@@ -82,14 +80,14 @@ public class Mind2 {
             Set<Set<InclusionDependency>> subMaxInd = generateSubMaxInds(sameIndexCoords, maxInds);
             maxInds = removeSubsets(generateIntersections(maxInds, subMaxInd));
 
-            for (InclusionDependency uind : config.getUnaryInds()) {
+            for (InclusionDependency uind : uinds) {
                 ImmutableSet<InclusionDependency> uindSet = ImmutableSet.of(uind);
                 if (maxInds.contains(uindSet)) {
                     maxInds.remove(uindSet);
                 }
             }
             if (maxInds.isEmpty()) {
-                return config.getUnaryInds().stream().map(ImmutableSet::of).collect(toImmutableSet());
+                return uinds.stream().map(ImmutableSet::of).collect(toImmutableSet());
             }
 
             Set<InclusionDependency> activeU = new HashSet<>();

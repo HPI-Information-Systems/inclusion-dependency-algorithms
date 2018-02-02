@@ -3,7 +3,6 @@ package de.metanome.algorithms.mind2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.algorithm_execution.FileGenerator;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.StringParameterAlgorithm;
@@ -24,13 +23,11 @@ import de.metanome.input.ind.InclusionDependencyInputConfigurationRequirements;
 import de.metanome.input.ind.InclusionDependencyInputGenerator;
 import de.metanome.input.ind.InclusionDependencyInputParameterAlgorithm;
 import de.metanome.input.ind.InclusionDependencyParameters;
+import de.metanome.util.RelationPairUinds;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.logging.Logger;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
-import static de.metanome.util.Collectors.toImmutableSet;
 import static java.lang.String.format;
 
 public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputParameterAlgorithm, TempFileAlgorithm,
@@ -92,16 +89,18 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
     @Override
     public void execute() throws AlgorithmExecutionException {
         indInputParams.setAlgorithmType(AlgorithmType.DE_MARCHI);
-        InclusionDependencyInput uindInput = new InclusionDependencyInputGenerator().get(indInputParams);
-        ImmutableSet<InclusionDependency> uinds = filterUinds(uindInput.execute(), indexColumnIdentifier);
         Mind2Configuration config = configurationBuilder
                 .indexColumn(indexColumnIdentifier)
-                .unaryInds(uinds)
                 .build();
-        log.info(format("Start calculating max INDs for %d UINDs", uinds.size()));
-        logUinds(uinds);
+        InclusionDependencyInput uindInput = new InclusionDependencyInputGenerator().get(indInputParams);
+        Mind2 mind2 = new Mind2(config);
 
-        new Mind2(config).execute();
+        RelationPairUinds relationPairUinds = new RelationPairUinds(uindInput.execute(), indexColumnIdentifier);
+        for (ImmutableSet<InclusionDependency> uinds : relationPairUinds) {
+            log.info(format("Start calculating max INDs for %d UINDs", uinds.size()));
+            logUinds(uinds);
+            mind2.execute(uinds);
+        }
     }
 
     @Override
@@ -113,19 +112,6 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
     public String getDescription() {
         return "Implementation of 'Detecting Maximum Inclusion Dependencies without Candidate Generation' " +
                 "by Shaabani, Meinel, 2016";
-    }
-
-    private ImmutableSet<InclusionDependency> filterUinds(Collection<InclusionDependency> uinds, String indexColumn) {
-        return uinds.stream()
-                .filter(uind -> {
-                    ColumnIdentifier lhs = getOnlyElement(uind.getDependant().getColumnIdentifiers());
-                    ColumnIdentifier rhs = getOnlyElement(uind.getReferenced().getColumnIdentifiers());
-                    boolean isIndexColumn = lhs.getColumnIdentifier().equals(indexColumn) ||
-                            lhs.getColumnIdentifier().equals(indexColumn);
-                    boolean isFromSameTable = lhs.getTableIdentifier().equals(rhs.getTableIdentifier());
-                    return !isIndexColumn && !isFromSameTable;
-                })
-                .collect(toImmutableSet());
     }
 
     private void logUinds(ImmutableSet<InclusionDependency> uinds) {
