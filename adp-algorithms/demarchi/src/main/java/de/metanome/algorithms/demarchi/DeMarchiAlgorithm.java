@@ -51,7 +51,7 @@ public class DeMarchiAlgorithm implements InclusionDependencyAlgorithm,
 
   private ConfigurationRequirement<?> processEmptyColumns() {
     final ConfigurationRequirementBoolean requirement = new ConfigurationRequirementBoolean(
-        ConfigurationKey.PROCES_EMPTY_COLUMNS.name());
+        ConfigurationKey.PROCESS_EMPTY_COLUMNS.name());
     requirement.setDefaultValues(new Boolean[]{defaultValues.isProcessEmptyColumns()});
     return requirement;
   }
@@ -76,7 +76,7 @@ public class DeMarchiAlgorithm implements InclusionDependencyAlgorithm,
   public void setBooleanConfigurationValue(final String identifier, final Boolean... values)
       throws AlgorithmConfigurationException {
 
-    if (identifier.equals(ConfigurationKey.PROCES_EMPTY_COLUMNS.name())) {
+    if (identifier.equals(ConfigurationKey.PROCESS_EMPTY_COLUMNS.name())) {
       builder.processEmptyColumns(values[0]);
     } else {
       handleUnknownConfiguration(identifier, values);
