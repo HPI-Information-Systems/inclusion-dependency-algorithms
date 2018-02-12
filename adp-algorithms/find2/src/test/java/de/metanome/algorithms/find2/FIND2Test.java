@@ -1,38 +1,45 @@
 package de.metanome.algorithms.find2;
 
-import de.metanome.algorithm_integration.AlgorithmExecutionException;
+import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
-import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
-import de.metanome.algorithm_integration.input.RelationalInput;
-import de.metanome.algorithm_integration.input.TableInputGenerator;
-import de.metanome.util.TestDatabase;
+import de.metanome.input.ind.AlgorithmType;
+import de.metanome.input.ind.InclusionDependencyParameters;
 import de.metanome.util.InclusionDependencyResultReceiverStub;
+import de.metanome.util.TestDatabase;
 import de.metanome.validation.ValidationParameters;
 import de.metanome.validation.database.QueryType;
-
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class FIND2Test {
 
+  private TestDatabase testDatabase;
+
+  @AfterEach
+  void tearDown() {
+    if (testDatabase != null) {
+      testDatabase.tearDown();
+    }
+  }
+
   @Test
-  void testPaperExample() throws AlgorithmExecutionException {
+  void testPaperExample() throws Exception {
     // GIVEN
     String relationName = "TEST";
     List<String> columnNames =
         asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N");
 
-    ArrayList<ColumnIdentifier> ci = new ArrayList<>();
-    for (String c : columnNames) ci.add(new ColumnIdentifier(relationName, c));
+    List<ColumnIdentifier> ci = new ArrayList<>();
+    for (String c : columnNames) {
+      ci.add(new ColumnIdentifier(relationName, c));
+    }
 
-    ArrayList<ExIND> maximumINDs = new ArrayList<>();
+    List<ExIND> maximumINDs = new ArrayList<>();
     maximumINDs.add(
         new ExIND(
             new ColumnPermutation(ci.get(0), ci.get(1), ci.get(2), ci.get(3), ci.get(4)),
@@ -50,7 +57,7 @@ class FIND2Test {
             new ColumnPermutation(ci.get(4), ci.get(6)),
             new ColumnPermutation(ci.get(11), ci.get(13))));
 
-    TestDatabase testDatabase =
+    testDatabase =
         TestDatabase.builder()
             .resourceClass(FIND2Test.class)
             .relationName(relationName)
@@ -58,33 +65,26 @@ class FIND2Test {
             .csvPath("testPaperExample.csv")
             .build();
 
-    try {
-      testDatabase.setUp();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    DatabaseConnectionGenerator connectionGenerator = testDatabase.asConnectionGenerator();
-
-    RelationalInput riMock = mock(RelationalInput.class);
-    when(riMock.relationName()).thenReturn(relationName);
-    when(riMock.columnNames()).thenReturn(columnNames);
-    TableInputGenerator tigMock = mock(TableInputGenerator.class);
-    when(tigMock.generateNewCopy()).thenReturn(riMock);
+    testDatabase.setUp();
 
     InclusionDependencyResultReceiverStub resultReceiver =
         new InclusionDependencyResultReceiverStub();
 
     ValidationParameters validationParameters = new ValidationParameters();
     validationParameters.setQueryType(QueryType.NOT_IN);
-    validationParameters.setConnectionGenerator(connectionGenerator);
+    validationParameters.setConnectionGenerator(testDatabase.asConnectionGenerator());
+
+    InclusionDependencyParameters inclusionDependencyParameters = new InclusionDependencyParameters();
+    inclusionDependencyParameters.setAlgorithmType(AlgorithmType.FILE);
+    inclusionDependencyParameters
+        .setConfigurationString("inputPath=" + getClass().getResource("ind_input.json").getFile());
 
     // EXECUTE
     FIND2Configuration config =
         FIND2Configuration.builder()
-            .databaseConnectionGenerator(connectionGenerator)
-            .tableInputGenerator(tigMock)
             .resultReceiver(resultReceiver)
             .validationParameters(validationParameters)
+            .inclusionDependencyParameters(inclusionDependencyParameters)
             .startK(2)
             .build();
 
@@ -97,16 +97,18 @@ class FIND2Test {
   }
 
   @Test
-  void testHypercliqueOnHigherAryEdges() throws AlgorithmExecutionException {
+  void testHypercliqueOnHigherAryEdges() throws Exception {
     // GIVEN
-    String relationName = "HAE";
+    String relationName = "TEST";
     List<String> columnNames =
         asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N");
 
-    ArrayList<ColumnIdentifier> ci = new ArrayList<>();
-    for (String c : columnNames) ci.add(new ColumnIdentifier(relationName, c));
+    List<ColumnIdentifier> ci = new ArrayList<>();
+    for (String c : columnNames) {
+      ci.add(new ColumnIdentifier(relationName, c));
+    }
 
-    ArrayList<ExIND> maximumINDs = new ArrayList<>();
+    List<ExIND> maximumINDs = new ArrayList<>();
     maximumINDs.add(
         new ExIND(
             new ColumnPermutation(ci.get(0), ci.get(1), ci.get(3), ci.get(4)),
@@ -132,11 +134,11 @@ class FIND2Test {
             new ColumnPermutation(ci.get(4), ci.get(5)),
             new ColumnPermutation(ci.get(11), ci.get(12))));
     maximumINDs.add(
-    new ExIND(
-        new ColumnPermutation(ci.get(4), ci.get(6)),
-        new ColumnPermutation(ci.get(11), ci.get(13))));
+        new ExIND(
+            new ColumnPermutation(ci.get(4), ci.get(6)),
+            new ColumnPermutation(ci.get(11), ci.get(13))));
 
-    TestDatabase testDatabase =
+    testDatabase =
         TestDatabase.builder()
             .resourceClass(FIND2Test.class)
             .relationName(relationName)
@@ -144,33 +146,26 @@ class FIND2Test {
             .csvPath("testHypercliqueOnHigherAryEdges.csv")
             .build();
 
-    try {
-      testDatabase.setUp();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    DatabaseConnectionGenerator connectionGenerator = testDatabase.asConnectionGenerator();
-
-    RelationalInput riMock = mock(RelationalInput.class);
-    when(riMock.relationName()).thenReturn(relationName);
-    when(riMock.columnNames()).thenReturn(columnNames);
-    TableInputGenerator tigMock = mock(TableInputGenerator.class);
-    when(tigMock.generateNewCopy()).thenReturn(riMock);
+    testDatabase.setUp();
 
     InclusionDependencyResultReceiverStub resultReceiver =
         new InclusionDependencyResultReceiverStub();
 
     ValidationParameters validationParameters = new ValidationParameters();
     validationParameters.setQueryType(QueryType.NOT_IN);
-    validationParameters.setConnectionGenerator(connectionGenerator);
+    validationParameters.setConnectionGenerator(testDatabase.asConnectionGenerator());
+
+    InclusionDependencyParameters inclusionDependencyParameters = new InclusionDependencyParameters();
+    inclusionDependencyParameters.setAlgorithmType(AlgorithmType.FILE);
+    inclusionDependencyParameters
+        .setConfigurationString("inputPath=" + getClass().getResource("ind_input.json").getFile());
 
     // EXECUTE
     FIND2Configuration config =
         FIND2Configuration.builder()
-            .databaseConnectionGenerator(connectionGenerator)
-            .tableInputGenerator(tigMock)
             .resultReceiver(resultReceiver)
             .validationParameters(validationParameters)
+            .inclusionDependencyParameters(inclusionDependencyParameters)
             .startK(2)
             .build();
 
@@ -183,7 +178,7 @@ class FIND2Test {
   }
 
   @Test
-  void testIrreducibleGraph() throws AlgorithmExecutionException {
+  void testIrreducibleGraph() throws Exception {
     // GIVEN
     String relationName = "IRREDUCIBLE";
     List<String> columnNames =
@@ -191,25 +186,31 @@ class FIND2Test {
             "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q",
             "R");
 
-    ArrayList<ColumnIdentifier> ci = new ArrayList<>();
-    for (String c : columnNames) ci.add(new ColumnIdentifier(relationName, c));
+    List<ColumnIdentifier> ci = new ArrayList<>();
+    for (String c : columnNames) {
+      ci.add(new ColumnIdentifier(relationName, c));
+    }
 
-    ArrayList<ExIND> maximumINDs = new ArrayList<>();
-    for (int i = 0; i < 3; i++)
-      for (int j = 3; j < 9; j++)
+    List<ExIND> maximumINDs = new ArrayList<>();
+    for (int i = 0; i < 3; i++) {
+      for (int j = 3; j < 9; j++) {
         maximumINDs.add(
             new ExIND(
                 new ColumnPermutation(ci.get(i), ci.get(j)),
                 new ColumnPermutation(ci.get(i + 9), ci.get(j + 9))));
+      }
+    }
 
-    for (int i = 3; i < 6; i++)
-      for (int j = 6; j < 9; j++)
+    for (int i = 3; i < 6; i++) {
+      for (int j = 6; j < 9; j++) {
         maximumINDs.add(
             new ExIND(
                 new ColumnPermutation(ci.get(i), ci.get(j)),
                 new ColumnPermutation(ci.get(i + 9), ci.get(j + 9))));
+      }
+    }
 
-    TestDatabase testDatabase =
+    testDatabase =
         TestDatabase.builder()
             .resourceClass(FIND2Test.class)
             .relationName(relationName)
@@ -217,33 +218,27 @@ class FIND2Test {
             .csvPath("testIrreducibleExample.csv")
             .build();
 
-    try {
-      testDatabase.setUp();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    DatabaseConnectionGenerator connectionGenerator = testDatabase.asConnectionGenerator();
-
-    RelationalInput riMock = mock(RelationalInput.class);
-    when(riMock.relationName()).thenReturn(relationName);
-    when(riMock.columnNames()).thenReturn(columnNames);
-    TableInputGenerator tigMock = mock(TableInputGenerator.class);
-    when(tigMock.generateNewCopy()).thenReturn(riMock);
+    testDatabase.setUp();
 
     InclusionDependencyResultReceiverStub resultReceiver =
         new InclusionDependencyResultReceiverStub();
 
     ValidationParameters validationParameters = new ValidationParameters();
     validationParameters.setQueryType(QueryType.NOT_IN);
-    validationParameters.setConnectionGenerator(connectionGenerator);
+    validationParameters.setConnectionGenerator(testDatabase.asConnectionGenerator());
+
+    InclusionDependencyParameters inclusionDependencyParameters = new InclusionDependencyParameters();
+    inclusionDependencyParameters.setAlgorithmType(AlgorithmType.FILE);
+    inclusionDependencyParameters
+        .setConfigurationString(
+            "inputPath=" + getClass().getResource("ind_input_irreducible.json").getFile());
 
     // EXECUTE
     FIND2Configuration config =
         FIND2Configuration.builder()
-            .databaseConnectionGenerator(connectionGenerator)
-            .tableInputGenerator(tigMock)
             .resultReceiver(resultReceiver)
             .validationParameters(validationParameters)
+            .inclusionDependencyParameters(inclusionDependencyParameters)
             .startK(2)
             .build();
 

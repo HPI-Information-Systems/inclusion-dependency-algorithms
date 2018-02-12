@@ -1,8 +1,5 @@
 package de.metanome.algorithms.find2;
 
-import static java.util.Arrays.asList;
-
-import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_types.DatabaseConnectionParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
@@ -15,6 +12,9 @@ import de.metanome.algorithm_integration.configuration.ConfigurationRequirementT
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
+import de.metanome.input.ind.InclusionDependencyInputConfigurationRequirements;
+import de.metanome.input.ind.InclusionDependencyInputParameterAlgorithm;
+import de.metanome.input.ind.InclusionDependencyParameters;
 import de.metanome.validation.InclusionDependencyValidationAlgorithm;
 import de.metanome.validation.ValidationConfigurationRequirements;
 import de.metanome.validation.ValidationParameters;
@@ -22,23 +22,26 @@ import java.util.ArrayList;
 
 public class FIND2Algorithm
     implements InclusionDependencyAlgorithm,
-        IntegerParameterAlgorithm,
-        TableInputParameterAlgorithm,
-        DatabaseConnectionParameterAlgorithm,
-        InclusionDependencyValidationAlgorithm {
+    IntegerParameterAlgorithm,
+    TableInputParameterAlgorithm,
+    DatabaseConnectionParameterAlgorithm,
+    InclusionDependencyValidationAlgorithm,
+    InclusionDependencyInputParameterAlgorithm {
 
-  private static final String START_K = "START_K";
   private final FIND2Configuration.FIND2ConfigurationBuilder configurationBuilder;
   private final ValidationParameters validationParameters;
+  private final InclusionDependencyParameters inclusionDependencyParameters;
 
   public FIND2Algorithm() {
     configurationBuilder = FIND2Configuration.builder();
     validationParameters = new ValidationParameters();
+    inclusionDependencyParameters = new InclusionDependencyParameters();
   }
 
   @Override
   public void execute() throws AlgorithmExecutionException {
-    configurationBuilder.validationParameters(validationParameters);
+    configurationBuilder.validationParameters(validationParameters)
+        .inclusionDependencyParameters(inclusionDependencyParameters);
     FIND2 find2 = new FIND2(configurationBuilder.build());
     find2.execute();
   }
@@ -50,42 +53,58 @@ public class FIND2Algorithm
         new ConfigurationRequirementTableInput(
             ConfigurationKey.TABLE.name(), ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES));
     reqs.addAll(ValidationConfigurationRequirements.validationStrategy());
-    ConfigurationRequirementInteger startKConfig = new ConfigurationRequirementInteger(START_K);
-    startKConfig.setDefaultValues(new Integer[] {2});
+    reqs.addAll(InclusionDependencyInputConfigurationRequirements.indInput());
+    ConfigurationRequirementInteger startKConfig = new ConfigurationRequirementInteger(
+        ConfigurationKey.START_K.name());
+    startKConfig.setDefaultValues(new Integer[]{2});
     reqs.add(startKConfig);
     reqs.add(new ConfigurationRequirementDatabaseConnection(ConfigurationKey.DATABASE.name()));
     return reqs;
   }
 
   @Override
-  public void setResultReceiver(InclusionDependencyResultReceiver resultReceiver) {
+  public void setResultReceiver(final InclusionDependencyResultReceiver resultReceiver) {
     configurationBuilder.resultReceiver(resultReceiver);
   }
 
   @Override
-  public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values)
-      throws AlgorithmConfigurationException {
-    if (identifier.equals(ConfigurationKey.TABLE.name()) && values.length > 0) {
-      configurationBuilder.tableInputGenerators(asList(values));
+  public void setTableInputConfigurationValue(final String identifier,
+      final TableInputGenerator... values) {
+
+    if (identifier.equals(ConfigurationKey.TABLE.name())) {
+      InclusionDependencyInputConfigurationRequirements
+          .acceptTableInputGenerator(values, inclusionDependencyParameters);
     }
   }
 
   @Override
   public void setDatabaseConnectionGeneratorConfigurationValue(
-      String identifier, DatabaseConnectionGenerator... values)
-      throws AlgorithmConfigurationException {
-    if (identifier.equals(ConfigurationKey.DATABASE.name()) && values.length > 0) {
-      configurationBuilder.databaseConnectionGenerator(values[0]);
+      final String identifier, final DatabaseConnectionGenerator... values) {
+
+    if (identifier.equals(ConfigurationKey.DATABASE.name())) {
       ValidationConfigurationRequirements.acceptDatabaseConnectionGenerator(
           values[0], validationParameters);
     }
   }
 
   @Override
-  public void setListBoxConfigurationValue(String identifier, String... selectedValues)
-      throws AlgorithmConfigurationException {
-    ValidationConfigurationRequirements.acceptListBox(
-        identifier, selectedValues, validationParameters);
+  public void setListBoxConfigurationValue(final String identifier,
+      final String... selectedValues) {
+
+    if (ValidationConfigurationRequirements.acceptListBox(
+        identifier, selectedValues, validationParameters)) {
+      return;
+    }
+
+    InclusionDependencyInputConfigurationRequirements
+        .acceptListBox(identifier, selectedValues, inclusionDependencyParameters);
+  }
+
+  @Override
+  public void setStringConfigurationValue(final String identifier, final String... values) {
+
+    InclusionDependencyInputConfigurationRequirements
+        .acceptString(identifier, values, inclusionDependencyParameters);
   }
 
   @Override
@@ -99,9 +118,8 @@ public class FIND2Algorithm
   }
 
   @Override
-  public void setIntegerConfigurationValue(String identifier, Integer... values)
-      throws AlgorithmConfigurationException {
-    if (identifier.equals(START_K) && values.length > 0) {
+  public void setIntegerConfigurationValue(final String identifier, final Integer... values) {
+    if (identifier.equals(ConfigurationKey.START_K.name()) && values.length > 0) {
       configurationBuilder.startK(values[0]);
     }
   }

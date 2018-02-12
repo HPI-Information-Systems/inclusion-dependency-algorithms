@@ -3,29 +3,31 @@ package de.metanome.algorithms.find2;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 class Hypergraph {
   private int k;
-  private HashSet<ExIND> karies;
-  private HashSet<ExIND> unaries;
+  private Set<ExIND> karies;
+  private Set<ExIND> unaries;
 
-  Hypergraph(int k, HashSet<ExIND> unaries, HashSet<ExIND> karies) {
+  Hypergraph(int k, Set<ExIND> unaries, Set<ExIND> karies) {
     this.k = k;
     this.unaries = unaries;
     this.karies = karies;
   }
 
-  HashSet<ExIND> getCliquesOfCurrentLevel() {
-    HashSet<ExIND> cliques = new HashSet<>();
+  Set<ExIND> getCliquesOfCurrentLevel() {
+    Set<ExIND> cliques = new HashSet<>();
     boolean reducible;
 
     do {
       reducible = false;
-      HashSet<ExIND> multipleCliqueEdges = new HashSet<>();
+      Set<ExIND> multipleCliqueEdges = new HashSet<>();
 
       for (ExIND kary : karies) {
-        HashSet<ExIND> cliqueCandidate = generateCliqueCandidate(kary);
+        Set<ExIND> cliqueCandidate = generateCliqueCandidate(kary);
         if (validateCandidate(cliqueCandidate)) {
           ExIND validClique = ExIND.toExIND(cliqueCandidate);
           if (cliques.stream().noneMatch(validMaxClique -> validMaxClique.contains(validClique)))
@@ -36,7 +38,7 @@ class Hypergraph {
         }
       }
       if (!reducible) {
-        HashSet<ExIND> cliqueCandidate;
+        Set<ExIND> cliqueCandidate;
         Iterator iterKaries = karies.iterator();
         Hypergraph G1, G2;
 
@@ -52,14 +54,14 @@ class Hypergraph {
           ExIND kary = (ExIND) iterKaries.next();
           cliqueCandidate = generateCliqueCandidate(kary);
 
-          final HashSet<ExIND> cC = cliqueCandidate; // has to be final or effective final in lambda
-          HashSet<ExIND> inducedEdges =
+          final Set<ExIND> cC = cliqueCandidate; // has to be final or effective final in lambda
+          Set<ExIND> inducedEdges =
               karies
                   .stream()
                   .filter(k -> cC.containsAll(k.getAllUnaries()))
                   .collect(Collectors.toCollection(HashSet::new));
 
-          HashSet<ExIND> otherEdges = new HashSet<>(karies);
+          Set<ExIND> otherEdges = new HashSet<>(karies);
           otherEdges.removeAll(inducedEdges);
 
           G1 = new Hypergraph(k, cliqueCandidate, inducedEdges);
@@ -85,9 +87,9 @@ class Hypergraph {
   }
   */
 
-  private HashSet<ExIND> generateCliqueCandidate(ExIND kary) {
-    HashSet<ExIND> cliqueCandidate = new HashSet<>();
-    HashSet<ExIND> otherUnaries = new HashSet<>(this.unaries);
+  private Set<ExIND> generateCliqueCandidate(ExIND kary) {
+    Set<ExIND> cliqueCandidate = new HashSet<>();
+    Set<ExIND> otherUnaries = new HashSet<>(this.unaries);
     cliqueCandidate.addAll(kary.getAllUnaries());
     otherUnaries.removeAll(kary.getAllUnaries());
 
@@ -96,7 +98,7 @@ class Hypergraph {
 
       // create necessaryIND with otherUnary. If it pass all, add otherUnary to cliqueCandidate.
       for (ExIND innerUnary : kary.getAllUnaries()) {
-        HashSet<ExIND> necessaryUnaries = new HashSet<>(kary.getAllUnaries());
+        Set<ExIND> necessaryUnaries = new HashSet<>(kary.getAllUnaries());
         necessaryUnaries.remove(innerUnary);
         necessaryUnaries.add(otherUnary);
         ExIND necessaryIND = ExIND.toExIND(necessaryUnaries);
@@ -111,8 +113,8 @@ class Hypergraph {
     return cliqueCandidate;
   }
 
-  private boolean validateCandidate(HashSet<ExIND> cliqueCandidate) {
-    HashMap<ExIND, Integer> map = new HashMap<>();
+  private boolean validateCandidate(Set<ExIND> cliqueCandidate) {
+    Map<ExIND, Integer> map = new HashMap<>();
     for (ExIND kary : karies)
       if (cliqueCandidate.containsAll(kary.getAllUnaries()))
         for (ExIND unary : kary.getAllUnaries()) map.put(unary, map.getOrDefault(unary, 0) + 1);
