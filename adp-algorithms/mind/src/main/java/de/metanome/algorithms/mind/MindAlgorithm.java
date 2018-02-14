@@ -3,10 +3,12 @@ package de.metanome.algorithms.mind;
 import static java.util.Arrays.asList;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
+import de.metanome.algorithm_integration.algorithm_types.BooleanParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.IntegerParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
+import de.metanome.algorithm_integration.configuration.ConfigurationRequirementBoolean;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementInteger;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
 import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
@@ -24,7 +26,8 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
     TableInputParameterAlgorithm,
     InclusionDependencyInputParameterAlgorithm,
     InclusionDependencyValidationAlgorithm,
-    IntegerParameterAlgorithm {
+    IntegerParameterAlgorithm,
+    BooleanParameterAlgorithm {
 
   private final Configuration.ConfigurationBuilder builder;
   private final InclusionDependencyParameters inclusionDependencyParameters;
@@ -45,6 +48,7 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
     requirements.addAll(InclusionDependencyInputConfigurationRequirements.indInput());
     requirements.addAll(ValidationConfigurationRequirements.validationStrategy());
     requirements.add(maxDepth());
+    requirements.add(detailedOutput());
     return requirements;
   }
 
@@ -58,6 +62,13 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
     final ConfigurationRequirementInteger requirement = new ConfigurationRequirementInteger(
         ConfigurationKey.MAX_DEPTH.name());
     requirement.setDefaultValues(new Integer[]{defaultValues.getMaxDepth()});
+    return requirement;
+  }
+
+  private ConfigurationRequirement<?> detailedOutput() {
+    final ConfigurationRequirementBoolean requirement = new ConfigurationRequirementBoolean(
+        ConfigurationKey.MAX_IND.name());
+    requirement.setDefaultValues(new Boolean[]{false});
     return requirement;
   }
 
@@ -102,6 +113,13 @@ public class MindAlgorithm implements InclusionDependencyAlgorithm,
   public void setIntegerConfigurationValue(final String identifier, final Integer... values) {
     if (identifier.equals(ConfigurationKey.MAX_DEPTH.name())) {
       builder.maxDepth(values[0]);
+    }
+  }
+
+  @Override
+  public void setBooleanConfigurationValue(final String identifier, final Boolean... values) {
+    if (identifier.equals(ConfigurationKey.MAX_IND.name())) {
+      builder.outputMaxInd(values[0]);
     }
   }
 
