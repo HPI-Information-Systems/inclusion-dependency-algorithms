@@ -27,6 +27,15 @@ public class InclusionDependencyBuilder {
       return this;
     }
 
+    public ColumnPermutationBuilder columns(final String relationName,
+        final List<String> columnNames) {
+
+      for (final String columnName : columnNames) {
+        columns.add(new ColumnIdentifier(relationName, columnName));
+      }
+      return this;
+    }
+
     public ColumnPermutationBuilder referenced() {
       outer.dependent = columnPermutation();
       return new ColumnPermutationBuilder(outer);
