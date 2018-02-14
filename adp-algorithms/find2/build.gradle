@@ -8,6 +8,8 @@ dependencies {
         exclude(group: 'de.metanome', module: 'algorithm_integration')
     }
 
+    extraLibs(project(':ind-input'))
+
     testCompile(project(path: ':util', configuration: 'tests')) {
         exclude(group: 'de.metanome', module: 'algorithm_integration')
     }

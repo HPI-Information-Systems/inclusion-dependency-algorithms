@@ -6,6 +6,7 @@ import de.metanome.algorithm_integration.results.InclusionDependency;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 class ExIND extends InclusionDependency {
 
@@ -15,7 +16,7 @@ class ExIND extends InclusionDependency {
     super(columnPermutation, columnPermutation1);
   }
 
-  static ExIND toExIND(HashSet<ExIND> necessaryUnaries) {
+  static ExIND toExIND(Set<ExIND> necessaryUnaries) {
     List<ColumnIdentifier> dep = new ArrayList<>();
     List<ColumnIdentifier> ref = new ArrayList<>();
     for (ExIND e : necessaryUnaries) {
@@ -28,13 +29,14 @@ class ExIND extends InclusionDependency {
         new ColumnPermutation(ref.toArray(new ColumnIdentifier[ref.size()])));
   }
 
-  HashSet<ExIND> getAllUnaries() {
+  Set<ExIND> getAllUnaries() {
     List<ColumnIdentifier> dep = this.getDependant().getColumnIdentifiers();
     List<ColumnIdentifier> ref = this.getReferenced().getColumnIdentifiers();
-    HashSet<ExIND> result = new HashSet<>();
+    Set<ExIND> result = new HashSet<>();
 
-    for (int i = 0; i < dep.size(); i++)
+    for (int i = 0; i < dep.size(); i++) {
       result.add(new ExIND(new ColumnPermutation(dep.get(i)), new ColumnPermutation(ref.get(i))));
+    }
     return result;
   }
 
@@ -47,12 +49,14 @@ class ExIND extends InclusionDependency {
     boolean contained = true;
     for (int i = 0; i < otherDep.size() && contained; i++) {
       contained = false;
-      for (int j = 0; j < thisDep.size(); j++)
-        if (thisDep.get(j).equals(otherDep.get(i)))
+      for (int j = 0; j < thisDep.size(); j++) {
+        if (thisDep.get(j).equals(otherDep.get(i))) {
           if (thisRef.get(j).equals(otherRef.get(i))) {
             contained = true;
             break;
           }
+        }
+      }
     }
     return contained;
   }
@@ -75,11 +79,13 @@ class ExIND extends InclusionDependency {
     if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
-    if (getDependant().getColumnIdentifiers().size() <= 1) return super.equals(obj);
+    if (getDependant().getColumnIdentifiers().size() <= 1) {
+      return super.equals(obj);
+    }
 
     ExIND other = (ExIND) obj;
-    HashSet<ExIND> thisUnaries = getAllUnaries();
-    HashSet<ExIND> otherUnaries = other.getAllUnaries();
+    Set<ExIND> thisUnaries = getAllUnaries();
+    Set<ExIND> otherUnaries = other.getAllUnaries();
     return thisUnaries.equals(otherUnaries);
   }
 
