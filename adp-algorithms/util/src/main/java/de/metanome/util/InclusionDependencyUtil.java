@@ -13,6 +13,17 @@ import java.util.List;
 
 public class InclusionDependencyUtil {
 
+  /**
+   * Retain only INDs which are not directly contained by other higher-arity INDs.
+   *
+   * <p>The basic idea is that all INDs are first sorted by degree in descending order.
+   * Subsequently beginning with the IND of highest arity the list is scanned from left to right
+   * in order to evict any contained INDs.</p>
+   *
+   * <p>The contains-check consists of checking if all LHS-columns appear in the LHS of the higher
+   * arity IND and if so, the RHS columns must match given the position mapping from the LHS, too.
+   * The transitivity property is currently not exploited.</p>
+   */
   public List<InclusionDependency> getMax(final Collection<InclusionDependency> toMinify) {
     final List<InclusionDependency> ind = new LinkedList<>(toMinify);
     ind.sort(Comparator.comparing(this::degreeOf).reversed());
