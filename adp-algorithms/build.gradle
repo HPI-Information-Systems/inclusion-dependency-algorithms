@@ -19,6 +19,9 @@ subprojects {
     apply plugin: 'org.junit.platform.gradle.plugin'
 
     repositories {
+        flatDir {
+            dirs 'dependencies'
+        }
         mavenLocal()
         maven {
             url 'https://oss.sonatype.org/content/repositories/snapshots'
