@@ -1,0 +1,4 @@
+scop_classification
+scop_comments
+scop_description
+scop_hierarchie
