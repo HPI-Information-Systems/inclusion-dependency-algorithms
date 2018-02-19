@@ -23,12 +23,14 @@ public class Configuration {
   private List<TableInputGenerator> tableInputGenerators;
 
   private int maxDepth;
+  private boolean outputMaxInd;
 
   public static Configuration withDefaults() {
     return builder()
         .resultReceiver(null)
         .maxDepth(-1)
         .tableInputGenerators(Collections.emptyList())
+        .outputMaxInd(true)
         .build();
   }
 }

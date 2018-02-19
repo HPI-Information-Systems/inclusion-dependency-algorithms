@@ -58,6 +58,7 @@ class MindTest {
         .inclusionDependencyParameters(inclusionDependencyParameters())
         .validationParameters(validationParameters())
         .maxDepth(-1)
+        .outputMaxInd(false)
         .build();
 
     mind = new Mind();

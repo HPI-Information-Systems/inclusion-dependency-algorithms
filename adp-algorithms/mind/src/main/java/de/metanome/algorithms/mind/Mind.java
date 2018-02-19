@@ -6,6 +6,7 @@ import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.input.ind.InclusionDependencyInput;
 import de.metanome.input.ind.InclusionDependencyInputGenerator;
+import de.metanome.util.InclusionDependencyUtil;
 import de.metanome.validation.ValidationStrategy;
 import de.metanome.validation.ValidationStrategyFactory;
 import java.util.ArrayList;
@@ -21,10 +22,12 @@ public class Mind {
 
   private final InclusionDependencyInputGenerator inclusionDependencyInputGenerator;
   private final ValidationStrategyFactory validationStrategyFactory;
+  private final InclusionDependencyUtil util;
 
   public Mind() {
     inclusionDependencyInputGenerator = new InclusionDependencyInputGenerator();
     validationStrategyFactory = new ValidationStrategyFactory();
+    util = new InclusionDependencyUtil();
   }
 
   public void execute(final Configuration configuration) throws AlgorithmExecutionException {
@@ -43,8 +46,6 @@ public class Mind {
         final ColumnPermutation lhs = candidate[0];
         final ColumnPermutation rhs = candidate[1];
         if (isInd(lhs, rhs)) {
-          final InclusionDependency ind = new InclusionDependency(lhs, rhs);
-          configuration.getResultReceiver().receiveResult(ind);
           results.add(candidate);
           inds.add(candidate);
         }
@@ -53,13 +54,13 @@ public class Mind {
       candidates = genNextLevelCandidates(inds);
     }
 
+    receiveResult();
     validationStrategy.close();
   }
 
 
   private List<ColumnPermutation[]> genLevel1Candidates() throws AlgorithmExecutionException {
     final List<InclusionDependency> inds = retrieveInputInds();
-    receiveResult(inds);
     final List<ColumnPermutation[]> internal = toInternalRepresentation(inds);
     results.addAll(internal);
     return internal;
@@ -71,10 +72,12 @@ public class Mind {
     return input.execute();
   }
 
-  private void receiveResult(final List<InclusionDependency> inds)
-      throws AlgorithmExecutionException {
+  private void receiveResult() throws AlgorithmExecutionException {
+    final List<InclusionDependency> inds = toExternalRepresentation(results);
+    final List<InclusionDependency> toOutput =
+        configuration.isOutputMaxInd() ? util.getMax(inds) : inds;
 
-    for (final InclusionDependency ind : inds) {
+    for (final InclusionDependency ind : toOutput) {
       configuration.getResultReceiver().receiveResult(ind);
     }
   }
@@ -85,6 +88,16 @@ public class Mind {
       columnPermutations.add(new ColumnPermutation[]{ind.getDependant(), ind.getReferenced()});
     }
     return columnPermutations;
+  }
+
+  private List<InclusionDependency> toExternalRepresentation(
+      final List<ColumnPermutation[]> permutations) {
+
+    final List<InclusionDependency> inds = new ArrayList<>(permutations.size());
+    for (final ColumnPermutation[] cp : permutations) {
+      inds.add(new InclusionDependency(cp[0], cp[1]));
+    }
+    return inds;
   }
 
   private List<ColumnPermutation[]> genNextLevelCandidates(
