@@ -13,8 +13,12 @@ can be fed into Metanome CLI as part of the "load:" statement.
 
 
 def main(path):
+
+    def _valid(p):
+        return not os.path.isdir(p) and os.path.getsize(p) > 0
+
     files = os.listdir(path)
-    nonempty = [x for x in files if os.path.getsize(os.path.join(path, x)) > 0]
+    nonempty = [x for x in files if _valid(os.path.join(path, x)) > 0]
     noendings = [x.rsplit(".")[0] if x.endswith(".csv") else x for x in nonempty]
     for x in noendings:
         print(x)
