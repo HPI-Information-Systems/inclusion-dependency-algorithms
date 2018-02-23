@@ -8,6 +8,6 @@ de.metanome.cli.App \
 $DB \
 --table-key TABLE \
 --tables load:biosqlsp/biosqlsp.txt \
---algorithm-config PROCESS_EMPTY_COLUMNS:true,
+--algorithm-config PROCESS_EMPTY_COLUMNS:true, \
 --algorithm-config INPUT_ROW_LIMIT:-1,MAX_MEMORY_USAGE_PERCENTAGE:50,MEMORY_CHECK_INTERVAL:1000 \
 --output file:$EXECUTION_ID
