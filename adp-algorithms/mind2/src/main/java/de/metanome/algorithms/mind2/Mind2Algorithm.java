@@ -88,7 +88,6 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
 
     @Override
     public void execute() throws AlgorithmExecutionException {
-        indInputParams.setAlgorithmType(AlgorithmType.DE_MARCHI);
         Mind2Configuration config = configurationBuilder
                 .indexColumn(indexColumnIdentifier)
                 .build();
