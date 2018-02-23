@@ -8,5 +8,6 @@ de.metanome.cli.App \
 $DB \
 --table-key TABLE \
 --tables load:scop/scop.txt \
---algorithm-config PROCESS_EMPTY_COLUMNS:true,OPEN_FILE_NR:20,PARTITION_NR:1 \
+--algorithm-config PROCESS_EMPTY_COLUMNS:true,OPEN_FILE_NR:100,PARTITION_NR:10 \
+--algorithm-config INPUT_ROW_LIMIT:-1,MAX_MEMORY_USAGE_PERCENTAGE:70,MEMORY_CHECK_INTERVAL:1000 \
 --output file:$EXECUTION_ID
