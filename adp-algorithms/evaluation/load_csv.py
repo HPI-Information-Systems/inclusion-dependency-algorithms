@@ -33,7 +33,7 @@ def get_columns(filename):
          nrows=1,
          sep=';',
          header=None,
-         escapechar="\\")
+         escapechar="\\", engine='python')
      return ['column' + str(index + 1) for index in range(len(frame.columns))]
 
 
@@ -69,7 +69,7 @@ def main():
         files = [arg]
 
     for f in files:
-        if os.path.getsize(f) > 0:
+        if not os.path.isdir(f) and os.path.getsize(f) > 0:
             load(f, cursor)
 
     connection.commit()
