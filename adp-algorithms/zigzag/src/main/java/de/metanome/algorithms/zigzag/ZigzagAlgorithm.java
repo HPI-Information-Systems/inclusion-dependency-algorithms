@@ -44,10 +44,6 @@ public abstract class ZigzagAlgorithm implements InclusionDependencyAlgorithm,
 
   List<ConfigurationRequirement<?>> common() {
     final List<ConfigurationRequirement<?>> requirements = new ArrayList<>();
-    requirements.add(
-        new ConfigurationRequirementTableInput(
-            ConfigurationKey.TABLE.name(), ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES));
-
     ConfigurationRequirementInteger startKConfig = new ConfigurationRequirementInteger(
         ConfigurationKey.START_K.name());
     startKConfig.setDefaultValues(new Integer[]{2});
