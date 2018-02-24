@@ -48,7 +48,10 @@ public class PostgresDataAccessObject implements DataAccessObject {
 
     // TODO: Encapsulate schemaName and tableName to Class
     private String getTableName(String tableName) {
-        return tableName.split("\\.")[1];
+        if (tableName.contains(".")) {
+            return tableName.split("\\.")[1];
+        }
+        return tableName;
     }
 
     private ImmutableList<ColumnIdentifier> getColumnNames(
