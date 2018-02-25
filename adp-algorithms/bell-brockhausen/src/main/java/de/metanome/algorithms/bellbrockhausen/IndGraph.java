@@ -88,14 +88,16 @@ public class IndGraph {
         // Run test if not: has edge A_ref -> A_k with k < i and no edge A_depend -> A_k
         if (fromEdges.get(referenced).stream()
                 .noneMatch(node -> getCandidateIndex(node) < dependantIndex && !hasEdge(dependant, node))) {
-            dbTests++;
-            if (dataAccessObject.isValidUIND(test)) {
-                updateGraph(test);
-                if (hasEqualRange(test)) {
-                    InclusionDependency reversedTest = reverseInd(test);
-                    dbTests++;
-                    if (dataAccessObject.isValidUIND(reversedTest)) {
-                        updateGraph(reversedTest);
+            if (isInRange(test)) {
+                dbTests++;
+                if (dataAccessObject.isValidUIND(test)) {
+                    updateGraph(test);
+                    if (hasEqualRange(test)) {
+                        InclusionDependency reversedTest = reverseInd(test);
+                        dbTests++;
+                        if (dataAccessObject.isValidUIND(reversedTest)) {
+                            updateGraph(reversedTest);
+                        }
                     }
                 }
             }
@@ -233,6 +235,12 @@ public class IndGraph {
         Attribute dependant = attributes.get(getDependant(ind));
         Attribute referenced = attributes.get(getReferenced(ind));
         return dependant.getValueRange().equals(referenced.getValueRange());
+    }
+
+    private boolean isInRange(final InclusionDependency ind) {
+        Attribute dependant = attributes.get(getDependant(ind));
+        Attribute referenced = attributes.get(getReferenced(ind));
+        return referenced.getValueRange().encloses(dependant.getValueRange());
     }
 
     public int getDBTests() {
