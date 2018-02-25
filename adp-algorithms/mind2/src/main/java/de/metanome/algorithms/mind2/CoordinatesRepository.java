@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.util.Collectors.toImmutableList;
@@ -35,6 +36,8 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class CoordinatesRepository {
+
+    private static final Logger log = Logger.getLogger(CoordinatesRepository.class.getName());
 
     private final Mind2Configuration config;
     private final ImmutableSet<InclusionDependency> uinds;
@@ -62,6 +65,7 @@ public class CoordinatesRepository {
                 getRelationalInputMap(config.getInputGenerators());
         ImmutableMap<String, ColumnIdentifier> indexColumns = getIndexColumns(attributes);
         for (InclusionDependency uind : uinds) {
+            log.info(format("Calculate coordinates for %s", uind));
             SetMultimap<Integer, Integer> uindCoordinates = generateCoordinates(uind, attributes, indexColumns);
             Path path = getPath();
             try {
