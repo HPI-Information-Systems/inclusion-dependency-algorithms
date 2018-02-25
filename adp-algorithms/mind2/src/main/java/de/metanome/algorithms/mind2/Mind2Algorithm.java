@@ -55,8 +55,7 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
     public void setTableInputConfigurationValue(String identifier, TableInputGenerator... values) {
         if (identifier.equals(ConfigurationKey.TABLE.name()) && values.length > 0) {
             configurationBuilder.inputGenerators(ImmutableList.copyOf(values));
-            InclusionDependencyInputConfigurationRequirements
-                    .acceptTableInputGenerator(values, indInputParams);
+            InclusionDependencyInputConfigurationRequirements.acceptTableInputGenerator(values, indInputParams);
         }
     }
 
@@ -82,7 +81,6 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
 
     @Override
     public void execute() throws AlgorithmExecutionException {
-        indInputParams.setAlgorithmType(AlgorithmType.DE_MARCHI);
         Mind2Configuration config = configurationBuilder
                 .dataAccessObject(new PostgresDataAccessObject())
                 .build();
