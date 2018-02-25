@@ -90,7 +90,6 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
         RelationPairUinds relationPairUinds = new RelationPairUinds(uindInput.execute());
         for (ImmutableSet<InclusionDependency> uinds : relationPairUinds) {
             log.info(format("Start calculating max INDs for %d UINDs", uinds.size()));
-            logUinds(uinds);
             mind2.execute(uinds);
         }
     }
@@ -104,11 +103,5 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
     public String getDescription() {
         return "Implementation of 'Detecting Maximum Inclusion Dependencies without Candidate Generation' " +
                 "by Shaabani, Meinel, 2016";
-    }
-
-    private void logUinds(ImmutableSet<InclusionDependency> uinds) {
-        StringBuilder sb = new StringBuilder("UINDS:");
-        uinds.forEach(uind -> sb.append(format("\n%s", uind)));
-        log.info(sb.toString());
     }
 }
