@@ -63,7 +63,11 @@ public class Zigzag {
     Map<Pair<String, String>, List<InclusionDependency>> tablesPairToINDList = allInputINDs.stream()
         .collect(Collectors.groupingBy(
             ind -> new Pair<>(ind.getDependant().getColumnIdentifiers().get(0).getTableIdentifier(),
-                ind.getDependant().getColumnIdentifiers().get(0).getTableIdentifier())));
+                ind.getReferenced().getColumnIdentifiers().get(0).getTableIdentifier())));
+
+    System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    System.out.println(tablesPairToINDList);
+    System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
     for (List<InclusionDependency> split : tablesPairToINDList.values()) {
       partialExecute(split);
@@ -165,6 +169,9 @@ public class Zigzag {
 
   private void commitResults() throws ColumnNameMismatchException, CouldNotReceiveResultException {
     InclusionDependencyUtil util = new InclusionDependencyUtil();
+
+    System.out.println(results);
+    System.out.println(util.getMax(results));
     for (InclusionDependency satisfiedInd : util.getMax(results)) {
       config.getResultReceiver().receiveResult(satisfiedInd);
     }
@@ -329,7 +336,7 @@ public class Zigzag {
     }
     dbChecks++;
     log.info(format("G3 checking: %s", ind));
-    return ((ErrorMarginValidationResult) validationStrategy.validate(ind)).getErrorMargin();
+    return ((ErrorMarginValidationResult) validationStrategy.validate(ind)).errorMargin();
   }
 
   // equivalent to d |= i in paper
