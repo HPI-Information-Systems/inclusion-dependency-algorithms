@@ -48,7 +48,10 @@ public class PostgresDataAccessObject implements DataAccessObject {
 
     // TODO: Encapsulate schemaName and tableName to Class
     private String getTableName(String tableName) {
-        return tableName.split("\\.")[1];
+        if (tableName.contains(".")) {
+            return tableName.split("\\.")[1];
+        }
+        return tableName;
     }
 
     private ImmutableList<ColumnIdentifier> getColumnNames(
@@ -79,10 +82,10 @@ public class PostgresDataAccessObject implements DataAccessObject {
             Range<Comparable> valueRange;
             switch (type) {
                 case TEXT:
-                    valueRange = Range.closed(resultSet.getString("minVal"), resultSet.getString("maxVal"));
+                    valueRange = Range.open(resultSet.getString("minVal"), resultSet.getString("maxVal"));
                     break;
                 case INTEGER:
-                    valueRange = Range.closed(resultSet.getInt("minVal"), resultSet.getInt("maxVal"));
+                    valueRange = Range.open(resultSet.getInt("minVal"), resultSet.getInt("maxVal"));
                     break;
                 default:
                     throw new AlgorithmExecutionException(
