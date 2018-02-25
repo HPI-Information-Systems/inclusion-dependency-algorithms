@@ -60,8 +60,9 @@ public class CoordinatesRepository {
     public void storeUindCoordinates() throws AlgorithmExecutionException {
         ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes =
                 getRelationalInputMap(config.getInputGenerators());
+        ImmutableMap<String, ColumnIdentifier> indexColumns = getIndexColumns(attributes);
         for (InclusionDependency uind : uinds) {
-            SetMultimap<Integer, Integer> uindCoordinates = generateCoordinates(uind, attributes);
+            SetMultimap<Integer, Integer> uindCoordinates = generateCoordinates(uind, attributes, indexColumns);
             Path path = getPath();
             try {
                 writeToFile(uind, uindCoordinates, path);
@@ -74,15 +75,20 @@ public class CoordinatesRepository {
     }
 
     private SetMultimap<Integer, Integer> generateCoordinates(
-            InclusionDependency unaryInd, ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes)
-            throws AlgorithmExecutionException {
+            InclusionDependency unaryInd,
+            ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes,
+            ImmutableMap<String, ColumnIdentifier> indexColumns) throws AlgorithmExecutionException {
         SetMultimap<Integer, Integer> uindCoordinates = MultimapBuilder.hashKeys().hashSetValues().build();
         ColumnIdentifier lhs = getUnaryIdentifier(unaryInd.getDependant());
         ColumnIdentifier rhs = getUnaryIdentifier(unaryInd.getReferenced());
-        AttributeIterator cursorA =  new AttributeIterator(
-                config.getSortedRelationalInput(attributes.get(lhs), lhs), lhs, config.getIndexColumn());
-        AttributeIterator cursorB = new AttributeIterator(
-                config.getSortedRelationalInput(attributes.get(rhs), rhs), rhs, config.getIndexColumn());
+
+        RelationalInput inputA = config.getDataAccessObject()
+                .getSortedRelationalInput(attributes.get(lhs), lhs, getIndexColumn(indexColumns, lhs), config.getIndexColumn(), false);
+        RelationalInput inputB = config.getDataAccessObject().
+                getSortedRelationalInput(attributes.get(rhs), rhs, getIndexColumn(indexColumns, rhs), config.getIndexColumn(), false);
+        AttributeIterator cursorA =  new AttributeIterator(inputA, lhs, config.getIndexColumn());
+        AttributeIterator cursorB = new AttributeIterator(inputB, rhs, config.getIndexColumn());
+
         cursorA.next();
         cursorB.next();
 
@@ -140,8 +146,7 @@ public class CoordinatesRepository {
         Map<ColumnIdentifier, TableInputGenerator> relationalInputs = new HashMap<>();
         for (TableInputGenerator generator : inputGenerators) {
             try (RelationalInput input = generator.generateNewCopy()) {
-                input.columnNames().stream()
-                        .filter(columnName -> !columnName.equals(config.getIndexColumn()))
+                input.columnNames()
                         .forEach(columnName -> relationalInputs.put(
                                 new ColumnIdentifier(input.relationName(), columnName), generator));
             } catch (Exception e) {
@@ -149,6 +154,27 @@ public class CoordinatesRepository {
             }
         }
         return ImmutableMap.copyOf(relationalInputs);
+    }
+
+    private ImmutableMap<String, ColumnIdentifier> getIndexColumns(Map<ColumnIdentifier, TableInputGenerator> relationalInputs) {
+        Map<String, ColumnIdentifier> indexColumns = new HashMap<>();
+        ImmutableList<ColumnIdentifier> columns = relationalInputs.keySet().stream().sorted().collect(toImmutableList());
+        for (ColumnIdentifier columnIdentifier : columns) {
+            if (indexColumns.containsKey(columnIdentifier.getTableIdentifier())) {
+                continue;
+            }
+            indexColumns.put(columnIdentifier.getTableIdentifier(), columnIdentifier);
+        }
+        return ImmutableMap.copyOf(indexColumns);
+    }
+
+    private ColumnIdentifier getIndexColumn(Map<String, ColumnIdentifier> indexColumns, ColumnIdentifier column)
+            throws AlgorithmExecutionException {
+        if (!indexColumns.containsKey(column.getTableIdentifier())) {
+            throw new AlgorithmExecutionException(
+                    format("Cannot find table %s in index columns", column.getTableIdentifier()));
+        }
+        return indexColumns.get(column.getTableIdentifier());
     }
 
     private Path getPath() throws FileCreationException {

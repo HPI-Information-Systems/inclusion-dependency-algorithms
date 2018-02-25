@@ -1,15 +1,13 @@
 package de.metanome.algorithms.bellbrockhausen;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
+import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.algorithm_types.DatabaseConnectionParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
-import de.metanome.algorithm_integration.algorithm_types.StringParameterAlgorithm;
+import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
-import de.metanome.algorithm_integration.configuration.ConfigurationRequirementDatabaseConnection;
-import de.metanome.algorithm_integration.configuration.ConfigurationRequirementString;
-import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
+import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
+import de.metanome.algorithm_integration.input.RelationalInput;
+import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithms.bellbrockhausen.accessors.DataAccessObject;
 import de.metanome.algorithms.bellbrockhausen.accessors.PostgresDataAccessObject;
@@ -17,13 +15,10 @@ import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfi
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration.BellBrockhausenConfigurationBuilder;
 
 import java.util.ArrayList;
-import java.util.List;
 
-import static de.metanome.algorithms.bellbrockhausen.configuration.ConfigurationKey.DATABASE;
 import static de.metanome.algorithms.bellbrockhausen.configuration.ConfigurationKey.TABLE;
 
-public class BellBrockhausenAlgorithm implements InclusionDependencyAlgorithm,
-        DatabaseConnectionParameterAlgorithm, StringParameterAlgorithm {
+public class BellBrockhausenAlgorithm implements InclusionDependencyAlgorithm, TableInputParameterAlgorithm {
 
     private final BellBrockhausenConfigurationBuilder configurationBuilder;
 
@@ -34,25 +29,28 @@ public class BellBrockhausenAlgorithm implements InclusionDependencyAlgorithm,
     @Override
     public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() {
         final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
-        requirements.add(new ConfigurationRequirementDatabaseConnection(DATABASE.name()));
-        requirements.add(new ConfigurationRequirementString(TABLE.name()));
+        requirements.add(new ConfigurationRequirementTableInput(TABLE.name()));
         return requirements;
     }
 
-    @Override
-    public void setDatabaseConnectionGeneratorConfigurationValue(
-            String identifier, DatabaseConnectionGenerator... values) {
-        if (identifier.equals(DATABASE.name())) {
-            configurationBuilder.connectionGenerator(values[0]);
-        }
-    }
-
-    @Override
-    public void setStringConfigurationValue(String identifier, String... values) {
-        if (identifier.equals(TABLE.name())) {
-            configurationBuilder.tableName(values[0]);
-        }
-    }
+  @Override
+  public void setTableInputConfigurationValue(final String identifier, final TableInputGenerator... values)
+          throws AlgorithmConfigurationException {
+      if (identifier.equals(TABLE.name())) {
+          if (values.length == 0) {
+            throw new AlgorithmConfigurationException("No tables provided");
+          }
+          // Save database connection of first TableInput
+          configurationBuilder.connectionGenerator(values[0].getDatabaseConnectionGenerator());
+          for (final TableInputGenerator generator : values) {
+              try (RelationalInput input = generator.generateNewCopy()) {
+                  configurationBuilder.tableName(input.relationName());
+              } catch (final Exception e) {
+                  throw new AlgorithmConfigurationException("cannot get table name", e);
+              }
+          }
+      }
+  }
 
     @Override
     public void setResultReceiver(InclusionDependencyResultReceiver resultReceiver) {

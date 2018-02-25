@@ -39,7 +39,7 @@ public class Mind {
 
     int depth = 1;
 
-    while (!candidates.isEmpty() && (configuration.getMaxDepth() < 0 || depth <= configuration
+    while (!candidates.isEmpty() && (configuration.getMaxDepth() < 0 || depth < configuration
         .getMaxDepth())) {
       final List<ColumnPermutation[]> inds = new ArrayList<>();
       for (final ColumnPermutation[] candidate : candidates) {

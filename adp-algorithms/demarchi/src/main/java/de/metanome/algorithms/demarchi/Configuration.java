@@ -23,6 +23,7 @@ public class Configuration {
   private List<RelationalInputGenerator> relationalInputGenerators;
 
   private boolean processEmptyColumns;
+  private int inputRowLimit;
 
   private InclusionDependencyResultReceiver resultReceiver;
 
@@ -30,6 +31,7 @@ public class Configuration {
     return builder().tableInputGenerators(Collections.emptyList())
         .relationalInputGenerators(Collections.emptyList())
         .processEmptyColumns(true)
+        .inputRowLimit(-1)
         .resultReceiver(null)
         .build();
   }

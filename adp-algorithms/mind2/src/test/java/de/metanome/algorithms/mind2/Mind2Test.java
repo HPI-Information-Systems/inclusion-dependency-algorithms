@@ -10,6 +10,7 @@ import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
+import de.metanome.algorithms.mind2.utils.DataAccessObject;
 import de.metanome.util.FileGeneratorFake;
 import de.metanome.util.InclusionDependencyResultReceiverStub;
 import de.metanome.util.RelationalInputGeneratorStub;
@@ -24,6 +25,8 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,18 +34,21 @@ import static org.mockito.Mockito.when;
 @RunWith(JukitoRunner.class)
 public class Mind2Test {
 
-    private static final String INDEX_COLUMN = "MIND2_INDEX";
+    private static final String INDEX_COLUMN = "mind2index";
 
     private InclusionDependencyResultReceiverStub resultReceiver;
+    private DataAccessObject mockDao;
     @Inject private Mind2 mind2;
 
     @Before
     public void setupMocks(Mind2Configuration config) {
         resultReceiver = new InclusionDependencyResultReceiverStub();
         FileGenerator fileGenerator = new FileGeneratorFake();
+        mockDao = mock(DataAccessObject.class);
+        when(config.getIndexColumn()).thenReturn(INDEX_COLUMN);
         when(config.getResultReceiver()).thenReturn(resultReceiver);
         when(config.getTempFileGenerator()).thenReturn(fileGenerator);
-        when(config.getIndexColumn()).thenReturn(INDEX_COLUMN);
+        when(config.getDataAccessObject()).thenReturn(mockDao);
     }
 
     @Test
@@ -87,8 +93,10 @@ public class Mind2Test {
         when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
         when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
         when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
-        when(config.getSortedRelationalInput(same(tableRGenerator), any())).then(in -> tableR.generateNewCopy());
-        when(config.getSortedRelationalInput(same(tableSGenerator), any())).then(in -> tableS.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableRGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableR.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableSGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableS.generateNewCopy());
 
         // WHEN
         mind2.execute(unaryInds);
@@ -130,8 +138,10 @@ public class Mind2Test {
         when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
         when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
         when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
-        when(config.getSortedRelationalInput(same(tableRGenerator), any())).then(in -> tableR.generateNewCopy());
-        when(config.getSortedRelationalInput(same(tableSGenerator), any())).then(in -> tableS.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableRGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableR.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableSGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableS.generateNewCopy());
 
         // WHEN
         mind2.execute(unaryInds);
@@ -172,8 +182,10 @@ public class Mind2Test {
         when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
         when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
         when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
-        when(config.getSortedRelationalInput(same(tableRGenerator), any())).then(in -> tableR.generateNewCopy());
-        when(config.getSortedRelationalInput(same(tableSGenerator), any())).then(in -> tableS.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableRGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableR.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableSGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableS.generateNewCopy());
 
         // WHEN
         mind2.execute(unaryInds);
@@ -224,8 +236,10 @@ public class Mind2Test {
         when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
         when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
         when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
-        when(config.getSortedRelationalInput(same(tableRGenerator), any())).then(in -> tableR.generateNewCopy());
-        when(config.getSortedRelationalInput(same(tableSGenerator), any())).then(in -> tableS.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableRGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableR.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableSGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableS.generateNewCopy());
 
         // WHEN
         mind2.execute(unaryInds);

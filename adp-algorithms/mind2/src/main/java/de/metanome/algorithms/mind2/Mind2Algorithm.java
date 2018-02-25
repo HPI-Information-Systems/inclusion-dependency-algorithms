@@ -10,13 +10,13 @@ import de.metanome.algorithm_integration.algorithm_types.TableInputParameterAlgo
 import de.metanome.algorithm_integration.algorithm_types.TempFileAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementRelationalInput;
-import de.metanome.algorithm_integration.configuration.ConfigurationRequirementString;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.configuration.ConfigurationKey;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration.Mind2ConfigurationBuilder;
+import de.metanome.algorithms.mind2.utils.PostgresDataAccessObject;
 import de.metanome.input.ind.AlgorithmType;
 import de.metanome.input.ind.InclusionDependencyInput;
 import de.metanome.input.ind.InclusionDependencyInputConfigurationRequirements;
@@ -37,7 +37,6 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
 
     private final Mind2ConfigurationBuilder configurationBuilder;
     private final InclusionDependencyParameters indInputParams = new InclusionDependencyParameters();
-    private String indexColumnIdentifier;
 
     public Mind2Algorithm() {
        configurationBuilder = Mind2Configuration.builder();
@@ -49,7 +48,6 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
         requirements.add(new ConfigurationRequirementRelationalInput(
                 ConfigurationKey.TABLE.name(), ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES));
         requirements.addAll(InclusionDependencyInputConfigurationRequirements.indInput());
-        requirements.add(new ConfigurationRequirementString(ConfigurationKey.INDEX.name()));
         return requirements;
     }
 
@@ -79,22 +77,18 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
 
     @Override
     public void setStringConfigurationValue(String identifier, String... values) {
-        if (identifier.equals(ConfigurationKey.INDEX.name())) {
-            indexColumnIdentifier = values[0];
-        } else {
-            InclusionDependencyInputConfigurationRequirements.acceptString(identifier, values, indInputParams);
-        }
+        InclusionDependencyInputConfigurationRequirements.acceptString(identifier, values, indInputParams);
     }
 
     @Override
     public void execute() throws AlgorithmExecutionException {
         Mind2Configuration config = configurationBuilder
-                .indexColumn(indexColumnIdentifier)
+                .dataAccessObject(new PostgresDataAccessObject())
                 .build();
         InclusionDependencyInput uindInput = new InclusionDependencyInputGenerator().get(indInputParams);
         Mind2 mind2 = new Mind2(config);
 
-        RelationPairUinds relationPairUinds = new RelationPairUinds(uindInput.execute(), indexColumnIdentifier);
+        RelationPairUinds relationPairUinds = new RelationPairUinds(uindInput.execute());
         for (ImmutableSet<InclusionDependency> uinds : relationPairUinds) {
             log.info(format("Start calculating max INDs for %d UINDs", uinds.size()));
             logUinds(uinds);

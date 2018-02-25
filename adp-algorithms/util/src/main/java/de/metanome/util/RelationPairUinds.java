@@ -10,7 +10,6 @@ import lombok.Data;
 import java.util.Collection;
 import java.util.Iterator;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.util.Collectors.toImmutableList;
 import static de.metanome.util.Collectors.toImmutableSet;
 import static de.metanome.util.UindUtils.getDependant;
@@ -31,11 +30,7 @@ public class RelationPairUinds implements Iterable<ImmutableSet<InclusionDepende
             .hashKeys().hashSetValues().build();
 
     public RelationPairUinds(Collection<InclusionDependency> uinds) {
-        this(uinds, null);
-    }
-
-    public RelationPairUinds(Collection<InclusionDependency> uinds, String indexColumn) {
-        filterUinds(uinds,indexColumn).forEach(uind -> {
+        filterUinds(uinds).forEach(uind -> {
             ColumnsKey columnsKey = new ColumnsKey(
                     getReferenced(uind).getTableIdentifier(),
                     getDependant(uind).getTableIdentifier());
@@ -51,15 +46,12 @@ public class RelationPairUinds implements Iterable<ImmutableSet<InclusionDepende
                 .iterator();
     }
 
-    private ImmutableSet<InclusionDependency> filterUinds(Collection<InclusionDependency> uinds, String indexColumn) {
+    private ImmutableSet<InclusionDependency> filterUinds(Collection<InclusionDependency> uinds) {
         return uinds.stream()
                 .filter(uind -> {
                     ColumnIdentifier lhs = getDependant(uind);
                     ColumnIdentifier rhs = getReferenced(uind);
-                    boolean isIndexColumn = lhs.getColumnIdentifier().equals(indexColumn) ||
-                            lhs.getColumnIdentifier().equals(indexColumn);
-                    boolean isFromSameTable = lhs.getTableIdentifier().equals(rhs.getTableIdentifier());
-                    return !isIndexColumn && !isFromSameTable;
+                    return !lhs.getTableIdentifier().equals(rhs.getTableIdentifier());
                 })
                 .collect(toImmutableSet());
     }
