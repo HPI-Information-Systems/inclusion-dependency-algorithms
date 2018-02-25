@@ -158,9 +158,17 @@ public class DeMarchi {
     final Attribute attribute = attributeIndex[attributeId];
     final int offset = attribute.getColumnOffset();
     final SortedSet<String> values = new TreeSet<>();
+    int rowCount = 0;
+    int maxRowCount = configuration.getInputRowLimit();
 
     try (RelationalInput input = attribute.getGenerator().generateNewCopy()) {
       while (input.hasNext()) {
+
+        if (maxRowCount > 0 && rowCount >= maxRowCount) {
+          break;
+        }
+        ++rowCount;
+
         final List<String> read = input.next();
         if (offset < read.size()) {
           final String v = read.get(offset);

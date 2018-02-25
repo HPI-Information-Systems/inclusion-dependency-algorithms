@@ -7,9 +7,11 @@ import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_types.BooleanParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.InclusionDependencyAlgorithm;
+import de.metanome.algorithm_integration.algorithm_types.IntegerParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.RelationalInputParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementBoolean;
+import de.metanome.algorithm_integration.configuration.ConfigurationRequirementInteger;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementRelationalInput;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementTableInput;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
@@ -18,7 +20,8 @@ import java.util.ArrayList;
 
 public class DeMarchiAlgorithm implements InclusionDependencyAlgorithm,
     RelationalInputParameterAlgorithm,
-    BooleanParameterAlgorithm {
+    BooleanParameterAlgorithm,
+    IntegerParameterAlgorithm {
 
   private final DeMarchi impl;
   private final Configuration defaultValues;
@@ -35,12 +38,19 @@ public class DeMarchiAlgorithm implements InclusionDependencyAlgorithm,
     final ArrayList<ConfigurationRequirement<?>> requirements = new ArrayList<>();
     requirements.add(relationalInput());
     requirements.add(processEmptyColumns());
+    requirements.add(rowCount());
     return requirements;
   }
 
   private ConfigurationRequirement<?> relationalInput() {
     return new ConfigurationRequirementRelationalInput(ConfigurationKey.TABLE.name(),
         ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES);
+  }
+
+  private ConfigurationRequirement<?> rowCount() {
+    final ConfigurationRequirementInteger requirement = new ConfigurationRequirementInteger(ConfigurationKey.INPUT_ROW_LIMIT.name());
+    requirement.setDefaultValues(new Integer[] { defaultValues.getInputRowLimit()});
+    return requirement;
   }
 
   private ConfigurationRequirement<?> tableInput() {
@@ -78,6 +88,17 @@ public class DeMarchiAlgorithm implements InclusionDependencyAlgorithm,
 
     if (identifier.equals(ConfigurationKey.PROCESS_EMPTY_COLUMNS.name())) {
       builder.processEmptyColumns(values[0]);
+    } else {
+      handleUnknownConfiguration(identifier, values);
+    }
+  }
+
+  @Override
+  public void setIntegerConfigurationValue(final String identifier, final Integer... values)
+      throws AlgorithmConfigurationException {
+
+    if (identifier.equals(ConfigurationKey.INPUT_ROW_LIMIT.name())) {
+      builder.inputRowLimit(values[0]);
     } else {
       handleUnknownConfiguration(identifier, values);
     }
