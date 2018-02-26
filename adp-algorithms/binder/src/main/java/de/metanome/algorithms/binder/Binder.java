@@ -1012,7 +1012,11 @@ class Binder {
 			bucketMetadata.setBucketComparisonOrder(bucketComparisonOrder);
 			// Check the n-ary IND candidates
 			long naryCompareTimeCurrent = System.currentTimeMillis();
-			naryDep2ref.putAll(this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset));
+			if (naryDep2ref != null) {
+				naryDep2ref.putAll(this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset));
+			} else {
+				naryDep2ref = this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset);
+			}
 
 			// Add the number of created buckets for n-ary INDs of this level to the naryOffset
 			naryOffset = naryOffset + attributeCombinations.size();
