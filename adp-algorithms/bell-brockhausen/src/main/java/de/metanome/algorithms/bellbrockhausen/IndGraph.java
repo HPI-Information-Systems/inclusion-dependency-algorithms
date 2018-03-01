@@ -83,10 +83,10 @@ public class IndGraph {
 
     private void testCandidate(final InclusionDependency test) throws AlgorithmExecutionException {
         ColumnIdentifier dependant = getDependant(test);
-        ColumnIdentifier referenced = getReferenced(test);
+        //ColumnIdentifier referenced = getReferenced(test);
         final int dependantIndex = getCandidateIndex(dependant);
         // Run test if not: has edge A_ref -> A_k with k < i and no edge A_depend -> A_k
-        if (fromEdges.get(referenced).stream()
+        if (fromEdges.get(dependant).stream()
                 .noneMatch(node -> getCandidateIndex(node) < dependantIndex && !hasEdge(dependant, node))) {
             if (isInRange(test)) {
                 dbTests++;
