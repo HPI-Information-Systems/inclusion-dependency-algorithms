@@ -7,9 +7,12 @@ import de.metanome.algorithm_integration.results.InclusionDependency;
 import lombok.Data;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static de.metanome.util.Collectors.toImmutableList;
+import static java.util.stream.Collectors.toList;
 
 @Data
 public class UindCoordinates {
@@ -28,15 +31,21 @@ public class UindCoordinates {
 
     private final InclusionDependency uind;
     private final Integer lhsIndex;
-    private final ImmutableList<Integer> rhsIndices;
+    private final List<Integer> rhsIndices;
 
-    public UindCoordinates(InclusionDependency uind, Integer lhsIndex, Collection<Integer> rhsIndices) {
+    public UindCoordinates(InclusionDependency uind, Integer lhsIndex, List<Integer> rhsIndices) {
         this.uind = uind;
         this.lhsIndex = lhsIndex;
-        this.rhsIndices = rhsIndices.stream().sorted().collect(toImmutableList());
+        this.rhsIndices = rhsIndices;
     }
 
-    public String toLine() {
-        return lhsIndex + FIELD_SEPERATOR + Joiner.on(ELEM_SEPERATOR).join(rhsIndices);
+    public static String toRhsLine(List<Integer> rhsIndices) {
+        return FIELD_SEPERATOR + Joiner
+                .on(ELEM_SEPERATOR)
+                .join(rhsIndices.stream().sorted().collect(toList()));
+    }
+
+    public static String toLine(int lhsIndex, String rhsLine) {
+        return lhsIndex + rhsLine;
     }
 }

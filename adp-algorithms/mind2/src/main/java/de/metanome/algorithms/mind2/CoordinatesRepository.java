@@ -16,6 +16,7 @@ import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
 import de.metanome.algorithms.mind2.model.AttributeValuePosition;
 import de.metanome.algorithms.mind2.model.UindCoordinates;
+import de.metanome.algorithms.mind2.model.ValuePositions;
 import de.metanome.algorithms.mind2.utils.AttributeIterator;
 import de.metanome.algorithms.mind2.utils.UindCoordinatesReader;
 
@@ -24,16 +25,21 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.util.Collectors.toImmutableList;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toList;
 
 public class CoordinatesRepository {
 
@@ -66,7 +72,7 @@ public class CoordinatesRepository {
         ImmutableMap<String, ColumnIdentifier> indexColumns = getIndexColumns(attributes);
         for (InclusionDependency uind : uinds) {
             log.info(format("Calculate coordinates for %s", uind));
-            SetMultimap<Integer, Integer> uindCoordinates = generateCoordinates(uind, attributes, indexColumns);
+            List<ValuePositions> uindCoordinates = generateCoordinates(uind, attributes, indexColumns);
             Path path = getPath();
             try {
                 writeToFile(uind, uindCoordinates, path);
@@ -78,11 +84,11 @@ public class CoordinatesRepository {
         }
     }
 
-    private SetMultimap<Integer, Integer> generateCoordinates(
+    private List<ValuePositions> generateCoordinates(
             InclusionDependency unaryInd,
             ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes,
             ImmutableMap<String, ColumnIdentifier> indexColumns) throws AlgorithmExecutionException {
-        SetMultimap<Integer, Integer> uindCoordinates = MultimapBuilder.hashKeys().hashSetValues().build();
+        List<ValuePositions> valuePositions = new ArrayList<>();
         ColumnIdentifier lhs = getUnaryIdentifier(unaryInd.getDependant());
         ColumnIdentifier rhs = getUnaryIdentifier(unaryInd.getReferenced());
 
@@ -92,6 +98,7 @@ public class CoordinatesRepository {
                 getSortedRelationalInput(attributes.get(rhs), rhs, getIndexColumn(indexColumns, rhs), config.getIndexColumn(), false);
         AttributeIterator cursorA =  new AttributeIterator(inputA, lhs, config.getIndexColumn());
         AttributeIterator cursorB = new AttributeIterator(inputB, rhs, config.getIndexColumn());
+        String previousValue = null;
 
         cursorA.next();
         cursorB.next();
@@ -99,10 +106,11 @@ public class CoordinatesRepository {
         while (cursorA.hasNext() || cursorB.hasNext()) {
             AttributeValuePosition valA = cursorA.current();
             AttributeValuePosition valB = cursorB.current();
+            previousValue = valA.getValue();
 
             if (valA.getValue().equals(valB.getValue())) {
-                Set<Integer> positionsA = new HashSet<>();
-                Set<Integer> positionsB = new HashSet<>();
+                List<Integer> positionsA = new ArrayList<>();
+                List<Integer> positionsB = new ArrayList<>();
 
                 AttributeValuePosition nextValA = cursorA.current();
                 while (nextValA.getValue().equals(valA.getValue())) {
@@ -123,7 +131,7 @@ public class CoordinatesRepository {
                 }
 
                 if (positionsA.size() > 0 && positionsB.size() > 0) {
-                    positionsA.forEach(indexA -> uindCoordinates.putAll(indexA, positionsB));
+                    valuePositions.add(new ValuePositions(positionsA, positionsB));
                 }
             } else if (valA.getValue().compareTo(valB.getValue()) < 0) {
                 if (!cursorA.hasNext()) {
@@ -137,12 +145,13 @@ public class CoordinatesRepository {
                 cursorB.next();
             }
         }
-        if (cursorA.current().getValue().equals(cursorB.current().getValue())) {
-            uindCoordinates.put(cursorA.current().getPosition(), cursorB.current().getPosition());
+        if (!cursorA.current().getValue().equals(previousValue) &&
+                cursorA.current().getValue().equals(cursorB.current().getValue())) {
+            valuePositions.add(new ValuePositions(cursorA.current().getPosition(), cursorB.current().getPosition()));
         }
         cursorA.close();
         cursorB.close();
-        return uindCoordinates;
+        return valuePositions;
     }
 
     private ImmutableMap<ColumnIdentifier, TableInputGenerator> getRelationalInputMap(
@@ -189,16 +198,20 @@ public class CoordinatesRepository {
         return getOnlyElement(columnPermutation.getColumnIdentifiers());
     }
 
-    private void writeToFile(InclusionDependency uind, SetMultimap<Integer, Integer> uindCoordinates, Path path)
+    private void writeToFile(InclusionDependency uind, List<ValuePositions> uindCoordinates, Path path)
             throws IOException {
-        ImmutableList<Integer> lhsCoordinates = uindCoordinates.keySet().stream()
-                .sorted().collect(toImmutableList());
+        log.info("Dump to file: " + uind);
         try (BufferedWriter writer = Files.newBufferedWriter(path, UTF_8)) {
-            for (Integer index : lhsCoordinates) {
-                UindCoordinates coordinates = new UindCoordinates(uind, index, uindCoordinates.get(index));
-                writer.write(coordinates.toLine());
-                writer.newLine();
+            for (ValuePositions valuePositions : uindCoordinates) {
+                List<Integer> lhsIndices = valuePositions.getPositionsA().stream().sorted().collect(toList());
+                String rhsString = UindCoordinates.toRhsLine(valuePositions.getPositionsB());
+                for (int lhsIndex : lhsIndices) {
+                    writer.write(UindCoordinates.toLine(lhsIndex, rhsString));
+                    writer.newLine();
+                }
+
             }
         }
+        log.info("Dump to file finished");
     }
 }
