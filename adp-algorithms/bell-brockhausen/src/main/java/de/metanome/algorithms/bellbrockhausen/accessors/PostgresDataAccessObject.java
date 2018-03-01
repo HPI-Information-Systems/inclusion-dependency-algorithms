@@ -74,7 +74,7 @@ public class PostgresDataAccessObject implements DataAccessObject {
             throws AlgorithmExecutionException {
         String columnName = columnIdentifier.getColumnIdentifier();
         String tableName = columnIdentifier.getTableIdentifier();
-        String query = format("SELECT MIN(%s) as minVal, MAX(%s) as maxVal, PG_TYPEOF(MAX(%s)) as type FROM %s",
+        String query = format("SELECT MIN(%s) COLLATE \"C\" as minVal, MAX(%s) COLLATE \"C\" as maxVal, PG_TYPEOF(MAX(%s)) as type FROM %s",
                 columnName, columnName, columnName, tableName);
         try (ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query)) {
             resultSet.next();
