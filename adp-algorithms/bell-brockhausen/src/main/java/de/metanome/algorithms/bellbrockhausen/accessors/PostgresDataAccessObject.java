@@ -78,24 +78,39 @@ public class PostgresDataAccessObject implements DataAccessObject {
                 columnName, columnName, columnName, tableName);
         try (ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query)) {
             resultSet.next();
-            DataType type = DataType.fromString(resultSet.getString("type"));
-            Range<Comparable> valueRange;
-            switch (type) {
-                case TEXT:
-                    valueRange = Range.closed(resultSet.getString("minVal"), resultSet.getString("maxVal"));
-                    break;
-                case INTEGER:
-                    valueRange = Range.closed(resultSet.getInt("minVal"), resultSet.getInt("maxVal"));
-                    break;
-                default:
-                    throw new AlgorithmExecutionException(
-                            format("Invalid data type %s for column %s", type, columnIdentifier));
-            }
+            final DataType type = DataType.fromString(resultSet.getString("type"));
+            final Range<Comparable> valueRange = extractRange(resultSet);
             return new Attribute(columnIdentifier, valueRange, type);
         } catch (SQLException e) {
             throw new InputGenerationException(
                     format("Error calculating value range for column %s", columnIdentifier), e);
         }
+    }
+
+    private Range<Comparable> extractRange(final ResultSet set) throws SQLException, AlgorithmExecutionException  {
+        final Comparable min = (Comparable) set.getObject("minVal");
+        final Comparable max = (Comparable) set.getObject("maxVal");
+        return getRange(min, max);
+    }
+
+    private Range<Comparable> getRange(final Comparable min, final Comparable max) {
+        if (min == null && max == null) {
+            return Range.all();
+        }
+
+        if (min == null) {
+            return Range.atMost(max);
+        }
+
+        if (max == null) {
+            return Range.atLeast(min);
+        }
+
+        if (min.equals(max)) {
+            return Range.singleton(min);
+        }
+
+        return Range.closed(min, max);
     }
 
     private boolean isInd(final ColumnIdentifier dependant, final ColumnIdentifier referenced)
