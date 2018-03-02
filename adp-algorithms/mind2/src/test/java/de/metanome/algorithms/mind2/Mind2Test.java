@@ -248,6 +248,59 @@ public class Mind2Test {
         assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(maximumInds));
     }
 
+    @Test
+    public void testEqualColumns(Mind2Configuration config) throws AlgorithmExecutionException {
+        // GIVEN
+        ColumnIdentifier a1 = new ColumnIdentifier("R", "A1");
+        ColumnIdentifier a2 = new ColumnIdentifier("R", "A2");
+        ColumnIdentifier b1 = new ColumnIdentifier("S", "B1");
+        ColumnIdentifier b2 = new ColumnIdentifier("S", "B2");
+        TableInputGenerator tableRGenerator = mock(TableInputGenerator.class);
+        TableInputGenerator tableSGenerator = mock(TableInputGenerator.class);
+        RelationalInputGenerator tableR = RelationalInputGeneratorStub.builder()
+                .relationName("R")
+                .columnNames(ImmutableList.of(INDEX_COLUMN, "A1", "A2"))
+                .rows(ImmutableList.of(
+                        Row.of("1", "a", "b"),
+                        Row.of("2", "a", "b"),
+                        Row.of("3", "a", "b"),
+                        Row.of("4", "a", "b"),
+                        Row.of("5", "a", "b"),
+                        Row.of("6", "a", "b"),
+                        Row.of("7", "a", "b")))
+                .build();
+        RelationalInputGenerator tableS = RelationalInputGeneratorStub.builder()
+                .relationName("S")
+                .columnNames(ImmutableList.of(INDEX_COLUMN, "B1", "B2"))
+                .rows(ImmutableList.of(
+                        Row.of("1", "a", "b"),
+                        Row.of("2", "a", "b"),
+                        Row.of("3", "a", "b"),
+                        Row.of("4", "a", "b"),
+                        Row.of("5", "a", "b"),
+                        Row.of("6", "a", "b"),
+                        Row.of("7", "a", "b")))
+                .build();
+        ImmutableSet<InclusionDependency> unaryInds = ImmutableSet.of(
+                toInd(a1, b1), toInd(a2, b2), toInd(b1, a1), toInd(b2, a2));
+        ImmutableSet<InclusionDependency> maximumInds = ImmutableSet.of(
+                new InclusionDependency(new ColumnPermutation(a1, a2, b1, b2), new ColumnPermutation(b1, b2, a1, a2)));
+
+        when(config.getInputGenerators()).thenReturn(ImmutableList.of(tableRGenerator, tableSGenerator));
+        when(tableRGenerator.generateNewCopy()).then(in -> tableR.generateNewCopy());
+        when(tableSGenerator.generateNewCopy()).then(in -> tableS.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableRGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableR.generateNewCopy());
+        when(mockDao.getSortedRelationalInput(same(tableSGenerator), any(ColumnIdentifier.class), any(ColumnIdentifier.class), anyString(), anyBoolean()))
+                .then(in -> tableS.generateNewCopy());
+
+        // WHEN
+        mind2.execute(unaryInds);
+
+        // THEN
+        assertThat(resultReceiver.getReceivedResults()).containsExactlyInAnyOrder(toArray(maximumInds));
+    }
+
     private InclusionDependency toInd(ColumnIdentifier dependant, ColumnIdentifier referenced) {
         return new InclusionDependency(new ColumnPermutation(dependant), new ColumnPermutation(referenced));
     }

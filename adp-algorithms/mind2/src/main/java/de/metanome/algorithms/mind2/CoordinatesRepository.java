@@ -71,7 +71,6 @@ public class CoordinatesRepository {
                 getRelationalInputMap(config.getInputGenerators());
         ImmutableMap<String, ColumnIdentifier> indexColumns = getIndexColumns(attributes);
         for (InclusionDependency uind : uinds) {
-            log.info(format("Calculate coordinates for %s", uind));
             List<ValuePositions> uindCoordinates = generateCoordinates(uind, attributes, indexColumns);
             Path path = getPath();
             try {
@@ -200,18 +199,19 @@ public class CoordinatesRepository {
 
     private void writeToFile(InclusionDependency uind, List<ValuePositions> uindCoordinates, Path path)
             throws IOException {
-        log.info("Dump to file: " + uind);
         try (BufferedWriter writer = Files.newBufferedWriter(path, UTF_8)) {
             for (ValuePositions valuePositions : uindCoordinates) {
                 List<Integer> lhsIndices = valuePositions.getPositionsA().stream().sorted().collect(toList());
-                String rhsString = UindCoordinates.toRhsLine(valuePositions.getPositionsB());
-                for (int lhsIndex : lhsIndices) {
-                    writer.write(UindCoordinates.toLine(lhsIndex, rhsString));
-                    writer.newLine();
+                for (int i = 0; i < lhsIndices.size(); i++) {
+                    if (i == 0) {
+                        writer.write(UindCoordinates.toLine(lhsIndices.get(i), valuePositions.getPositionsB()));
+                        writer.newLine();
+                    } else {
+                        writer.write(UindCoordinates.toLine(lhsIndices.get(i)));
+                        writer.newLine();
+                    }
                 }
-
             }
         }
-        log.info("Dump to file finished");
     }
 }

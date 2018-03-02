@@ -19,10 +19,14 @@ public class UindCoordinates {
 
     public static final String FIELD_SEPERATOR = ";";
     public static final String ELEM_SEPERATOR = ",";
+    public static final String SAME_RHS_INDICATOR = "\\N";
 
-    public static UindCoordinates fromLine(InclusionDependency uind, String data) {
+    public static UindCoordinates fromLine(InclusionDependency uind, String data, List<Integer> currentRhsIndices) {
         ImmutableList<String> parts = ImmutableList.copyOf(Splitter.on(FIELD_SEPERATOR).trimResults().split(data));
         int lhsIndex = Integer.valueOf(parts.get(0));
+        if (parts.get(1).equals(SAME_RHS_INDICATOR)) {
+            return new UindCoordinates(uind, lhsIndex, currentRhsIndices);
+        }
         ImmutableList<Integer> rhsIndices = StreamSupport.stream(
                 Splitter.on(ELEM_SEPERATOR).trimResults().split(parts.get(1)).spliterator(), false)
                 .map(Integer::valueOf).collect(toImmutableList());
@@ -39,13 +43,11 @@ public class UindCoordinates {
         this.rhsIndices = rhsIndices;
     }
 
-    public static String toRhsLine(List<Integer> rhsIndices) {
-        return FIELD_SEPERATOR + Joiner
-                .on(ELEM_SEPERATOR)
-                .join(rhsIndices.stream().sorted().collect(toList()));
+    public static String toLine(int lhsIndex, List<Integer> rhsIndices) {
+        return lhsIndex + FIELD_SEPERATOR + Joiner.on(ELEM_SEPERATOR).join(rhsIndices.stream().sorted().collect(toList()));
     }
 
-    public static String toLine(int lhsIndex, String rhsLine) {
-        return lhsIndex + rhsLine;
+    public static String toLine(int lhsIndex) {
+        return lhsIndex + FIELD_SEPERATOR + SAME_RHS_INDICATOR;
     }
 }
