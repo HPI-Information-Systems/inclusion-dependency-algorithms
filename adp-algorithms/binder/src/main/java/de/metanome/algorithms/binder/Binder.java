@@ -976,12 +976,12 @@ class Binder {
 		// Generate, bucketize and test the n-ary INDs level-wise
 		LongArrayList naryGenerationTime = new LongArrayList();
 		LongArrayList naryCompareTime = new LongArrayList();
+		Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = null;
 		while (++naryLevel <= this.maxNaryLevel || this.maxNaryLevel <= 0) {
 			System.out.print(" L" + naryLevel);
-			
+
 			// Generate (n+1)-ary IND candidates from the already identified unary and n-ary IND candidates
 			final long naryGenerationTimeCurrent = System.currentTimeMillis();
-			Map<AttributeCombination, List<AttributeCombination>> naryDep2ref = nPlusOneAryDep2ref;
 
 			nPlusOneAryDep2ref = this.generateNPlusOneAryCandidates(nPlusOneAryDep2ref, bucketMetadata.getColumnSizes());
 			if (nPlusOneAryDep2ref.isEmpty()) {
@@ -994,17 +994,17 @@ class Binder {
 			attributeCombinationSet.addAll(nPlusOneAryDep2ref.keySet());
 			nPlusOneAryDep2ref.values().forEach(attributeCombinationSet::addAll);
 			List<AttributeCombination> attributeCombinations = new ArrayList<>(attributeCombinationSet);
-			
+
 			// Extend the columnSize array
 			LongArrayList columnSizes = bucketMetadata.getColumnSizes();
 			for (int i = 0; i < attributeCombinations.size(); i++)
 				columnSizes.add(0);
 			bucketMetadata.setColumnSizes(columnSizes);
-			
+
 			int[] currentNarySpillCounts = new int[attributeCombinations.size()];
 			for (int attributeCombinationNumber = 0; attributeCombinationNumber < attributeCombinations.size(); attributeCombinationNumber++)
 				currentNarySpillCounts[attributeCombinationNumber] = 0;
-			
+
 			naryGenerationTime.add(System.currentTimeMillis() - naryGenerationTimeCurrent);
 
 			// Read the input dataset again and bucketize all attribute combinations that are refs or deps
@@ -1012,7 +1012,11 @@ class Binder {
 			bucketMetadata.setBucketComparisonOrder(bucketComparisonOrder);
 			// Check the n-ary IND candidates
 			long naryCompareTimeCurrent = System.currentTimeMillis();
-			nPlusOneAryDep2ref = this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset);
+			if (naryDep2ref != null) {
+				naryDep2ref.putAll(this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset));
+			} else {
+				naryDep2ref = this.naryCheckViaTwoStageIndexAndLists(nPlusOneAryDep2ref, attributeCombinations, naryOffset);
+			}
 
 			// Add the number of created buckets for n-ary INDs of this level to the naryOffset
 			naryOffset = naryOffset + attributeCombinations.size();
@@ -1021,7 +1025,7 @@ class Binder {
 			System.out.print("(" + (System.currentTimeMillis() - naryGenerationTimeCurrent) + " ms)");
 		}
 
-		return nPlusOneAryDep2ref;
+		return naryDep2ref;
 	}
 	
 //	private Map<AttributeCombination, List<AttributeCombination>> detectNaryViaSingleChecks() throws InputGenerationException, AlgorithmConfigurationException {

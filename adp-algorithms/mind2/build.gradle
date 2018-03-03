@@ -2,9 +2,12 @@ dependencies {
     extraLibs(project(':util')) {
         transitive = false
     }
-    extraLibs(project(':ind-input')) {
+
+    extraLibs(project(':ind-input'))
+
+    testCompile(project(path: ':util', configuration: 'tests')) {
+        exclude(group: 'de.metanome', module: 'algorithm_integration')
     }
-    testCompile project(path: ':util', configuration: 'tests')
 }
 
 jar {
@@ -12,5 +15,4 @@ jar {
     manifest {
         attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.mind2.Mind2Algorithm'
     }
-    classifier 'file'
 }
