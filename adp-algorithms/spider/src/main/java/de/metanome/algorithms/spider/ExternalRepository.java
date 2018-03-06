@@ -2,6 +2,7 @@ package de.metanome.algorithms.spider;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_execution.FileCreationException;
+import de.metanome.algorithm_integration.input.InputIterationException;
 import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.util.TPMMS;
@@ -78,6 +79,13 @@ class ExternalRepository {
       }
     } catch (final Exception e) {
       throw new AlgorithmExecutionException("error while storing attributes to disk", e);
+    } finally {
+      // FIXME
+      try {
+        generator.close();
+      } catch (final Exception e) {
+        throw new InputIterationException("terrible", e);
+      }
     }
   }
 
