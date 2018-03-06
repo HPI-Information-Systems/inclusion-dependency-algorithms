@@ -88,6 +88,7 @@ public class TableInfoFactory {
         columnNames.add(metadata.getColumnName(index));
         columnTypes.add(metadata.getColumnTypeName(index));
       }
+
       return TableInfo.builder()
           .tableInputGenerator(generator)
           .tableName(metadata.getTableName(1))
@@ -96,6 +97,14 @@ public class TableInfoFactory {
           .build();
     } catch (final SQLException e) {
       throw new InputGenerationException("database error while reading metadata", e);
+    } finally {
+      try {
+        // FIXME iterating over all input tables, creating one connection per table exceeds connection limits
+        // hopefully the underlying database generator re-establishes the connection
+        generator.close();
+      } catch (final Exception e) {
+        throw new InputGenerationException("terrible", e);
+      }
     }
   }
 }
