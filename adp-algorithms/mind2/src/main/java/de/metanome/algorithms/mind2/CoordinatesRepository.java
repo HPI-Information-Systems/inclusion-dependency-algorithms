@@ -3,8 +3,6 @@ package de.metanome.algorithms.mind2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.SetMultimap;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
@@ -20,6 +18,11 @@ import de.metanome.algorithms.mind2.model.UindCoordinates;
 import de.metanome.algorithms.mind2.model.ValuePositions;
 import de.metanome.algorithms.mind2.utils.AttributeIterator;
 import de.metanome.algorithms.mind2.utils.UindCoordinatesReader;
+import it.unimi.dsi.fastutil.Arrays;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 
 import javax.inject.Inject;
 import java.io.BufferedWriter;
@@ -27,15 +30,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
-import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.util.Collectors.toImmutableList;
 import static java.lang.String.format;
@@ -68,7 +70,7 @@ public class CoordinatesRepository {
         }
     }
 
-    public ImmutableSet<Integer> storeUindCoordinates() throws AlgorithmExecutionException {
+    public IntSet storeUindCoordinates() throws AlgorithmExecutionException {
         ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes =
                 getRelationalInputMap(config.getInputGenerators());
         ImmutableMap<String, ColumnIdentifier> indexColumns = getIndexColumns(attributes);
@@ -86,12 +88,12 @@ public class CoordinatesRepository {
                         format("Error writing uind coordinates for uind %s to file %s", uind, path), e);
             }
         }
-        return ImmutableSet.copyOf(idToUind.keySet());
+        return new IntOpenHashSet(idToUind.keySet());
     }
 
-    public void collectInds(Set<Set<Integer>> maxInds) throws AlgorithmExecutionException {
+    public void collectInds(Set<IntSet> maxInds) throws AlgorithmExecutionException {
         InclusionDependencyResultReceiver resultReceiver = config.getResultReceiver();
-        for (Set<Integer> maxInd : maxInds) {
+        for (IntSet maxInd : maxInds) {
             ImmutableList<ColumnIdentifier> referencedIds = maxInd.stream()
                     .map(idToUind::get)
                     .map(InclusionDependency::getReferenced)
@@ -137,8 +139,8 @@ public class CoordinatesRepository {
             previousValue = valA.getValue();
 
             if (valA.getValue().equals(valB.getValue())) {
-                List<Integer> positionsA = new ArrayList<>();
-                List<Integer> positionsB = new ArrayList<>();
+                IntList positionsA = new IntArrayList();
+                IntList positionsB = new IntArrayList();
 
                 AttributeValuePosition nextValA = cursorA.current();
                 while (nextValA.getValue().equals(valA.getValue())) {

@@ -1,16 +1,18 @@
 package de.metanome.algorithms.mind2.utils;
 
 import com.google.common.collect.AbstractIterator;
+import it.unimi.dsi.fastutil.ints.IntIterator;
+import it.unimi.dsi.fastutil.ints.IntList;
 
 import java.util.Iterator;
 
 public class RhsIterator extends AbstractIterator<Integer> {
 
-    private final Integer uindId;
-    private Iterator<Integer> iter;
-    private Integer current;
+    private final int uindId;
+    private IntIterator iter;
+    private int current;
 
-    public RhsIterator(Integer uindId, Iterable<Integer> iter) {
+    public RhsIterator(Integer uindId, IntList iter) {
         this.uindId = uindId;
         this.iter = iter.iterator();
         next();
@@ -20,17 +22,17 @@ public class RhsIterator extends AbstractIterator<Integer> {
     protected Integer computeNext() {
         if (iter.hasNext()) {
             Integer result = current;
-            current = iter.next();
+            current = iter.nextInt();
             return result;
         }
         return endOfData();
     }
 
-    public Integer current() {
+    public int current() {
         return current;
     }
 
-    public Integer getUindId() {
+    public int getUindId() {
         return uindId;
     }
 }

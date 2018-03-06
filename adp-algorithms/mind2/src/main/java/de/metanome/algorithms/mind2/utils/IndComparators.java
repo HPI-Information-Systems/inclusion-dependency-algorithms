@@ -19,14 +19,14 @@ public class IndComparators {
     public static class UindCoordinatesComparator implements Comparator<UindCoordinates> {
         @Override
         public int compare(UindCoordinates coordinatesA, UindCoordinates coordinatesB) {
-            return coordinatesA.getLhsIndex().compareTo(coordinatesB.getLhsIndex());
+            return coordinatesA.getLhsIndex() - coordinatesB.getLhsIndex();
         }
     }
 
     public static class RhsComrapator implements Comparator<RhsIterator> {
         @Override
         public int compare(RhsIterator iterA, RhsIterator iterB) {
-            return iterA.current().compareTo(iterB.current());
+            return iterA.current() - iterB.current();
         }
     }
 }

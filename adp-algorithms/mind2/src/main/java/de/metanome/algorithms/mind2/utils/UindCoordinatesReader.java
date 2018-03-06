@@ -1,19 +1,18 @@
 package de.metanome.algorithms.mind2.utils;
 
-import com.google.common.collect.ImmutableList;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.model.UindCoordinates;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntLists;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.List;
 
 public class UindCoordinatesReader implements AutoCloseable {
 
     private final int uindId;
     private final BufferedReader reader;
-    private List<Integer> currentRhsIndices = ImmutableList.of();
+    private IntList currentRhsIndices = IntLists.EMPTY_LIST;
     private String line;
     private UindCoordinates current;
 
