@@ -114,7 +114,9 @@ public class Mind2 {
             Set<UindCoordinates> sameIndexCoords, Set<IntSet> currentMaxInds) {
 
         Queue<RhsIterator> positionsQueue = new PriorityQueue<>(new RhsComrapator());
-        initializeQueue(positionsQueue, sameIndexCoords);
+        for (UindCoordinates coords : sameIndexCoords) {
+            positionsQueue.add(new RhsIterator(coords.getUindId(), coords.getRhsIndices()));
+        }
 
         Set<IntSet> maxInds = new ObjectOpenHashSet<>();
         Set<IntSet> maxIndSubsets = new ObjectOpenHashSet<>();
@@ -142,49 +144,24 @@ public class Mind2 {
                 subMaxInds.add(currentRhsUind);
             }
 
-            subMaxIndsTerminationCheck(currentMaxInds, maxIndSubsets, subMaxInds);
+            for (IntSet maxInd : currentMaxInds) {
+                if (subMaxInds.containsAll(maxInd)) {
+                    maxIndSubsets.add(maxInd);
+                }
+            }
             if (maxIndSubsets.equals(currentMaxInds)) {
                 maxInds = currentMaxInds;
                 break;
             }
-            mergeSubMaxInds(maxInds, subMaxInds);
-            advanceReader(positionsQueue, readers);
+            maxInds.add(subMaxInds);
+            for (RhsIterator nextReader : readers) {
+                if (nextReader.hasNext()) {
+                    nextReader.next();
+                    positionsQueue.add(nextReader);
+                }
+            }
         }
         return removeSubsets(maxInds);
-    }
-
-    private void initializeQueue(
-            Queue<RhsIterator> positionsQueue,
-            Set<UindCoordinates> sameIndexCoords) {
-        for (UindCoordinates coords : sameIndexCoords) {
-            positionsQueue.add(new RhsIterator(coords.getUindId(), coords.getRhsIndices()));
-        }
-    }
-
-    private void subMaxIndsTerminationCheck(
-            Set<IntSet> currentMaxInds,
-            Set<IntSet> maxIndSubsets,
-            IntSet subMaxInds) {
-        for (IntSet maxInd : currentMaxInds) {
-            if (subMaxInds.containsAll(maxInd)) {
-                maxIndSubsets.add(maxInd);
-            }
-        }
-    }
-
-    private void mergeSubMaxInds(Set<IntSet> maxInds, IntSet subMaxInds) {
-        maxInds.add(subMaxInds);
-    }
-
-    private void advanceReader(
-            Queue<RhsIterator> positionsQueue,
-            Set<RhsIterator> readers) {
-        for (RhsIterator nextReader : readers) {
-            if (nextReader.hasNext()) {
-                nextReader.next();
-                positionsQueue.add(nextReader);
-            }
-        }
     }
 
     // phi Operator
