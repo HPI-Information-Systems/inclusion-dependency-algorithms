@@ -21,7 +21,7 @@ public class UindCoordinates {
     public static final String ELEM_SEPERATOR = ",";
     public static final String SAME_RHS_INDICATOR = "\\N";
 
-    public static UindCoordinates fromLine(int uindId, String data, List<Integer> currentRhsIndices) {
+    public static UindCoordinates fromLine(Integer uindId, String data, List<Integer> currentRhsIndices) {
         ImmutableList<String> parts = ImmutableList.copyOf(Splitter.on(FIELD_SEPERATOR).trimResults().split(data));
         int lhsIndex = Integer.valueOf(parts.get(0));
         if (parts.get(1).equals(SAME_RHS_INDICATOR)) {
@@ -33,21 +33,21 @@ public class UindCoordinates {
         return new UindCoordinates(uindId, lhsIndex, rhsIndices);
     }
 
-    private final int uindId;
+    private final Integer uindId;
     private final Integer lhsIndex;
     private final List<Integer> rhsIndices;
 
-    public UindCoordinates(int uindId, Integer lhsIndex, List<Integer> rhsIndices) {
+    public UindCoordinates(Integer uindId, Integer lhsIndex, List<Integer> rhsIndices) {
         this.uindId = uindId;
         this.lhsIndex = lhsIndex;
         this.rhsIndices = rhsIndices;
     }
 
-    public static String toLine(int lhsIndex, List<Integer> rhsIndices) {
+    public static String toLine(Integer lhsIndex, List<Integer> rhsIndices) {
         return lhsIndex + FIELD_SEPERATOR + Joiner.on(ELEM_SEPERATOR).join(rhsIndices.stream().sorted().collect(toList()));
     }
 
-    public static String toLine(int lhsIndex) {
+    public static String toLine(Integer lhsIndex) {
         return lhsIndex + FIELD_SEPERATOR + SAME_RHS_INDICATOR;
     }
 }

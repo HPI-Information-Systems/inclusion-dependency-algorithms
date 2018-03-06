@@ -15,7 +15,7 @@ public class ValuePositions {
         this.positionsB = positionsB;
     }
 
-    public  ValuePositions(int posA, int posB) {
+    public  ValuePositions(Integer posA, Integer posB) {
         positionsA = Collections.singletonList(posA);
         positionsB = Collections.singletonList(posB);
     }
