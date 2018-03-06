@@ -11,14 +11,14 @@ import java.util.List;
 
 public class UindCoordinatesReader implements AutoCloseable {
 
-    private final InclusionDependency uind;
+    private final int uindId;
     private final BufferedReader reader;
     private List<Integer> currentRhsIndices = ImmutableList.of();
     private String line;
     private UindCoordinates current;
 
-    public UindCoordinatesReader(InclusionDependency uind, BufferedReader reader) throws AlgorithmExecutionException {
-        this.uind = uind;
+    public UindCoordinatesReader(int uindId, BufferedReader reader) throws AlgorithmExecutionException {
+        this.uindId = uindId;
         this.reader = reader;
         this.line = getNextLine();
         next();
@@ -30,7 +30,7 @@ public class UindCoordinatesReader implements AutoCloseable {
 
     public UindCoordinates next() throws AlgorithmExecutionException {
         UindCoordinates result = current;
-        current = UindCoordinates.fromLine(uind, line, currentRhsIndices);
+        current = UindCoordinates.fromLine(uindId, line, currentRhsIndices);
         currentRhsIndices = current.getRhsIndices();
         line = getNextLine();
         return result;

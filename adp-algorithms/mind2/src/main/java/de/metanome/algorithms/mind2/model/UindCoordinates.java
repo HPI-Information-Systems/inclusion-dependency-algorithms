@@ -21,24 +21,24 @@ public class UindCoordinates {
     public static final String ELEM_SEPERATOR = ",";
     public static final String SAME_RHS_INDICATOR = "\\N";
 
-    public static UindCoordinates fromLine(InclusionDependency uind, String data, List<Integer> currentRhsIndices) {
+    public static UindCoordinates fromLine(int uindId, String data, List<Integer> currentRhsIndices) {
         ImmutableList<String> parts = ImmutableList.copyOf(Splitter.on(FIELD_SEPERATOR).trimResults().split(data));
         int lhsIndex = Integer.valueOf(parts.get(0));
         if (parts.get(1).equals(SAME_RHS_INDICATOR)) {
-            return new UindCoordinates(uind, lhsIndex, currentRhsIndices);
+            return new UindCoordinates(uindId, lhsIndex, currentRhsIndices);
         }
         ImmutableList<Integer> rhsIndices = StreamSupport.stream(
                 Splitter.on(ELEM_SEPERATOR).trimResults().split(parts.get(1)).spliterator(), false)
                 .map(Integer::valueOf).collect(toImmutableList());
-        return new UindCoordinates(uind, lhsIndex, rhsIndices);
+        return new UindCoordinates(uindId, lhsIndex, rhsIndices);
     }
 
-    private final InclusionDependency uind;
+    private final int uindId;
     private final Integer lhsIndex;
     private final List<Integer> rhsIndices;
 
-    public UindCoordinates(InclusionDependency uind, Integer lhsIndex, List<Integer> rhsIndices) {
-        this.uind = uind;
+    public UindCoordinates(int uindId, Integer lhsIndex, List<Integer> rhsIndices) {
+        this.uindId = uindId;
         this.lhsIndex = lhsIndex;
         this.rhsIndices = rhsIndices;
     }

@@ -12,6 +12,7 @@ import de.metanome.algorithm_integration.algorithm_execution.FileCreationExcepti
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.input.TableInputGenerator;
+import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.configuration.Mind2Configuration;
 import de.metanome.algorithms.mind2.model.AttributeValuePosition;
@@ -47,7 +48,8 @@ public class CoordinatesRepository {
 
     private final Mind2Configuration config;
     private final ImmutableSet<InclusionDependency> uinds;
-    private final Map<InclusionDependency, Path> uindToPath = new HashMap<>();
+    private final Map<Integer, Path> uindToPath = new HashMap<>();
+    private final Map<Integer, InclusionDependency> idToUind = new HashMap<>();
 
     @Inject
     public CoordinatesRepository(Mind2Configuration config, ImmutableSet<InclusionDependency> uinds) {
@@ -55,31 +57,58 @@ public class CoordinatesRepository {
         this.uinds = uinds;
     }
 
-    public UindCoordinatesReader getReader(InclusionDependency uind) throws AlgorithmExecutionException {
-        if (!uindToPath.containsKey(uind)) {
-            throw new AlgorithmExecutionException(format("No coordinates file found for uind %s", uind));
+    public UindCoordinatesReader getReader(Integer uindId) throws AlgorithmExecutionException {
+        if (!uindToPath.containsKey(uindId)) {
+            throw new AlgorithmExecutionException(format("No coordinates file found for UIND id %d", uindId));
         }
         try {
-            return new UindCoordinatesReader(uind, Files.newBufferedReader(uindToPath.get(uind)));
+            return new UindCoordinatesReader(uindId, Files.newBufferedReader(uindToPath.get(uindId)));
         } catch (IOException e) {
-            throw new AlgorithmExecutionException(format("Error reading coordinates file for uind %s", uind), e);
+            throw new AlgorithmExecutionException(format("Error reading coordinates file for uind %s", uindId), e);
         }
     }
 
-    public void storeUindCoordinates() throws AlgorithmExecutionException {
+    public ImmutableSet<Integer> storeUindCoordinates() throws AlgorithmExecutionException {
         ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes =
                 getRelationalInputMap(config.getInputGenerators());
         ImmutableMap<String, ColumnIdentifier> indexColumns = getIndexColumns(attributes);
+        int uindId = 0;
         for (InclusionDependency uind : uinds) {
             List<ValuePositions> uindCoordinates = generateCoordinates(uind, attributes, indexColumns);
             Path path = getPath();
             try {
-                writeToFile(uind, uindCoordinates, path);
-                uindToPath.put(uind, path);
+                writeToFile(uindCoordinates, path);
+                uindToPath.put(uindId, path);
+                idToUind.put(uindId, uind);
+                uindId++;
             } catch (IOException e) {
                 throw new AlgorithmExecutionException(
                         format("Error writing uind coordinates for uind %s to file %s", uind, path), e);
             }
+        }
+        return ImmutableSet.copyOf(idToUind.keySet());
+    }
+
+    public void collectInds(Set<Set<Integer>> maxInds) throws AlgorithmExecutionException {
+        InclusionDependencyResultReceiver resultReceiver = config.getResultReceiver();
+        for (Set<Integer> maxInd : maxInds) {
+            ImmutableList<ColumnIdentifier> referencedIds = maxInd.stream()
+                    .map(idToUind::get)
+                    .map(InclusionDependency::getReferenced)
+                    .map(ColumnPermutation::getColumnIdentifiers)
+                    .flatMap(List::stream)
+                    .collect(toImmutableList());
+            ColumnPermutation referenced = new ColumnPermutation();
+            referenced.setColumnIdentifiers(referencedIds);
+            ImmutableList<ColumnIdentifier> dependantIds = maxInd.stream()
+                    .map(idToUind::get)
+                    .map(InclusionDependency::getDependant)
+                    .map(ColumnPermutation::getColumnIdentifiers)
+                    .flatMap(List::stream)
+                    .collect(toImmutableList());
+            ColumnPermutation dependant = new ColumnPermutation();
+            dependant.setColumnIdentifiers(dependantIds);
+            resultReceiver.receiveResult(new InclusionDependency(dependant, referenced));
         }
     }
 
@@ -197,7 +226,7 @@ public class CoordinatesRepository {
         return getOnlyElement(columnPermutation.getColumnIdentifiers());
     }
 
-    private void writeToFile(InclusionDependency uind, List<ValuePositions> uindCoordinates, Path path)
+    private void writeToFile(List<ValuePositions> uindCoordinates, Path path)
             throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(path, UTF_8)) {
             for (ValuePositions valuePositions : uindCoordinates) {
