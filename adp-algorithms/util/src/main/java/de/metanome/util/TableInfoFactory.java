@@ -24,9 +24,21 @@ public class TableInfoFactory {
       final Collection<TableInputGenerator> tableInputGenerators)
       throws InputGenerationException, AlgorithmConfigurationException {
 
+    // FIXME Defensive programming: given that an algorithm only implements RelationalInput, TableInput may come in disguise
+    final List<RelationalInputGenerator> relational = new ArrayList<>();
+    final List<TableInputGenerator> table = new ArrayList<>(tableInputGenerators);
+
+    for (final RelationalInputGenerator generator : relationalInputGenerators) {
+      if (generator instanceof TableInputGenerator) {
+        table.add(((TableInputGenerator) generator));
+      } else {
+        relational.add(generator);
+      }
+    }
+
     final List<TableInfo> tables = new ArrayList<>();
-    tables.addAll(createFromRelationalInputs(relationalInputGenerators));
-    tables.addAll(createFromTableInputs(tableInputGenerators));
+    tables.addAll(createFromRelationalInputs(relational));
+    tables.addAll(createFromTableInputs(table));
     return tables;
   }
 
