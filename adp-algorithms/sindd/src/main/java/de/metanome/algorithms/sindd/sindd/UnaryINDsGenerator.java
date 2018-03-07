@@ -1,5 +1,6 @@
 package de.metanome.algorithms.sindd.sindd;
 
+import de.metanome.algorithms.sindd.database.metadata.Attribute;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -7,14 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import de.metanome.algorithms.sindd.database.metadata.Attribute;
-
 public class UnaryINDsGenerator {
 
   private Map<String, Attribute> id2attMap;
+  private Set<Set<String>> maxClusters;
 
   public UnaryINDsGenerator(Map<String, Attribute> id2attMap) {
     this.id2attMap = id2attMap;
+    maxClusters = new HashSet<>();
   }
 
   public void generateFrom(Partition partition) throws IOException {
@@ -26,9 +27,14 @@ public class UnaryINDsGenerator {
     AttributeSetCollector collector = new AttributeSetCollector(partitionFiles);
     while (collector.hasNext()) {
       Set<String> nextAttSet = collector.nextCluster();
-      updateReferencedAttributes(nextAttSet);
+      maxClusters.add(nextAttSet);
     }
+
     collector.close();
+
+    for (Set<String> cluster : maxClusters) {
+      updateReferencedAttributes(cluster);
+    }
   }
 
   private void updateReferencedAttributes(Set<String> attSet) {
