@@ -1,21 +1,23 @@
 package de.metanome.algorithms.mind2.utils;
 
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.mind2.model.UindCoordinates;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntLists;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 
 public class UindCoordinatesReader implements AutoCloseable {
 
-    private final InclusionDependency uind;
+    private final int uindId;
     private final BufferedReader reader;
+    private IntList currentRhsIndices = IntLists.EMPTY_LIST;
     private String line;
     private UindCoordinates current;
 
-    public UindCoordinatesReader(InclusionDependency uind, BufferedReader reader) throws AlgorithmExecutionException {
-        this.uind = uind;
+    public UindCoordinatesReader(int uindId, BufferedReader reader) throws AlgorithmExecutionException {
+        this.uindId = uindId;
         this.reader = reader;
         this.line = getNextLine();
         next();
@@ -27,7 +29,8 @@ public class UindCoordinatesReader implements AutoCloseable {
 
     public UindCoordinates next() throws AlgorithmExecutionException {
         UindCoordinates result = current;
-        current = UindCoordinates.fromLine(uind, line);
+        current = UindCoordinates.fromLine(uindId, line, currentRhsIndices);
+        currentRhsIndices = current.getRhsIndices();
         line = getNextLine();
         return result;
     }

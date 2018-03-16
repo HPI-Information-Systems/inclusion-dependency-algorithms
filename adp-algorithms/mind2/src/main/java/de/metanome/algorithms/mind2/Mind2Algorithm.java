@@ -81,6 +81,7 @@ public class Mind2Algorithm implements InclusionDependencyAlgorithm, TableInputP
 
     @Override
     public void execute() throws AlgorithmExecutionException {
+        indInputParams.setAlgorithmType(AlgorithmType.FILE);
         Mind2Configuration config = configurationBuilder
                 .dataAccessObject(new PostgresDataAccessObject())
                 .build();
