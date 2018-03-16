@@ -4,8 +4,7 @@ dependencies {
         transitive = false
     }
 
-    extraLibs(project(':ind-input')) {
-    }
+    extraLibs(project(':ind-input'))
 
     extraLibs(project(':validation-strategies')) {
         exclude(group: 'de.metanome', module: 'algorithm_integration')

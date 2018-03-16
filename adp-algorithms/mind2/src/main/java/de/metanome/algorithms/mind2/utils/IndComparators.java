@@ -1,6 +1,5 @@
 package de.metanome.algorithms.mind2.utils;
 
-import de.metanome.algorithms.mind2.model.RhsPosition;
 import de.metanome.algorithms.mind2.model.UindCoordinates;
 
 import java.util.Comparator;
@@ -20,16 +19,14 @@ public class IndComparators {
     public static class UindCoordinatesComparator implements Comparator<UindCoordinates> {
         @Override
         public int compare(UindCoordinates coordinatesA, UindCoordinates coordinatesB) {
-            return coordinatesA.getLhsIndex().compareTo(coordinatesB.getLhsIndex());
+            return coordinatesA.getLhsIndex() - coordinatesB.getLhsIndex();
         }
     }
 
-    public static class RhsComrapator implements Comparator<CurrentIterator<RhsPosition>> {
+    public static class RhsComrapator implements Comparator<RhsIterator> {
         @Override
-        public int compare(CurrentIterator<RhsPosition> iterA, CurrentIterator<RhsPosition> iterB) {
-            RhsPosition poA = iterA.current();
-            RhsPosition poB = iterB.current();
-            return poA.getRhs().compareTo(poB.getRhs());
+        public int compare(RhsIterator iterA, RhsIterator iterB) {
+            return iterA.current() - iterB.current();
         }
     }
 }

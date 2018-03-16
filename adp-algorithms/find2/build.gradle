@@ -20,7 +20,7 @@ jar {
     manifest {
         attributes 'Algorithm-Bootstrap-Class': 'de.metanome.algorithms.find2.FIND2Algorithm'
     }
-    classifier 'file'
+    classifier 'database'
 }
 
 test {

@@ -57,6 +57,7 @@ class FIND2Test {
             new ColumnPermutation(ci.get(4), ci.get(6)),
             new ColumnPermutation(ci.get(11), ci.get(13))));
 
+    // SETUP
     testDatabase =
         TestDatabase.builder()
             .resourceClass(FIND2Test.class)
