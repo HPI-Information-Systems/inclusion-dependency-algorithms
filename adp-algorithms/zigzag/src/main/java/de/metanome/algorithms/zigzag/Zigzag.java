@@ -17,11 +17,13 @@ import de.metanome.validation.ValidationStrategyFactory;
 import de.metanome.util.InclusionDependencyUtil;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
@@ -44,6 +46,7 @@ public class Zigzag {
   private int dbChecks = 0;
 
   Zigzag(ZigzagConfiguration config) {
+    log.setLevel(Level.FINE);
     this.config = config;
     currentLevel = config.getStartK();
 
@@ -65,10 +68,6 @@ public class Zigzag {
             ind -> new Pair<>(ind.getDependant().getColumnIdentifiers().get(0).getTableIdentifier(),
                 ind.getReferenced().getColumnIdentifiers().get(0).getTableIdentifier())));
 
-    System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-    System.out.println(tablesPairToINDList);
-    System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-
     for (List<InclusionDependency> split : tablesPairToINDList.values()) {
       partialExecute(split);
       currentLevel = config.getStartK();
@@ -85,13 +84,13 @@ public class Zigzag {
     unaryINDs = getUnaryINDs(inputINDs);
     checkKaryInputInds(config.getStartK(), inputINDs);
     Set<Set<InclusionDependency>> positiveBorder = indToNodes(satisfiedINDs); // Bd+(I)
-    log.info(format("Positive Border: %s", positiveBorder));
+    log.fine(format("Positive Border: %s", positiveBorder));
     Set<Set<InclusionDependency>> negativeBorder = indToNodes(unsatisfiedINDs); // Bd-(I)
-    log.info(format("Negative Border: %s", negativeBorder));
+    log.fine(format("Negative Border: %s", negativeBorder));
 
     Set<Set<InclusionDependency>> optimisticBorder = calculateOptimisticBorder(
         new HashSet<>(unsatisfiedINDs)); // Bd+(I opt)
-    log.info(format("First optimistic border %s", optimisticBorder));
+    log.fine(format("First optimistic border %s", optimisticBorder));
 
     while (!isOptimisticBorderFinal(optimisticBorder, positiveBorder)) {
       Set<Set<InclusionDependency>> possibleSmallerINDs = new HashSet<>(); // optDI, all g3' < epsilon
@@ -144,10 +143,11 @@ public class Zigzag {
       negativeBorder = removeSpecializations(negativeBorder);
 
       currentLevel += 1;
-      log.info(format("Calculating next border for level: %d", currentLevel));
+      log.fine(format("Calculating next border for level: %d", currentLevel));
       optimisticBorder = calculateOptimisticBorder(negativeBorder.stream()
           .map(this::nodeToInd)
           .collect(Collectors.toSet()));
+      log.fine(format("Another optimistic border %s", optimisticBorder));
     }
     addResultFromPositiveBorder(positiveBorder);
   }
@@ -170,8 +170,8 @@ public class Zigzag {
   private void commitResults() throws ColumnNameMismatchException, CouldNotReceiveResultException {
     InclusionDependencyUtil util = new InclusionDependencyUtil();
 
-    System.out.println(results);
-    System.out.println(util.getMax(results));
+    log.fine(format("results: %s",  results));
+    log.fine(format("max results: %s", util.getMax(results)));
     for (InclusionDependency satisfiedInd : util.getMax(results)) {
       config.getResultReceiver().receiveResult(satisfiedInd);
     }
@@ -213,12 +213,13 @@ public class Zigzag {
   // Currently very inefficient for many unsatisfied INDs, e.g. when generating many invalid ones
   // This stems from combining all of them with cartesianProducts
   // This algorithm is from the HPI data profiling lecture from SS17
-  private Set<Set<InclusionDependency>> calculateOptimisticBorder(
+  Set<Set<InclusionDependency>> calculateOptimisticBorderSlower(
       Set<InclusionDependency> unsatisfiedINDs) {
+    log.fine("Using old optimistic Border calculation.");
     Set<Set<InclusionDependency>> solution = new HashSet<>();
     Set<Set<InclusionDependency>> unsatisfiedNodes = indToNodes(unsatisfiedINDs);
     for (Set<InclusionDependency> head : unsatisfiedNodes) {
-      log.info(format("Adding to cartesian product: %s", head));
+      // log.fine(format("Adding to cartesian product: %s", head));
       Set<Set<InclusionDependency>> unpackedHead = head.stream()
           .map(Sets::newHashSet)
           .collect(Collectors.toSet());
@@ -230,6 +231,45 @@ public class Zigzag {
       }
     }
     return solution.stream().map(this::invertIND).collect(Collectors.toSet());
+  }
+
+  // See Demetrovics and Thi: Some remarks on generating armstrong and inferring functional dependencies relation. (1995)
+  // Also briefly described in Data Profiling lecture at HPI in SS2017
+  Set<Set<InclusionDependency>> calculateOptimisticBorder(
+      Set<InclusionDependency> unsatisfiedINDs) {
+
+    Set<Set<InclusionDependency>> unsatisfiedNodes = indToNodes(unsatisfiedINDs);
+    Set<Set<InclusionDependency>> S = new HashSet<>();
+    for (Set<InclusionDependency> head : unsatisfiedNodes) {
+
+      Set<InclusionDependency> I = invertIND(head);
+
+      Set<Set<InclusionDependency>> removedItems = S.stream().filter(I::containsAll)
+          .collect(Collectors.toSet());
+      S.removeAll(removedItems);
+
+      Set<Set<InclusionDependency>> addToS = new HashSet<>();
+      for (InclusionDependency h : head) {
+        if (removedItems.isEmpty()) {
+          Set<InclusionDependency> l = new HashSet<>();
+          l.add(h);
+          if (S.stream().allMatch(s -> Collections.disjoint(s, l))) {
+            addToS.add(l);
+          }
+        } else {
+          for (Set<InclusionDependency> rI : removedItems) {
+            Set<InclusionDependency> l = new HashSet<>(rI);
+            l.add(h);
+
+            if (S.stream().noneMatch(l::containsAll)) {
+              addToS.add(l);
+            }
+          }
+        }
+      }
+      S.addAll(addToS);
+    }
+    return S.stream().map(this::invertIND).collect(Collectors.toSet());
   }
 
   private Set<Set<InclusionDependency>> unpackCartesianProduct(
@@ -326,7 +366,7 @@ public class Zigzag {
 
   private double g3(InclusionDependency ind) {
     if (hasMultipleTablesPerSide(ind)) {
-      log.info(format("Invalid: IND has multiple tables on one side (IND: %s)", ind));
+      log.fine(format("Invalid: IND has multiple tables on one side (IND: %s)", ind));
       return config.getEpsilon() + 1;
     }
     // INVALID if it has duplicates
@@ -335,14 +375,14 @@ public class Zigzag {
       return config.getEpsilon() + 1;
     }
     dbChecks++;
-    log.info(format("G3 checking: %s", ind));
+    // log.fine(format("G3 checking: %s", ind));
     return ((ErrorMarginValidationResult) validationStrategy.validate(ind)).errorMargin();
   }
 
   // equivalent to d |= i in paper
   private boolean isIND(InclusionDependency ind) {
     if (hasMultipleTablesPerSide(ind)) {
-      log.info(format("Invalid: IND has multiple tables on one side (IND: %s)", ind));
+      log.fine(format("Invalid: IND has multiple tables on one side (IND: %s)", ind));
       return false;
     }
     // INVALID if it has duplicates
@@ -384,10 +424,10 @@ public class Zigzag {
       for (InclusionDependency ind : candidates) {
         if (indIsInInputINDs(ind, inputINDs)) {
           satisfiedINDs.add(ind);
-          log.info(format("New satisfied IND: %s", ind));
+          log.fine(format("New satisfied IND: %s", ind));
         } else {
           unsatisfiedINDs.add(ind);
-          log.info(format("New unsatisfied IND: %s", ind));
+          log.fine(format("New unsatisfied IND: %s", ind));
         }
       }
     }

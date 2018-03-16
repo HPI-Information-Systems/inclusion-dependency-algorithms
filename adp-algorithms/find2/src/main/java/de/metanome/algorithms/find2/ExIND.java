@@ -67,7 +67,7 @@ class ExIND extends InclusionDependency {
 
   @Override
   public int hashCode() {
-    return getDependant().getColumnIdentifiers().size();
+    return this.size();
   }
 
   // Beware: cannot compare ExIND with InclusionDependency and vice versa

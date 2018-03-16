@@ -1,8 +1,10 @@
 package de.metanome.algorithms.zigzag;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.common.collect.Sets;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.results.InclusionDependency;
@@ -13,7 +15,9 @@ import de.metanome.util.InclusionDependencyResultReceiverStub;
 import de.metanome.util.TestDatabase;
 import de.metanome.validation.ValidationParameters;
 import de.metanome.validation.database.QueryType;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -98,6 +102,7 @@ public class ZigzagTest {
     zigzag.execute();
 
     // THEN
+    System.out.println("permuted INDs are equal but will not be detected. -> ToDo");
     System.out.println("resultReceiver " + resultReceiver.getReceivedResults().size() + resultReceiver.getReceivedResults());
     System.out.println("actual maxINDs " + maximumINDs.size() + maximumINDs);
 
@@ -106,18 +111,9 @@ public class ZigzagTest {
     assertTrue(maximumINDs.containsAll(resultReceiver.getReceivedResults()));
   }
 
-/*
-  @Test
-  public void testCalculateOptimisticBorder(ZigzagConfiguration config) {
-    ZigzagConfiguration config =
-        ZigzagConfiguration.builder()
-            .validationParameters(validationParameters)
-            .inclusionDependencyParameters(inclusionDependencyParameters)
-            .build();
-
-    Zigzag zigzag = new Zigzag(config);
-
-    Set<InclusionDependency> unsatisfiedINDs = new HashSet<>();
+  // @Test
+  public void testCalculateOptimisticBorder(Zigzag zigzag) throws Exception {
+        Set<InclusionDependency> unsatisfiedINDs = new HashSet<>();
 
     ColumnIdentifier a1 = new ColumnIdentifier("table", "a");
     ColumnIdentifier a2 = new ColumnIdentifier("table", "a2");
@@ -150,8 +146,9 @@ public class ZigzagTest {
     Set<ColumnIdentifier> ABCE = Sets.newHashSet(a1, b1, c1, e1);
     Set<Set<ColumnIdentifier>> optimisticBorder = Sets.newHashSet(BD, ABCE);
 
-    assertEquals(optimisticBorder, zigzag.calculateOptimisticBorder(unsatisfiedINDs));
-  }*/
+    System.out.println(zigzag.calculateOptimisticBorder(unsatisfiedINDs));
+    // System.out.println(optimisticBorder.equals(zigzag.calculateOptimisticBorder(unsatisfiedINDs)));
+  }
 
   private Set<InclusionDependency> calculateUnaryInds() {
     ColumnIdentifier a1 = new ColumnIdentifier("table", "a");
