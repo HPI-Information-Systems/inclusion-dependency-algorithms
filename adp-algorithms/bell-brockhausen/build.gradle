@@ -2,6 +2,8 @@ dependencies {
     extraLibs(project(':util')) {
         transitive = false
     }
+
+    extraLibs 'javax.inject:javax.inject:1'
     testCompile project(path: ':util', configuration: 'tests')
 }
 
