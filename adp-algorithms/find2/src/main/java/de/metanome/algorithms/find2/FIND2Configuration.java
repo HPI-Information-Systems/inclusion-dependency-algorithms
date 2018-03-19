@@ -11,7 +11,6 @@ import lombok.Data;
 class FIND2Configuration {
 
   private final InclusionDependencyResultReceiver resultReceiver;
-
   private final ValidationParameters validationParameters;
   private final InclusionDependencyParameters inclusionDependencyParameters;
   private final int startK;

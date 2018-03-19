@@ -49,15 +49,18 @@ public class FIND2Algorithm
   @Override
   public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() {
     ArrayList<ConfigurationRequirement<?>> reqs = new ArrayList<>();
+
     reqs.add(
         new ConfigurationRequirementTableInput(
             ConfigurationKey.TABLE.name(), ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES));
     reqs.addAll(ValidationConfigurationRequirements.validationStrategy());
     reqs.addAll(InclusionDependencyInputConfigurationRequirements.indInput());
+
     ConfigurationRequirementInteger startKConfig = new ConfigurationRequirementInteger(
         ConfigurationKey.START_K.name());
     startKConfig.setDefaultValues(new Integer[]{2});
     reqs.add(startKConfig);
+
     reqs.add(new ConfigurationRequirementDatabaseConnection(ConfigurationKey.DATABASE.name()));
     return reqs;
   }

@@ -11,15 +11,20 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 class FIND2 {
+
+  private final static Logger log = Logger.getLogger(FIND2.class.getName());
 
   private final FIND2Configuration config;
   private final ValidationStrategy validationStrategy;
   private final InclusionDependencyInput inclusionDependencyInput;
 
   FIND2(FIND2Configuration config) {
+    log.setLevel(Level.FINE);
     this.config = config;
     validationStrategy =
         new ValidationStrategyFactory().forDatabase(this.config.getValidationParameters());
@@ -28,6 +33,7 @@ class FIND2 {
   }
 
   void execute() throws AlgorithmExecutionException {
+    log.fine("Start of algorithm FIND2.");
     // generate and validate unary and kary INDs;
     List<InclusionDependency> inputInds = inclusionDependencyInput.execute();
     Set<ExIND> unaries = getUnaryINDs(inputInds);
@@ -72,9 +78,9 @@ class FIND2 {
     }
   }
 
-  private Set<ExIND> getUnaryINDs(final Collection<InclusionDependency> inputInds) {
+  private Set<ExIND> getUnaryINDs(final Collection<InclusionDependency> inputINDs) {
     final Set<ExIND> result = new HashSet<>();
-    for (InclusionDependency ind : inputInds) {
+    for (InclusionDependency ind : inputINDs) {
       if (ind.getDependant().getColumnIdentifiers().size() == 1) {
         final ExIND exIND = new ExIND(ind.getDependant(), ind.getReferenced());
         exIND.setValidity(true);
@@ -88,12 +94,12 @@ class FIND2 {
    * Generates all kary-INDs at level startK from given unary-INDs and returns valid ones.
    *
    * @param startK k in k-ary
-   * @param inputInds valid input INDs
+   * @param inputINDs valid input INDs
    * @return valid kary-INDs
    */
-  private Set<ExIND> getKaryINDs(int startK, Collection<InclusionDependency> inputInds) {
+  private Set<ExIND> getKaryINDs(int startK, Collection<InclusionDependency> inputINDs) {
     final Set<ExIND> result = new HashSet<>();
-    for (final InclusionDependency inputInd : inputInds) {
+    for (final InclusionDependency inputInd : inputINDs) {
       if (inputInd.getDependant().getColumnIdentifiers().size() == startK) {
         final ExIND exIND = new ExIND(inputInd.getDependant(), inputInd.getReferenced());
         exIND.setValidity(true);
