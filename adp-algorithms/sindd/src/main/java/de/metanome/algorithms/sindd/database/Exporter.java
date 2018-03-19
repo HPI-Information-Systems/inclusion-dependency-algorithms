@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.opencsv.CSVWriter;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.input.RelationalInput;
+import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithms.sindd.Configuration;
 import de.metanome.algorithms.sindd.database.metadata.Attribute;
 import de.metanome.algorithms.sindd.sindd.Partition;
@@ -72,10 +73,17 @@ public class Exporter {
   private static List<Writer> writeToDisk(final Configuration configuration, final TableInfo table,
       final List<Attribute> group, final int startIndex) throws IOException {
 
-    try (RelationalInput in = table.selectInputGenerator().generateNewCopy()) {
+    final RelationalInputGenerator generator = table.selectInputGenerator();
+    try (RelationalInput in = generator.generateNewCopy()) {
       return writeToDisk(configuration, in, group, startIndex);
     } catch (final Exception e) {
       throw new IOException(e);
+    } finally {
+      try {
+        generator.close();
+      } catch (final Exception e) {
+        throw new IOException("terrible", e);
+      }
     }
   }
 

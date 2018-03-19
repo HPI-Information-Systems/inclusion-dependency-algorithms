@@ -24,9 +24,21 @@ public class TableInfoFactory {
       final Collection<TableInputGenerator> tableInputGenerators)
       throws InputGenerationException, AlgorithmConfigurationException {
 
+    // FIXME Defensive programming: given that an algorithm only implements RelationalInput, TableInput may come in disguise
+    final List<RelationalInputGenerator> relational = new ArrayList<>();
+    final List<TableInputGenerator> table = new ArrayList<>(tableInputGenerators);
+
+    for (final RelationalInputGenerator generator : relationalInputGenerators) {
+      if (generator instanceof TableInputGenerator) {
+        table.add(((TableInputGenerator) generator));
+      } else {
+        relational.add(generator);
+      }
+    }
+
     final List<TableInfo> tables = new ArrayList<>();
-    tables.addAll(createFromRelationalInputs(relationalInputGenerators));
-    tables.addAll(createFromTableInputs(tableInputGenerators));
+    tables.addAll(createFromRelationalInputs(relational));
+    tables.addAll(createFromTableInputs(table));
     return tables;
   }
 
@@ -88,6 +100,7 @@ public class TableInfoFactory {
         columnNames.add(metadata.getColumnName(index));
         columnTypes.add(metadata.getColumnTypeName(index));
       }
+
       return TableInfo.builder()
           .tableInputGenerator(generator)
           .tableName(metadata.getTableName(1))
@@ -96,6 +109,14 @@ public class TableInfoFactory {
           .build();
     } catch (final SQLException e) {
       throw new InputGenerationException("database error while reading metadata", e);
+    } finally {
+      try {
+        // FIXME iterating over all input tables, creating one connection per table exceeds connection limits
+        // hopefully the underlying database generator re-establishes the connection
+        generator.close();
+      } catch (final Exception e) {
+        throw new InputGenerationException("terrible", e);
+      }
     }
   }
 }

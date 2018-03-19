@@ -4,6 +4,6 @@ dependencies {
     extraLibs project(':spider')
     extraLibs project(':unary-sql')
 
+    extraLibs group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.4'
     extraLibs group: 'commons-beanutils', name: 'commons-beanutils', version: '1.9.3'
-
 }

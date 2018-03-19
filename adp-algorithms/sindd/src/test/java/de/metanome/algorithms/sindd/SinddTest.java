@@ -9,9 +9,9 @@ import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.InclusionDependencyBuilder;
+import de.metanome.util.RelationalInputGeneratorStub;
 import de.metanome.util.Row;
 import de.metanome.util.TPMMSConfiguration;
-import de.metanome.util.TableInputGeneratorStub;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +41,7 @@ class SinddTest {
 
     columnNames = asList("a", "b", "c");
 
-    generator = TableInputGeneratorStub.builder()
+    generator = RelationalInputGeneratorStub.builder()
         .relationName(TABLE_NAME)
         .columnNames(columnNames)
         .row(Row.of(null, "11", "11"))

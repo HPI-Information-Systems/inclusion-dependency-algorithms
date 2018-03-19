@@ -3,7 +3,8 @@ dependencies {
     extraLibs(project(':util')) {
         transitive = false
     }
-
+    
+    extraLibs 'au.com.bytecode:opencsv:2.4'
     testCompile project(path: ':util', configuration: 'tests')
 }
 
