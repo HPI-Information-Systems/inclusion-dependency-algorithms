@@ -9,5 +9,4 @@ public class Attribute {
 
     private final ColumnIdentifier columnIdentifier;
     private final Range<Comparable> valueRange;
-    private final DataType dataType;
 }

@@ -8,7 +8,6 @@ import de.metanome.algorithm_integration.input.DatabaseConnectionGenerator;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.bellbrockhausen.models.Attribute;
-import de.metanome.algorithms.bellbrockhausen.models.DataType;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -74,13 +73,12 @@ public class PostgresDataAccessObject implements DataAccessObject {
             throws AlgorithmExecutionException {
         String columnName = columnIdentifier.getColumnIdentifier();
         String tableName = columnIdentifier.getTableIdentifier();
-        String query = format("SELECT MIN(%s COLLATE \"C\") as minVal, MAX(%s COLLATE \"C\") as maxVal, PG_TYPEOF(MAX(%s)) as type FROM %s",
-                columnName, columnName, columnName, tableName);
+        String query = format("SELECT MIN(%s COLLATE \"C\") as minVal, MAX(%s COLLATE \"C\") as maxVal FROM %s",
+                columnName, columnName, tableName);
         try (ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query)) {
             resultSet.next();
-            final DataType type = DataType.fromString(resultSet.getString("type"));
             final Range<Comparable> valueRange = extractRange(resultSet);
-            return new Attribute(columnIdentifier, valueRange, type);
+            return new Attribute(columnIdentifier, valueRange);
         } catch (SQLException e) {
             throw new InputGenerationException(
                     format("Error calculating value range for column %s", columnIdentifier), e);

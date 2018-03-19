@@ -6,17 +6,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
 public class IndTest {
-    private final InclusionDependency test;
-    private boolean isDeleted;
 
     public static IndTest fromAttributes(Attribute dependant, Attribute referenced) {
-        boolean hasSameType = dependant.getDataType().equals(referenced.getDataType());
-        boolean isDeleted = !hasSameType || !referenced.getValueRange().encloses(dependant.getValueRange());
         InclusionDependency ind = new InclusionDependency(
                 new ColumnPermutation(dependant.getColumnIdentifier()),
                 new ColumnPermutation(referenced.getColumnIdentifier()));
-        return new IndTest(ind, isDeleted);
+        return new IndTest(ind, dependant, referenced);
+    }
+
+    private final InclusionDependency ind;
+    private final Attribute dependant;
+    private final Attribute referenced;
+    private boolean isDeleted = false;
+
+    public void delete() {
+        isDeleted = true;
     }
 }

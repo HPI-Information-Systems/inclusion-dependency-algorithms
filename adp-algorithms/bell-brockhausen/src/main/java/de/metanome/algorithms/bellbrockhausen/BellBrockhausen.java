@@ -35,21 +35,20 @@ public class BellBrockhausen {
         ImmutableSet<Attribute> attributes = collectAttributes();
         Set<Attribute> candidates = generateCandidates(attributes);
 
-        IndGraph indGraph = new IndGraph(
+        IndCandidates indCandidates = new IndCandidates(
                 configuration.getResultReceiver(),
                 dataAccessObject,
                 ImmutableList.copyOf(candidates));
 
-        indGraph.testCandidates();
-        log.info(format("#DB tests: %d", indGraph.getDBTests()));
+        indCandidates.testCandidates();
+        indCandidates.printStats();
     }
 
     private Set<Attribute> generateCandidates(ImmutableSet<Attribute> attributes) {
         Set<Attribute> candidates = new HashSet<>();
         for (Attribute attributeA : attributes) {
             for (Attribute attributeB : attributes) {
-                if (attributeA.getColumnIdentifier().equals(attributeB.getColumnIdentifier()) ||
-                        !attributeA.getDataType().equals(attributeB.getDataType())) {
+                if (attributeA.getColumnIdentifier().equals(attributeB.getColumnIdentifier())) {
                     continue;
                 }
                 if (attributeA.getValueRange().encloses(attributeB.getValueRange()) ||
