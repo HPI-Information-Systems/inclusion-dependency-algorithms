@@ -78,6 +78,8 @@ public class TPMMS {
 
         new Merger(output).merge(spilledFiles, origin);
       }
+
+      removeSpillFiles();
     }
 
     private void writeSpillFiles() throws IOException {
@@ -140,6 +142,13 @@ public class TPMMS {
       } finally {
         output.close();
       }
+    }
+
+    private void removeSpillFiles() throws IOException {
+      for (final Path spill : spilledFiles) {
+        Files.delete(spill);
+      }
+      spilledFiles.clear();
     }
   }
 
