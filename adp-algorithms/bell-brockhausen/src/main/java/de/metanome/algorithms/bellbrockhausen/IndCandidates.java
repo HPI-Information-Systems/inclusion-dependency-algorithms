@@ -51,8 +51,8 @@ public class IndCandidates {
             log.info(format("=== Testing candidate group %d of %d ===", i, tests.size()));
             printStats();
             for (IndTestPair testPair : testPairs) {
-                testCandidate(testPair.getFrom(), i);
-                testCandidate(testPair.getTo(), i);
+                testCandidate(testPair.getFromBase(), i);
+                testCandidate(testPair.getToBase(), i);
             }
         }
     }
@@ -69,10 +69,10 @@ public class IndCandidates {
         ImmutableList.Builder<ImmutableList<IndTestPair>> tests = ImmutableList.builder();
         for (int i = 0; i < candidates.size(); i++) {
             ImmutableList.Builder<IndTestPair> testPairs = ImmutableList.builder();
-            Attribute candidateA = candidates.get(i);
+            Attribute baseCandidate = candidates.get(i);
             for (int j = i + 1; j < candidates.size(); j++) {
-                Attribute candidateB = candidates.get(j);
-                testPairs.add(IndTestPair.fromAttributes(candidateA, candidateB));
+                Attribute iterateCandidate = candidates.get(j);
+                testPairs.add(IndTestPair.fromAttributes(baseCandidate, iterateCandidate));
             }
             tests.add(testPairs.build());
         }
@@ -112,7 +112,7 @@ public class IndCandidates {
                     .collect(toImmutableSet());
 
             tests.get(dependentIndex).forEach(testPair -> {
-                IndTest test = testPair.getFrom();
+                IndTest test = testPair.getFromBase();
                 if (getIndex(test.getReferenced().getColumnIdentifier()) > referencedIndex) {
                     test.delete();
                 }
@@ -127,7 +127,7 @@ public class IndCandidates {
                     .collect(toImmutableSet());
 
             tests.get(referencedIndex).forEach(testPair -> {
-                IndTest test = testPair.getTo();
+                IndTest test = testPair.getToBase();
                 if (getIndex(test.getDependant().getColumnIdentifier()) > dependentIndex) {
                     test.delete();
                 }
@@ -138,13 +138,13 @@ public class IndCandidates {
 
     private void deleteTests(ImmutableSet<ColumnIdentifier> toDependant, ImmutableSet<ColumnIdentifier> fromReferenced) {
         toDependant.forEach(kAttribute -> tests.get(getIndex(kAttribute)).forEach(testPair -> {
-            IndTest test = testPair.getFrom();
+            IndTest test = testPair.getFromBase();
             if (getIndex(test.getDependant()) < getIndex(test.getReferenced())) {
                 test.delete();
             }
         }));
         fromReferenced.forEach(lAttribute -> tests.get(getIndex(lAttribute)).forEach(testPair -> {
-            IndTest test = testPair.getTo();
+            IndTest test = testPair.getToBase();
             if (getIndex(test.getDependant()) > getIndex(test.getReferenced())) {
                 test.delete();
             }
@@ -167,8 +167,8 @@ public class IndCandidates {
         int deletedTests = 0;
         for (ImmutableList<IndTestPair> testGroups : tests) {
             for (IndTestPair testPair: testGroups) {
-                if (testPair.getTo().isDeleted()) deletedTests++;
-                if (testPair.getFrom().isDeleted()) deletedTests++;
+                if (testPair.getFromBase().isDeleted()) deletedTests++;
+                if (testPair.getToBase().isDeleted()) deletedTests++;
             }
         }
         return deletedTests;

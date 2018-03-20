@@ -5,11 +5,12 @@ import lombok.Data;
 @Data
 public class IndTestPair {
 
-    public static IndTestPair fromAttributes(Attribute candidateA, Attribute candidateB) {
+    public static IndTestPair fromAttributes(Attribute baseCandidate, Attribute iterateCandidate) {
         return new IndTestPair(
-                IndTest.fromAttributes(candidateA, candidateB), IndTest.fromAttributes(candidateB, candidateA));
+                IndTest.fromAttributes(baseCandidate, iterateCandidate),
+                IndTest.fromAttributes(iterateCandidate, baseCandidate));
     }
 
-    private final IndTest to; // A_i <= A_i+r
-    private final IndTest from; // A_i+r <= A_i
+    private final IndTest fromBase; // A_i <= A_i+r
+    private final IndTest toBase; // A_i+r <= A_i
 }
