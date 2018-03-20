@@ -39,8 +39,7 @@ public class IndGraph {
         ColumnIdentifier referenced = getReferenced(test.getInd());
         // Invalid if A_j -> A_k with k < i and not A_l -> A_k
         return fromEdges.get(referenced).stream()
-                .noneMatch(kNode -> getIndex(kNode) < testGroupIndex &&
-                        !hasEdge(dependant, kNode));
+                .noneMatch(kNode -> getIndex(kNode) < testGroupIndex && !hasEdge(dependant, kNode));
     }
 
     public void insertEdge(InclusionDependency ind) {
@@ -58,16 +57,19 @@ public class IndGraph {
 
     private ImmutableSet<ColumnIdentifier> collectNodes(
             ColumnIdentifier node, Function<ColumnIdentifier, Set<ColumnIdentifier>> getSuccessor) {
-        Set<ColumnIdentifier> results = new HashSet<>();
+        Set<ColumnIdentifier> visited = new HashSet<>();
         Queue<ColumnIdentifier> queue = new LinkedList<>();
         queue.add(node);
         while (!queue.isEmpty()) {
             ColumnIdentifier nextNode = queue.remove();
-            Set<ColumnIdentifier> successor = Sets.difference(getSuccessor.apply(nextNode), results);
+            if (visited.contains(nextNode)) {
+                continue;
+            }
+            visited.add(nextNode);
+            Set<ColumnIdentifier> successor = getSuccessor.apply(nextNode);
             queue.addAll(successor);
-            results.addAll(successor);
         }
-        return ImmutableSet.copyOf(results);
+        return ImmutableSet.copyOf(visited);
     }
 
     private boolean hasEdge(ColumnIdentifier from, ColumnIdentifier to) {

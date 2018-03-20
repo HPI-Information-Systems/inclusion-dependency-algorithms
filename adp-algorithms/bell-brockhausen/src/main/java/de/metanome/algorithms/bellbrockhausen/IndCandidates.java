@@ -80,7 +80,7 @@ public class IndCandidates {
     }
 
     private void testCandidate(IndTest test, int testGroupIndex) throws AlgorithmExecutionException {
-        if (!test.isDeleted() && indGraph.isValidTest(test, testGroupIndex) && isValidInd(test)) {
+        if (test.isDeleted() || indGraph.isValidTest(test, testGroupIndex) && isValidInd(test)) {
             updateGraph(test.getInd());
             resultReceiver.receiveResult(test.getInd());
             validUinds++;
@@ -111,9 +111,11 @@ public class IndCandidates {
                     .filter(lNode -> getIndex(lNode) > dependentIndex)
                     .collect(toImmutableSet());
 
+            // Delete A_i <= A_l with l > j in A_i[]
             tests.get(dependentIndex).forEach(testPair -> {
                 IndTest test = testPair.getFromBase();
-                if (getIndex(test.getReferenced().getColumnIdentifier()) > referencedIndex) {
+                ColumnIdentifier testReferenced = test.getReferenced().getColumnIdentifier();
+                if (fromReferenced.contains(testReferenced) && getIndex(testReferenced) > referencedIndex) {
                     test.delete();
                 }
             });
@@ -126,9 +128,11 @@ public class IndCandidates {
                     .filter(lNode -> getIndex(lNode) > referencedIndex)
                     .collect(toImmutableSet());
 
+            // Delete A_k <= A_j with k > i in A_j[]
             tests.get(referencedIndex).forEach(testPair -> {
                 IndTest test = testPair.getToBase();
-                if (getIndex(test.getDependant().getColumnIdentifier()) > dependentIndex) {
+                ColumnIdentifier testDependant = test.getDependant().getColumnIdentifier();
+                if (toDependant.contains(testDependant) && getIndex(testDependant) > dependentIndex) {
                     test.delete();
                 }
             });
@@ -136,27 +140,35 @@ public class IndCandidates {
         }
     }
 
+    // A_k[], A_l[]
     private void deleteTests(ImmutableSet<ColumnIdentifier> toDependant, ImmutableSet<ColumnIdentifier> fromReferenced) {
-        toDependant.forEach(kAttribute -> tests.get(getIndex(kAttribute)).forEach(testPair -> {
-            IndTest test = testPair.getFromBase();
-            if (getIndex(test.getDependant()) < getIndex(test.getReferenced())) {
-                test.delete();
-            }
-        }));
-        fromReferenced.forEach(lAttribute -> tests.get(getIndex(lAttribute)).forEach(testPair -> {
-            IndTest test = testPair.getToBase();
-            if (getIndex(test.getDependant()) > getIndex(test.getReferenced())) {
-                test.delete();
-            }
-        }));
+        // Delete all A_k <= A_l with k < l in A_k[]
+        toDependant.forEach(kAttribute -> {
+            tests.get(getIndex(kAttribute)).forEach(testPair -> {
+                IndTest test = testPair.getFromBase();
+                ColumnIdentifier testDependant = test.getDependant().getColumnIdentifier();
+                ColumnIdentifier testReferenced = test.getReferenced().getColumnIdentifier();
+                if (fromReferenced.contains(testReferenced) && getIndex(testDependant) < getIndex(testReferenced)) {
+                    test.delete();
+                }
+            });
+        });
+
+        // Delete all A_k <= A_l with k > l in A_l[]
+        fromReferenced.forEach(lAttribute -> {
+            tests.get(getIndex(lAttribute)).forEach(testPair -> {
+                IndTest test = testPair.getToBase();
+                ColumnIdentifier testDependant = test.getDependant().getColumnIdentifier();
+                ColumnIdentifier testReferenced = test.getReferenced().getColumnIdentifier();
+                if (toDependant.contains(testDependant) && getIndex(testDependant) > getIndex(testReferenced)) {
+                    test.delete();
+                }
+            });
+        });
     }
 
     private int getIndex(ColumnIdentifier attribute) {
         return attributeIndices.get(attribute);
-    }
-
-    private int getIndex(Attribute attribute) {
-        return getIndex(attribute.getColumnIdentifier());
     }
 
     public int getDBTests() {
