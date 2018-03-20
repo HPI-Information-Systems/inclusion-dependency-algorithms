@@ -44,21 +44,8 @@ public class UnaryINDsGenerator {
 
   private Set<Attribute> getAttObjects(Set<String> attSet) {
     Set<Attribute> attObjects = new HashSet<Attribute>(attSet.size());
-
-    // NPE DEBUG
-    if (id2attMap.isEmpty()) {
-      System.err.println("map is empty");
-    }
-    System.err.println("map has size " + id2attMap.size());
-
     for (String att : attSet) {
       Attribute attObj = id2attMap.get(att);
-
-      // NPE DEBUG
-      if (attObj == null) {
-        System.err.println("attribue " + att + " not found");
-      }
-
       attObjects.add(attObj);
     }
     return attObjects;
