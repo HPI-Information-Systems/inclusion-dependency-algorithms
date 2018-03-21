@@ -26,13 +26,21 @@ public class TableInfoFactory {
 
     // FIXME Defensive programming: given that an algorithm only implements RelationalInput, TableInput may come in disguise
     final List<RelationalInputGenerator> relational = new ArrayList<>();
-    final List<TableInputGenerator> table = new ArrayList<>(tableInputGenerators);
+    final List<TableInputGenerator> table = new ArrayList<>();
 
-    for (final RelationalInputGenerator generator : relationalInputGenerators) {
-      if (generator instanceof TableInputGenerator) {
-        table.add(((TableInputGenerator) generator));
-      } else {
-        relational.add(generator);
+    // FIXME overly defensive - algorithms should have empty list as sensible default value
+    if (tableInputGenerators != null) {
+      table.addAll(tableInputGenerators);
+    }
+
+    // FIXME overly defensive - algorithms should have empty list as sensible default value
+    if (relationalInputGenerators != null) {
+      for (final RelationalInputGenerator generator : relationalInputGenerators) {
+        if (generator instanceof TableInputGenerator) {
+          table.add(((TableInputGenerator) generator));
+        } else {
+          relational.add(generator);
+        }
       }
     }
 
@@ -47,6 +55,8 @@ public class TableInfoFactory {
       throws InputGenerationException {
 
     final List<TableInfo> result = new ArrayList<>();
+
+    // FIXME overly defensive - algorithms should have empty list as sensible default value
     if (generators != null) {
       for (final RelationalInputGenerator generator : generators) {
         try (RelationalInput input = generator.generateNewCopy()) {
@@ -81,6 +91,7 @@ public class TableInfoFactory {
       throws InputGenerationException, AlgorithmConfigurationException {
 
     final List<TableInfo> result = new ArrayList<>();
+    // FIXME overly defensive - algorithms should have empty list as sensible default value
     if (generators != null) {
       for (final TableInputGenerator generator : generators) {
         result.add(createFrom(generator));
