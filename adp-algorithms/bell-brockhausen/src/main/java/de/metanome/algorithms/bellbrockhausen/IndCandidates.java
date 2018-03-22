@@ -55,6 +55,7 @@ public class IndCandidates {
                 testCandidate(testPair.getToBase(), i);
             }
         }
+        printStats();
     }
 
     private ImmutableMap<ColumnIdentifier, Integer> getAttributeIndices(ImmutableList<Attribute> candidates) {

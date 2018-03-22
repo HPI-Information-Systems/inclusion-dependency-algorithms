@@ -113,17 +113,17 @@ public class PostgresDataAccessObject implements DataAccessObject {
 
     private boolean isInd(final ColumnIdentifier dependant, final ColumnIdentifier referenced)
             throws AlgorithmExecutionException {
-        String query = format("SELECT shared, dependant FROM " +
-                "(SELECT COUNT(DISTINCT(a.%s)) as shared FROM %s a, %s b WHERE a.%s = b.%s) AS q1, " +
-                "(SELECT COUNT(DISTINCT(%s)) as dependant FROM %s) AS q2",
-                dependant.getColumnIdentifier(), dependant.getTableIdentifier(), referenced.getTableIdentifier(),
-                dependant.getColumnIdentifier(), referenced.getColumnIdentifier(),
-                dependant.getColumnIdentifier(), dependant.getTableIdentifier());
+        String query = format("SELECT COUNT(*) AS unmatched FROM %s " +
+                "WHERE %s IS NOT NULL " +
+                "AND %s NOT IN (SELECT %s FROM %s) " +
+                "FETCH FIRST 1 ROWS ONLY",
+                dependant.getTableIdentifier(), dependant.getColumnIdentifier(),
+                dependant.getColumnIdentifier(),
+                referenced.getColumnIdentifier(), referenced.getTableIdentifier());
         try (ResultSet resultSet = connectionGenerator.generateResultSetFromSql(query)) {
             resultSet.next();
-            int sharedCount = resultSet.getInt("shared");
-            int dependantCount = resultSet.getInt("dependant");
-            return sharedCount == dependantCount;
+            int unmatched = resultSet.getInt("unmatched");
+            return unmatched == 0;
         } catch (SQLException e) {
             throw new InputGenerationException(format("Error getting distinct value count for column %s and %s",
                     dependant.getColumnIdentifier(), referenced.getColumnIdentifier()));
