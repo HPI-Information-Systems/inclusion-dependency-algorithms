@@ -5,11 +5,11 @@ import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.BitSetIterator;
 import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -40,8 +40,8 @@ public class DeMarchi {
     attributeIndex = new Attribute[getTotalColumnCount(tables)];
 
     fillAttributeIndex(tables);
-    final Map<String, IntSet> attributesByType = groupAttributesByType();
-    for (final IntSet attributes : attributesByType.values()) {
+    final Map<String, BitSet> attributesByType = groupAttributesByType();
+    for (final BitSet attributes : attributesByType.values()) {
       handleDomain(attributes);
     }
   }
@@ -63,12 +63,12 @@ public class DeMarchi {
     }
   }
 
-  private Map<String, IntSet> groupAttributesByType() {
-    final Map<String, IntSet> attributesByType = new HashMap<>();
+  private Map<String, BitSet> groupAttributesByType() {
+    final Map<String, BitSet> attributesByType = new HashMap<>();
     for (final Attribute attribute : attributeIndex) {
       attributesByType
-          .computeIfAbsent(attribute.getType(), k -> new IntOpenHashSet())
-          .add(attribute.getId());
+          .computeIfAbsent(attribute.getType(), k -> new BitSet(attributeIndex.length))
+          .set(attribute.getId());
     }
     return attributesByType;
   }
@@ -77,63 +77,76 @@ public class DeMarchi {
     return info.stream().mapToInt(TableInfo::getColumnCount).sum();
   }
 
-  private void handleDomain(final IntSet attributes) throws AlgorithmExecutionException {
-    final Map<String, IntSet> attributesByValue = groupAttributesByValue(attributes);
-    final IntSet[] closures = computeClosures(attributesByValue);
+  private void handleDomain(final BitSet attributes) throws AlgorithmExecutionException {
+    final Map<String, BitSet> attributesByValue = groupAttributesByValue(attributes);
+    final BitSet[] closures = computeClosures(attributesByValue);
     computeInclusionDependencies(closures);
   }
 
-  private Map<String, IntSet> groupAttributesByValue(final IntSet attributes)
+  private Map<String, BitSet> groupAttributesByValue(final BitSet attributes)
       throws AlgorithmExecutionException {
 
-    final Map<String, IntSet> attributesByValue = new HashMap<>();
-    for (final int attribute : attributes) {
+    final Map<String, BitSet> attributesByValue = new HashMap<>();
+    final BitSetIterator iterator = BitSetIterator.of(attributes);
+    while (iterator.hasNext()) {
+      final int attribute = iterator.next();
       final Collection<String> values = getValues(attribute);
 
       if (configuration.isProcessEmptyColumns() && values.isEmpty()) {
         handleEmptyAttribute(attribute, attributes);
       } else {
         for (final String value : values) {
-          attributesByValue.computeIfAbsent(value, k -> new IntOpenHashSet()).add(attribute);
+          attributesByValue
+              .computeIfAbsent(value, k -> new BitSet(attributeIndex.length))
+              .set(attribute);
         }
       }
     }
     return attributesByValue;
   }
 
-  private void handleEmptyAttribute(final int attribute, final IntSet attributes)
+  private void handleEmptyAttribute(final int attribute, final BitSet attributes)
       throws AlgorithmExecutionException {
 
-    for (int other : attributes) {
+    final BitSetIterator iterator = BitSetIterator.of(attributes);
+    while (iterator.hasNext()) {
+      final int other = iterator.next();
       if (attribute != other) {
         receiveIND(attributeIndex[attribute], attributeIndex[other]);
       }
     }
   }
 
-  private IntSet[] computeClosures(final Map<String, IntSet> attributesByValue) {
-    final IntSet[] closures = new IntSet[attributeIndex.length];
-    for (Map.Entry<String, IntSet> entry : attributesByValue.entrySet()) {
-      for (int attribute : entry.getValue()) {
+  private BitSet[] computeClosures(final Map<String, BitSet> attributesByValue) {
+    final BitSet[] closures = new BitSet[attributeIndex.length];
+
+    for (Map.Entry<String, BitSet> entry : attributesByValue.entrySet()) {
+      final BitSetIterator iterator = BitSetIterator.of(entry.getValue());
+      while (iterator.hasNext()) {
+        final int attribute = iterator.next();
         if (closures[attribute] == null) {
-          closures[attribute] = new IntOpenHashSet(entry.getValue());
+          final BitSet set = new BitSet(attributeIndex.length);
+          set.or(entry.getValue());
+          closures[attribute] = set;
         } else {
-          closures[attribute].retainAll(entry.getValue());
+          closures[attribute].and(entry.getValue());
         }
       }
     }
     return closures;
   }
 
-  private void computeInclusionDependencies(final IntSet[] closures)
+  private void computeInclusionDependencies(final BitSet[] closures)
       throws AlgorithmExecutionException {
 
     for (final Attribute attribute : attributeIndex) {
-      final IntSet closure = closures[attribute.getId()];
+      final BitSet closure = closures[attribute.getId()];
       if (closure == null) {
         continue;
       }
-      for (final int rhs : closure) {
+      final BitSetIterator iterator = BitSetIterator.of(closure);
+      while (iterator.hasNext()) {
+        final int rhs = iterator.next();
         if (attribute.getId() != rhs) {
           receiveIND(attribute, attributeIndex[rhs]);
         }
