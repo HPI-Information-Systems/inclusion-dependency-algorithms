@@ -2,9 +2,8 @@ package de.metanome.algorithms.demarchi;
 
 import com.google.common.annotations.VisibleForTesting;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.input.InputGenerationException;
-import de.metanome.algorithm_integration.input.RelationalInput;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.AttributeHelper;
 import de.metanome.util.BitSetIterator;
 import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.util.TableInfo;
@@ -14,22 +13,24 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 public class DeMarchi {
 
   private final TableInfoFactory tableInfoFactory;
+  private final AttributeHelper attributeHelper;
+
   private Configuration configuration;
   private Attribute[] attributeIndex;
 
   public DeMarchi() {
     tableInfoFactory = new TableInfoFactory();
+    attributeHelper = new AttributeHelper();
   }
 
   @VisibleForTesting
   DeMarchi(final TableInfoFactory tableInfoFactory) {
     this.tableInfoFactory = tableInfoFactory;
+    attributeHelper = new AttributeHelper();
   }
 
   public void execute(final Configuration configuration) throws AlgorithmExecutionException {
@@ -53,10 +54,10 @@ public class DeMarchi {
         attributeIndex[attributeId] = Attribute.builder()
             .id(attributeId)
             .tableName(table.getTableName())
-            .columnOffset(index)
             .name(table.getColumnNames().get(index))
             .type(table.getColumnTypes().get(index))
-            .generator(table.selectInputGenerator())
+            .relationalInputGenerator(table.getRelationalInputGenerator())
+            .tableInputGenerator(table.getTableInputGenerator())
             .build();
         ++attributeId;
       }
@@ -87,21 +88,20 @@ public class DeMarchi {
       throws AlgorithmExecutionException {
 
     final Map<String, BitSet> attributesByValue = new HashMap<>();
+    final BitSet emptyAttributes = new BitSet(attributeIndex.length);
+
     final BitSetIterator iterator = BitSetIterator.of(attributes);
     while (iterator.hasNext()) {
-      final int attribute = iterator.next();
-      final Collection<String> values = getValues(attribute);
+      addValues(iterator.next(), attributesByValue, emptyAttributes);
+    }
 
-      if (configuration.isProcessEmptyColumns() && values.isEmpty()) {
-        handleEmptyAttribute(attribute, attributes);
-      } else {
-        for (final String value : values) {
-          attributesByValue
-              .computeIfAbsent(value, k -> new BitSet(attributeIndex.length))
-              .set(attribute);
-        }
+    if (configuration.isProcessEmptyColumns()) {
+      final BitSetIterator empty = BitSetIterator.of(emptyAttributes);
+      while (empty.hasNext()) {
+        handleEmptyAttribute(empty.next(), attributes);
       }
     }
+
     return attributesByValue;
   }
 
@@ -165,34 +165,20 @@ public class DeMarchi {
     configuration.getResultReceiver().receiveResult(ind);
   }
 
-  private Collection<String> getValues(final int attributeId)
-      throws AlgorithmExecutionException {
+  private void addValues(final int attributeId,
+      final Map<String, BitSet> attributesByValue,
+      final BitSet emptyAttributes) throws AlgorithmExecutionException {
 
     final Attribute attribute = attributeIndex[attributeId];
-    final int offset = attribute.getColumnOffset();
-    final SortedSet<String> values = new TreeSet<>();
-    int rowCount = 0;
-    int maxRowCount = configuration.getInputRowLimit();
+    final boolean hasValue = attributeHelper.getValues(attribute.selectInputGenerator(),
+        attribute.getTableName(), attribute.getName(), configuration.getInputRowLimit(), value -> {
+          attributesByValue
+              .computeIfAbsent(value, v -> new BitSet(attributeIndex.length))
+              .set(attributeId);
+        });
 
-    try (RelationalInput input = attribute.getGenerator().generateNewCopy()) {
-      while (input.hasNext()) {
-
-        if (maxRowCount > 0 && rowCount >= maxRowCount) {
-          break;
-        }
-        ++rowCount;
-
-        final List<String> read = input.next();
-        if (offset < read.size()) {
-          final String v = read.get(offset);
-          if (v != null) {
-            values.add(v);
-          }
-        }
-      }
-      return values;
-    } catch (final Exception e) {
-      throw new InputGenerationException("reading attribute values", e);
+    if (!hasValue) {
+      emptyAttributes.set(attributeId);
     }
   }
 }

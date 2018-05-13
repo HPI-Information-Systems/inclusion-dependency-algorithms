@@ -7,14 +7,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
-import de.metanome.algorithm_integration.input.TableInputGenerator;
+import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.util.InclusionDependencyBuilder;
+import de.metanome.util.RelationalInputGeneratorStub;
 import de.metanome.util.Row;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
-import de.metanome.util.TableInputGeneratorStub;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ class DeMarchiTest {
   @Captor
   private ArgumentCaptor<InclusionDependency> ind;
 
-  private TableInputGenerator generator;
+  private RelationalInputGenerator generator;
   private DeMarchi impl;
 
   private List<String> columnNames;
@@ -46,7 +46,7 @@ class DeMarchiTest {
 
     columnNames = asList("a", "b", "c", "d");
     columnTypes = asList("str", "int", "int", "str");
-    generator = TableInputGeneratorStub.builder()
+    generator = RelationalInputGeneratorStub.builder()
         .relationName("Test")
         .columnNames(columnNames)
         .row(Row.of("1", "1", "1", null))
@@ -86,7 +86,7 @@ class DeMarchiTest {
   }
 
   private List<TableInfo> tableFixture() {
-    return asList(TableInfo.builder().tableInputGenerator(generator)
+    return asList(TableInfo.builder().relationalInputGenerator(generator)
         .tableName(TABLE_NAME)
         .columnNames(columnNames)
         .columnTypes(columnTypes)
@@ -94,7 +94,8 @@ class DeMarchiTest {
   }
 
   private Configuration getConfiguration() {
-    return Configuration.builder().tableInputGenerator(generator).resultReceiver(resultReceiver)
+    return Configuration.builder().relationalInputGenerator(generator)
+        .resultReceiver(resultReceiver)
         .build();
   }
 
