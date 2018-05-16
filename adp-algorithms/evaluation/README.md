@@ -12,6 +12,7 @@ ALGORITHMS      Top-level algorithm directory
 JVM_ARGS        Additional JVM arguments - like available heap
 DEBUG           Configuration for remote debugging
 DB              Metanome CLI parameters for establishing a database connection
+DATASET			Identifier of the current dataset
 $@              The ID of the run - probably a running counter
 ```
 
@@ -21,7 +22,7 @@ Evaluation scripts should roughly look like the following:
 
 ```
 #!/bin/bash
-export EXECUTION_ID="my-dataset_my-algorithm"$@
+export EXECUTION_ID=$DATASET"_my-algorithm"$@
 
 java $DEBUG $JVM_ARGS \
 -cp $ADP_LIB:$ALGORITHMS/my-algorithm/build/libs/my-algorithm-0.1.0-SNAPSHOT.jar \
@@ -29,7 +30,7 @@ de.metanome.cli.App \
 --algorithm de.metanome.algorithms.my.MyAlgorithm \
 $DB \
 --table-key TABLE \
---tables load:my-dataset/my-dataset.txt \
+--tables load:$DATASET/$DATASET.txt 
 --algorithm-config KEY:VALUE \
 --output file:$EXECUTION_ID
 ```
@@ -42,7 +43,7 @@ execution since the output directory - `results/` - is hardcoded inside Metanome
 
 ## Launching
 
-Please do not forget to enter the actual database credentials to `pgpass.conf`.
+Please do not forget to enter the actual database credentials to `pgpass_$DATASET.conf`.
 
 ### Simple
 Below listing contains all necessary steps to create and execute an evaluation script of the *DeMarchi* algorithm
@@ -51,10 +52,17 @@ with the *SCOP* dataset.
 <pre>
 adp-algorithms$ ./gradlew assemble
 adp-algorithms$ cd evaluation
-$ vi ./scop/demarchi.sh       # Create evaluation script
-$ chmod +x scop/demarchi.sh   # Make executable
-$ source evaluation_env.sh    # Load environment
-$ ./scop/demarchi.sh          # Execute
+$ vi ./demarchi.sh       # Create evaluation script
+$ chmod +x demarchi.sh   # Make executable
+
+# Below will
+# - load relations from "scop/scop.txt",
+# - obtain connection from "pgpass_scop.conf", and
+# - prefix the output file
+$ export DATASET=scop	
+
+$ source evaluation_env.sh    # Load environment; make sure that $DATASET is present
+$ ./demarchi.sh          	  # Execute
 $ wc -l results/*             # Check IND count; check presence of logfile
    <i>  39 results/scop_demarchi_inds
       9 results/scop_demarchi.log</i>
