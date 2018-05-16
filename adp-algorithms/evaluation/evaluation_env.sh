@@ -5,5 +5,5 @@ ADP_LIB=$METANOME_CLI:$POSTGRES
 ALGORITHMS=".."
 JVM_ARGS="-Xmx83g -Dtinylog.configuration=tinylog-evaluation.properties"
 DEBUG="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-DB="--db-type postgresql --db-connection pgpass.conf"
+DB="--db-type postgresql --db-connection pgpass_$DATASET.conf"
 set +a
