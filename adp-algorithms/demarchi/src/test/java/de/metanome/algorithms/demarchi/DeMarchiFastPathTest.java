@@ -1,6 +1,7 @@
 package de.metanome.algorithms.demarchi;
 
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
@@ -23,7 +24,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-class DeMarchiTest {
+class DeMarchiFastPathTest {
 
   private static final String TABLE_NAME = "test";
 
@@ -45,7 +46,7 @@ class DeMarchiTest {
     MockitoAnnotations.initMocks(this);
 
     columnNames = asList("a", "b", "c", "d");
-    columnTypes = asList("str", "int", "int", "str");
+    columnTypes = columnNames.stream().map(x -> "str").collect(toList());
     generator = RelationalInputGeneratorStub.builder()
         .relationName("Test")
         .columnNames(columnNames)
@@ -64,11 +65,10 @@ class DeMarchiTest {
 
     impl.execute(getConfiguration());
 
-    verify(resultReceiver).receiveResult(ind.capture());
+    verify(resultReceiver, atLeastOnce()).receiveResult(ind.capture());
     assertThat(ind.getAllValues())
-        .hasSize(1)
-        .first()
-        .isEqualTo(expectedInd());
+        .hasSize(3)
+        .contains(expectedInd());
   }
 
   @Test
@@ -80,8 +80,7 @@ class DeMarchiTest {
 
     verify(resultReceiver, atLeastOnce()).receiveResult(ind.capture());
     assertThat(ind.getAllValues())
-        .as("empty column should only form IND with column of same type")
-        .hasSize(2)
+        .hasSize(6)
         .contains(emptyColumnOnLhs());
   }
 

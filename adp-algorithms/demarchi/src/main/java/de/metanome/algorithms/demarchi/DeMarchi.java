@@ -1,35 +1,41 @@
 package de.metanome.algorithms.demarchi;
 
+import static java.util.stream.Collectors.toSet;
+
 import com.google.common.annotations.VisibleForTesting;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
-import de.metanome.algorithm_integration.input.InputGenerationException;
 import de.metanome.algorithm_integration.input.RelationalInput;
+import de.metanome.algorithm_integration.input.RelationalInputGenerator;
 import de.metanome.algorithm_integration.results.InclusionDependency;
+import de.metanome.util.AttributeHelper;
+import de.metanome.util.BitSetIterator;
 import de.metanome.util.InclusionDependencyBuilder;
 import de.metanome.util.TableInfo;
 import de.metanome.util.TableInfoFactory;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 public class DeMarchi {
 
   private final TableInfoFactory tableInfoFactory;
+  private final AttributeHelper attributeHelper;
+
   private Configuration configuration;
+  private int attributeCount;
   private Attribute[] attributeIndex;
 
   public DeMarchi() {
     tableInfoFactory = new TableInfoFactory();
+    attributeHelper = new AttributeHelper();
   }
 
   @VisibleForTesting
   DeMarchi(final TableInfoFactory tableInfoFactory) {
     this.tableInfoFactory = tableInfoFactory;
+    attributeHelper = new AttributeHelper();
   }
 
   public void execute(final Configuration configuration) throws AlgorithmExecutionException {
@@ -37,13 +43,19 @@ public class DeMarchi {
     final List<TableInfo> tables = tableInfoFactory
         .create(configuration.getRelationalInputGenerators(),
             configuration.getTableInputGenerators());
-    attributeIndex = new Attribute[getTotalColumnCount(tables)];
-
+    attributeCount = getTotalColumnCount(tables);
+    attributeIndex = new Attribute[attributeCount];
     fillAttributeIndex(tables);
-    final Map<String, IntSet> attributesByType = groupAttributesByType();
-    for (final IntSet attributes : attributesByType.values()) {
-      handleDomain(attributes);
+
+    if (onlyOneTypePresent(tables)) {
+      handleSingleDomain(tables);
+    } else {
+      handleMultipleDomains();
     }
+  }
+
+  private boolean onlyOneTypePresent(final Collection<TableInfo> tables) {
+    return tables.stream().flatMap(t -> t.getColumnTypes().stream()).collect(toSet()).size() == 1;
   }
 
   private void fillAttributeIndex(final Collection<TableInfo> tables) {
@@ -53,22 +65,76 @@ public class DeMarchi {
         attributeIndex[attributeId] = Attribute.builder()
             .id(attributeId)
             .tableName(table.getTableName())
-            .columnOffset(index)
             .name(table.getColumnNames().get(index))
             .type(table.getColumnTypes().get(index))
-            .generator(table.selectInputGenerator())
+            .relationalInputGenerator(table.getRelationalInputGenerator())
+            .tableInputGenerator(table.getTableInputGenerator())
             .build();
         ++attributeId;
       }
     }
   }
 
-  private Map<String, IntSet> groupAttributesByType() {
-    final Map<String, IntSet> attributesByType = new HashMap<>();
+  /**
+   * DeMarchi Fast Path: Given only a single attribute type (CSV, life science database) we can
+   * ignore the extraction contexts entirely. Savings: for CSV we then require only one scan per
+   * relation instead of relation scans in the number of attributes. For a database only one query
+   * per relation is required instead of queries in the number of attributes.
+   */
+  private void handleSingleDomain(final List<TableInfo> tables) throws AlgorithmExecutionException {
+    final BitSet nonEmptyAttributes = new BitSet(attributeCount);
+    final Map<String, BitSet> attributesByValue = new HashMap<>();
+
+    int attributeId = 0;
+    for (final TableInfo table : tables) {
+      try (RelationalInputGenerator generator = table.selectInputGenerator();
+          RelationalInput input = generator.generateNewCopy()) {
+
+        while (input.hasNext()) {
+          final List<String> values = input.next();
+          for (int index = 0; index < values.size(); ++index) {
+            final String value = values.get(index);
+            if (value != null) {
+              nonEmptyAttributes.set(attributeId + index);
+              attributesByValue
+                  .computeIfAbsent(value, v -> new BitSet(attributeCount))
+                  .set(attributeId + index);
+            }
+          }
+        }
+
+        attributeId += input.numberOfColumns();
+      } catch (final Exception e) {
+        throw new AlgorithmExecutionException("relation scan failed", e);
+      }
+    }
+
+    if (configuration.isProcessEmptyColumns()) {
+      nonEmptyAttributes.flip(0, attributeCount);
+      final BitSetIterator iterator = BitSetIterator.of(nonEmptyAttributes);
+      final BitSet allAttributes = new BitSet(attributeCount);
+      allAttributes.set(0, attributeCount);
+      while (iterator.hasNext()) {
+        handleEmptyAttribute(iterator.next(), allAttributes);
+      }
+    }
+
+    computeInclusionDependencies(computeClosures(attributesByValue));
+  }
+
+  private void handleMultipleDomains() throws AlgorithmExecutionException {
+    final Map<String, BitSet> attributesByType = groupAttributesByType();
+    for (final BitSet attributes : attributesByType.values()) {
+      handleDomain(attributes);
+    }
+  }
+
+  private Map<String, BitSet> groupAttributesByType() {
+    final Map<String, BitSet> attributesByType = new HashMap<>();
     for (final Attribute attribute : attributeIndex) {
       attributesByType
-          .computeIfAbsent(attribute.getType(), k -> new IntOpenHashSet())
-          .add(attribute.getId());
+          .computeIfAbsent(attribute.getType(), k -> new BitSet(attributeIndex.length))
+          .set(attribute.getId());
     }
     return attributesByType;
   }
@@ -77,63 +143,75 @@ public class DeMarchi {
     return info.stream().mapToInt(TableInfo::getColumnCount).sum();
   }
 
-  private void handleDomain(final IntSet attributes) throws AlgorithmExecutionException {
-    final Map<String, IntSet> attributesByValue = groupAttributesByValue(attributes);
-    final IntSet[] closures = computeClosures(attributesByValue);
+  private void handleDomain(final BitSet attributes) throws AlgorithmExecutionException {
+    final Map<String, BitSet> attributesByValue = groupAttributesByValue(attributes);
+    final BitSet[] closures = computeClosures(attributesByValue);
     computeInclusionDependencies(closures);
   }
 
-  private Map<String, IntSet> groupAttributesByValue(final IntSet attributes)
+  private Map<String, BitSet> groupAttributesByValue(final BitSet attributes)
       throws AlgorithmExecutionException {
 
-    final Map<String, IntSet> attributesByValue = new HashMap<>();
-    for (final int attribute : attributes) {
-      final Collection<String> values = getValues(attribute);
+    final Map<String, BitSet> attributesByValue = new HashMap<>();
+    final BitSet emptyAttributes = new BitSet(attributeIndex.length);
 
-      if (configuration.isProcessEmptyColumns() && values.isEmpty()) {
-        handleEmptyAttribute(attribute, attributes);
-      } else {
-        for (final String value : values) {
-          attributesByValue.computeIfAbsent(value, k -> new IntOpenHashSet()).add(attribute);
-        }
+    final BitSetIterator iterator = BitSetIterator.of(attributes);
+    while (iterator.hasNext()) {
+      addValues(iterator.next(), attributesByValue, emptyAttributes);
+    }
+
+    if (configuration.isProcessEmptyColumns()) {
+      final BitSetIterator empty = BitSetIterator.of(emptyAttributes);
+      while (empty.hasNext()) {
+        handleEmptyAttribute(empty.next(), attributes);
       }
     }
+
     return attributesByValue;
   }
 
-  private void handleEmptyAttribute(final int attribute, final IntSet attributes)
+  private void handleEmptyAttribute(final int attribute, final BitSet attributes)
       throws AlgorithmExecutionException {
 
-    for (int other : attributes) {
+    final BitSetIterator iterator = BitSetIterator.of(attributes);
+    while (iterator.hasNext()) {
+      final int other = iterator.next();
       if (attribute != other) {
         receiveIND(attributeIndex[attribute], attributeIndex[other]);
       }
     }
   }
 
-  private IntSet[] computeClosures(final Map<String, IntSet> attributesByValue) {
-    final IntSet[] closures = new IntSet[attributeIndex.length];
-    for (Map.Entry<String, IntSet> entry : attributesByValue.entrySet()) {
-      for (int attribute : entry.getValue()) {
+  private BitSet[] computeClosures(final Map<String, BitSet> attributesByValue) {
+    final BitSet[] closures = new BitSet[attributeCount];
+
+    for (Map.Entry<String, BitSet> entry : attributesByValue.entrySet()) {
+      final BitSetIterator iterator = BitSetIterator.of(entry.getValue());
+      while (iterator.hasNext()) {
+        final int attribute = iterator.next();
         if (closures[attribute] == null) {
-          closures[attribute] = new IntOpenHashSet(entry.getValue());
+          final BitSet set = new BitSet(attributeCount);
+          set.or(entry.getValue());
+          closures[attribute] = set;
         } else {
-          closures[attribute].retainAll(entry.getValue());
+          closures[attribute].and(entry.getValue());
         }
       }
     }
     return closures;
   }
 
-  private void computeInclusionDependencies(final IntSet[] closures)
+  private void computeInclusionDependencies(final BitSet[] closures)
       throws AlgorithmExecutionException {
 
     for (final Attribute attribute : attributeIndex) {
-      final IntSet closure = closures[attribute.getId()];
+      final BitSet closure = closures[attribute.getId()];
       if (closure == null) {
         continue;
       }
-      for (final int rhs : closure) {
+      final BitSetIterator iterator = BitSetIterator.of(closure);
+      while (iterator.hasNext()) {
+        final int rhs = iterator.next();
         if (attribute.getId() != rhs) {
           receiveIND(attribute, attributeIndex[rhs]);
         }
@@ -152,34 +230,20 @@ public class DeMarchi {
     configuration.getResultReceiver().receiveResult(ind);
   }
 
-  private Collection<String> getValues(final int attributeId)
-      throws AlgorithmExecutionException {
+  private void addValues(final int attributeId,
+      final Map<String, BitSet> attributesByValue,
+      final BitSet emptyAttributes) throws AlgorithmExecutionException {
 
     final Attribute attribute = attributeIndex[attributeId];
-    final int offset = attribute.getColumnOffset();
-    final SortedSet<String> values = new TreeSet<>();
-    int rowCount = 0;
-    int maxRowCount = configuration.getInputRowLimit();
+    final boolean hasValue = attributeHelper.getValues(attribute.selectInputGenerator(),
+        attribute.getTableName(), attribute.getName(), configuration.getInputRowLimit(), value -> {
+          attributesByValue
+              .computeIfAbsent(value, v -> new BitSet(attributeCount))
+              .set(attributeId);
+        });
 
-    try (RelationalInput input = attribute.getGenerator().generateNewCopy()) {
-      while (input.hasNext()) {
-
-        if (maxRowCount > 0 && rowCount >= maxRowCount) {
-          break;
-        }
-        ++rowCount;
-
-        final List<String> read = input.next();
-        if (offset < read.size()) {
-          final String v = read.get(offset);
-          if (v != null) {
-            values.add(v);
-          }
-        }
-      }
-      return values;
-    } catch (final Exception e) {
-      throw new InputGenerationException("reading attribute values", e);
+    if (!hasValue) {
+      emptyAttributes.set(attributeId);
     }
   }
 }
