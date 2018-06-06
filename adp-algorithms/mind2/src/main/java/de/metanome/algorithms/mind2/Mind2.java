@@ -39,8 +39,8 @@ public class Mind2 {
 
     public void execute(ImmutableSet<InclusionDependency> uinds) throws AlgorithmExecutionException {
         CoordinatesRepository repository = new CoordinatesRepository(config, uinds);
-//        IntSet uindIds = repository.storeUindCoordinates();
-        IntSet uindIds = repository.cachedStoreUindCoordinates();
+        IntSet uindIds = repository.storeUindCoordinates();
+//        IntSet uindIds = repository.cachedStoreUindCoordinates();
         log.info("Finished calculating UIND coordinates");
 
         Set<IntSet> maxInds = generateMaxInds(repository, uindIds);
@@ -185,8 +185,7 @@ public class Mind2 {
             Set<IntSet> indsA, Set<IntSet> indsB) {
         ObjectSet<IntSet> intersections = new ObjectOpenHashSet<>();
         Sets.cartesianProduct(ImmutableList.of(indsA, indsB)).forEach(indPair -> {
-            ImmutableSet<Integer> intersection = Sets.intersection(indPair.get(0), indPair.get(1))
-                    .immutableCopy();
+            ImmutableSet<Integer> intersection = Sets.intersection(indPair.get(0), indPair.get(1)).immutableCopy();
             if (!intersection.isEmpty()) {
                 intersections.add(new IntOpenHashSet(intersection));
             }

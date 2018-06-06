@@ -15,7 +15,7 @@ import static java.lang.String.format;
 
 public class PostgresDataAccessObject implements DataAccessObject {
 
-    private static final String SORT_STATEMENT = "SELECT *, row_number() OVER (ORDER BY %s) AS %s FROM %s ORDER BY %s %s";
+    private static final String SORT_STATEMENT = "SELECT *, row_number() OVER (ORDER BY %s COLLATE \"C\") AS %s FROM %s ORDER BY %s COLLATE \"C\" %s";
 
     @Override
     public RelationalInput getSortedRelationalInput(
