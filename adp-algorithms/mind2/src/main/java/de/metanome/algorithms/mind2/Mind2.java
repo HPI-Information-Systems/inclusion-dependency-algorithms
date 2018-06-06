@@ -39,7 +39,8 @@ public class Mind2 {
 
     public void execute(ImmutableSet<InclusionDependency> uinds) throws AlgorithmExecutionException {
         CoordinatesRepository repository = new CoordinatesRepository(config, uinds);
-        IntSet uindIds = repository.storeUindCoordinates();
+//        IntSet uindIds = repository.storeUindCoordinates();
+        IntSet uindIds = repository.cachedStoreUindCoordinates();
         log.info("Finished calculating UIND coordinates");
 
         Set<IntSet> maxInds = generateMaxInds(repository, uindIds);
