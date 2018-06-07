@@ -4,9 +4,6 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntLists;
 import lombok.Data;
 
-import java.util.Collections;
-import java.util.List;
-
 @Data
 public class ValuePositions {
     private final IntList positionsA;

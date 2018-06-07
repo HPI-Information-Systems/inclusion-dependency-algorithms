@@ -40,7 +40,6 @@ public class Mind2 {
     public void execute(ImmutableSet<InclusionDependency> uinds) throws AlgorithmExecutionException {
         CoordinatesRepository repository = new CoordinatesRepository(config, uinds);
         IntSet uindIds = repository.storeUindCoordinates();
-//        IntSet uindIds = repository.cachedStoreUindCoordinates();
         log.info("Finished calculating UIND coordinates");
 
         Set<IntSet> maxInds = generateMaxInds(repository, uindIds);
@@ -86,12 +85,10 @@ public class Mind2 {
 
             for (int uind : uinds) {
                 IntSet uindSet = IntSets.singleton(uind);
-                if (maxInds.contains(uindSet)) {
-                    maxInds.remove(uindSet);
-                }
+                maxInds.remove(uindSet);
             }
             if (maxInds.isEmpty()) {
-                for (int uind: uinds) {
+                for (int uind : uinds) {
                     maxInds.add(IntSets.singleton(uind));
                 }
                 return maxInds;

@@ -3,17 +3,12 @@ package de.metanome.algorithms.mind2.model;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import de.metanome.algorithm_integration.results.InclusionDependency;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.Data;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
-import static de.metanome.util.Collectors.toImmutableList;
 import static java.util.stream.Collectors.toList;
 
 @Data

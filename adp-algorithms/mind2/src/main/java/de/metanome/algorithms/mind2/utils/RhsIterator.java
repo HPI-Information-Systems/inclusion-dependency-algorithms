@@ -4,8 +4,6 @@ import com.google.common.collect.AbstractIterator;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntList;
 
-import java.util.Iterator;
-
 public class RhsIterator extends AbstractIterator<Integer> {
 
     private final int uindId;

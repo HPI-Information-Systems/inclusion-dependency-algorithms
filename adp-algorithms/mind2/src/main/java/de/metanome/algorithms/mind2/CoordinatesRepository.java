@@ -28,7 +28,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -39,7 +38,7 @@ import java.util.logging.Logger;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static de.metanome.util.Collectors.toImmutableList;
-import static de.metanome.util.Collectors.toImmutableSet;
+import static de.metanome.util.IndDeduplicator.deduplicateColumnIdentifier;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
@@ -116,7 +115,11 @@ public class CoordinatesRepository {
                     .collect(toImmutableList());
             ColumnPermutation dependant = new ColumnPermutation();
             dependant.setColumnIdentifiers(dependantIds);
-            resultReceiver.receiveResult(new InclusionDependency(dependant, referenced));
+
+            Set<InclusionDependency> inds = deduplicateColumnIdentifier(new InclusionDependency(dependant, referenced));
+            for (InclusionDependency ind : inds) {
+                resultReceiver.receiveResult(ind);
+            }
         }
     }
 
@@ -243,33 +246,17 @@ public class CoordinatesRepository {
             }
         }
         try (BufferedWriter writer = Files.newBufferedWriter(path, UTF_8)) {
+            List<Integer> previousPositions = new ArrayList<>();
             for (int lhs : positions.keySet().stream().sorted().collect(toList())) {
                 List<Integer> valuePositions = positions.get(lhs);
-                writer.write(UindCoordinates.toLine(lhs, valuePositions));
+                if (valuePositions.equals(previousPositions)) {
+                    writer.write(UindCoordinates.toLine(lhs));
+                } else {
+                    writer.write(UindCoordinates.toLine(lhs, valuePositions));
+                }
                 writer.newLine();
+                previousPositions = valuePositions;
             }
         }
-    }
-
-    // TODO: Debugging only, remove
-    public IntSet cachedStoreUindCoordinates() {
-        uindToPath.put(0, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm4197031579466151552tmp"));
-        uindToPath.put(1, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm5917111378669304947tmp"));
-        uindToPath.put(2, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm6413565627858387043tmp"));
-        uindToPath.put(3, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm3512138551421949066tmp"));
-        uindToPath.put(4, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm3806585669409253463tmp"));
-        uindToPath.put(5, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm7738645437290930012tmp"));
-        uindToPath.put(6, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm6064171548428247053tmp"));
-        uindToPath.put(7, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm4201991446690561848tmp"));
-        uindToPath.put(8, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm7155422949762178868tmp"));
-        uindToPath.put(9, Paths.get("/home/ntzr/mind2-scop-tmp/Mind2Algorithm1975003286451848672tmp"));
-
-        ImmutableList<InclusionDependency> sortedUinds = uinds.stream()
-                .sorted(Comparator.comparing(InclusionDependency::toString))
-                .collect(toImmutableList());
-        for (int i = 0; i < sortedUinds.size(); i++) {
-            idToUind.put(i, sortedUinds.get(i));
-        }
-        return new IntOpenHashSet(idToUind.keySet());
     }
 }
