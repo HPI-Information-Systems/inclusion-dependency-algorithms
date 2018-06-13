@@ -1,5 +1,9 @@
 package de.metanome.algorithms.bellbrockhausen;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
@@ -12,35 +16,35 @@ import de.metanome.algorithms.bellbrockhausen.accessors.TableInfo;
 import de.metanome.algorithms.bellbrockhausen.configuration.BellBrockhausenConfiguration;
 import de.metanome.algorithms.bellbrockhausen.models.Attribute;
 import de.metanome.util.InclusionDependencyResultReceiverStub;
-import org.jukito.JukitoRunner;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import javax.inject.Inject;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
-@RunWith(JukitoRunner.class)
-public class BellBrockhausenTest {
+class BellBrockhausenTest {
 
     private static final String TABLE_NAME = "table";
 
     private InclusionDependencyResultReceiverStub resultReceiver;
-    @Inject private BellBrockhausen bellBrockhausen;
+    private BellBrockhausen bellBrockhausen;
 
-    @Before
-    public void setupMocks(BellBrockhausenConfiguration config) {
+    @Mock
+    private BellBrockhausenConfiguration config;
+    @Mock
+    private DataAccessObject dataAccessObject;
+
+    @BeforeEach
+    void setupMocks() {
+        MockitoAnnotations.initMocks(this);
+        bellBrockhausen = new BellBrockhausen(config, dataAccessObject);
         resultReceiver = new InclusionDependencyResultReceiverStub();
         when(config.getResultReceiver()).thenReturn(resultReceiver);
         when(config.getTableNames()).thenReturn(ImmutableList.of(TABLE_NAME));
     }
 
     @Test
-    public void testTableWithTwoInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
+    void testTableWithTwoInds() throws AlgorithmExecutionException {
         // GIVEN
         Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.closed("1", "3"));
         Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.closed("2", "4"));
@@ -63,7 +67,7 @@ public class BellBrockhausenTest {
     }
 
     @Test
-    public void testTableWithNoInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
+    void testTableWithNoInds() throws AlgorithmExecutionException {
         // GIVEN
         Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.closed("1", "3"));
         Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.closed("2", "4"));
@@ -82,7 +86,7 @@ public class BellBrockhausenTest {
     }
 
     @Test
-    public void testTableWithTransitiveInds(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
+    void testTableWithTransitiveInds() throws AlgorithmExecutionException {
         // GIVEN
         Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.closed("1", "3"));
         Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.closed("3", "4"));
@@ -110,7 +114,7 @@ public class BellBrockhausenTest {
 
 
     @Test
-    public void testTableWithEqualValues(DataAccessObject dataAccessObject) throws AlgorithmExecutionException {
+    void testTableWithEqualValues() throws AlgorithmExecutionException {
         // GIVEN
         Attribute attributeA = new Attribute(new ColumnIdentifier(TABLE_NAME, "a"), Range.closed("1", "3"));
         Attribute attributeB = new Attribute(new ColumnIdentifier(TABLE_NAME, "b"), Range.closed("1", "3"));

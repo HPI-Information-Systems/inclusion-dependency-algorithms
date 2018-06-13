@@ -52,13 +52,10 @@ public class CoordinatesRepository {
     private final Map<Integer, Path> uindToPath = new HashMap<>();
     private final Map<Integer, InclusionDependency> idToUind = new HashMap<>();
 
-    @Inject
     public CoordinatesRepository(Mind2Configuration config, ImmutableSet<InclusionDependency> uinds) {
         this.config = config;
         this.uinds = uinds;
     }
-
-
 
     public UindCoordinatesReader getReader(Integer uindId) throws AlgorithmExecutionException {
         if (!uindToPath.containsKey(uindId)) {

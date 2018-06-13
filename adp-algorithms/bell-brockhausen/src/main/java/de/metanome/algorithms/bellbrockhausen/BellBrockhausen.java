@@ -25,7 +25,6 @@ public class BellBrockhausen {
     private final BellBrockhausenConfiguration configuration;
     private final DataAccessObject dataAccessObject;
 
-    @Inject
     public BellBrockhausen(BellBrockhausenConfiguration configuration, DataAccessObject dataAccessObject) {
         this.configuration = configuration;
         this.dataAccessObject = dataAccessObject;

@@ -1,7 +1,6 @@
 package de.metanome.algorithms.zigzag;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.Sets;
@@ -15,16 +14,15 @@ import de.metanome.util.InclusionDependencyResultReceiverStub;
 import de.metanome.util.TestDatabase;
 import de.metanome.validation.ValidationParameters;
 import de.metanome.validation.database.QueryType;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.junit.Test;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-public class ZigzagTest {
+class ZigzagTest {
 
   private TestDatabase testDatabase;
 
@@ -35,8 +33,9 @@ public class ZigzagTest {
     }
   }
 
+  @Disabled // FIXME
   @Test
-  public void testPaperExample() throws Exception {
+  void testPaperExample() throws Exception {
     // GIVEN
     String relationName = "TEST";
     List<String> columnNames =
@@ -103,7 +102,9 @@ public class ZigzagTest {
 
     // THEN
     System.out.println("permuted INDs are equal but will not be detected. -> ToDo");
-    System.out.println("resultReceiver " + resultReceiver.getReceivedResults().size() + resultReceiver.getReceivedResults());
+    System.out.println(
+        "resultReceiver " + resultReceiver.getReceivedResults().size() + resultReceiver
+            .getReceivedResults());
     System.out.println("actual maxINDs " + maximumINDs.size() + maximumINDs);
 
     //ToDo: permuted INDs should be equal.
@@ -111,9 +112,10 @@ public class ZigzagTest {
     assertTrue(maximumINDs.containsAll(resultReceiver.getReceivedResults()));
   }
 
-  // @Test
-  public void testCalculateOptimisticBorder(Zigzag zigzag) throws Exception {
-        Set<InclusionDependency> unsatisfiedINDs = new HashSet<>();
+  @Disabled // FIXME
+  @Test
+  void testCalculateOptimisticBorder() {
+    Set<InclusionDependency> unsatisfiedINDs = new HashSet<>();
 
     ColumnIdentifier a1 = new ColumnIdentifier("table", "a");
     ColumnIdentifier a2 = new ColumnIdentifier("table", "a2");
@@ -146,6 +148,7 @@ public class ZigzagTest {
     Set<ColumnIdentifier> ABCE = Sets.newHashSet(a1, b1, c1, e1);
     Set<Set<ColumnIdentifier>> optimisticBorder = Sets.newHashSet(BD, ABCE);
 
+    Zigzag zigzag = new Zigzag(ZigzagConfiguration.builder().build());
     System.out.println(zigzag.calculateOptimisticBorder(unsatisfiedINDs));
     // System.out.println(optimisticBorder.equals(zigzag.calculateOptimisticBorder(unsatisfiedINDs)));
   }

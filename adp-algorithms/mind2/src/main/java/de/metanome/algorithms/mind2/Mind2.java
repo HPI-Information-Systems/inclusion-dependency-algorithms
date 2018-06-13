@@ -32,7 +32,6 @@ public class Mind2 {
 
     private final Mind2Configuration config;
 
-    @Inject
     public Mind2(Mind2Configuration config) {
         this.config = config;
     }
