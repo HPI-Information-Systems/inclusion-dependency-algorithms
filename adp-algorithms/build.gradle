@@ -27,6 +27,7 @@ subprojects {
     }
 
     dependencies {
+        extraLibs 'org.apache.commons:commons-lang3:3.7'
         compileOnly 'com.github.f4lco.Metanome:algorithm_integration:jitpack-SNAPSHOT'
         compileOnly 'org.projectlombok:lombok:1.16.16'
         compileOnly 'it.unimi.dsi:fastutil:8.1.1'

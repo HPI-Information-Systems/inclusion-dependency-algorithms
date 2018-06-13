@@ -1,5 +1,7 @@
 package de.metanome.algorithms.zigzag;
 
+import static java.lang.String.format;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
@@ -11,10 +13,10 @@ import de.metanome.algorithm_integration.results.InclusionDependency;
 import de.metanome.algorithms.zigzag.configuration.ZigzagConfiguration;
 import de.metanome.input.ind.InclusionDependencyInput;
 import de.metanome.input.ind.InclusionDependencyInputGenerator;
+import de.metanome.util.InclusionDependencyUtil;
 import de.metanome.validation.ErrorMarginValidationResult;
 import de.metanome.validation.ValidationStrategy;
 import de.metanome.validation.ValidationStrategyFactory;
-import de.metanome.util.InclusionDependencyUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,9 +28,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
-
-import static java.lang.String.format;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class Zigzag {
 
@@ -65,7 +65,7 @@ public class Zigzag {
 
     Map<Pair<String, String>, List<InclusionDependency>> tablesPairToINDList = allInputINDs.stream()
         .collect(Collectors.groupingBy(
-            ind -> new Pair<>(ind.getDependant().getColumnIdentifiers().get(0).getTableIdentifier(),
+            ind -> Pair.of(ind.getDependant().getColumnIdentifiers().get(0).getTableIdentifier(),
                 ind.getReferenced().getColumnIdentifiers().get(0).getTableIdentifier())));
 
     for (List<InclusionDependency> split : tablesPairToINDList.values()) {
@@ -170,7 +170,7 @@ public class Zigzag {
   private void commitResults() throws ColumnNameMismatchException, CouldNotReceiveResultException {
     InclusionDependencyUtil util = new InclusionDependencyUtil();
 
-    log.fine(format("results: %s",  results));
+    log.fine(format("results: %s", results));
     log.fine(format("max results: %s", util.getMax(results)));
     for (InclusionDependency satisfiedInd : util.getMax(results)) {
       config.getResultReceiver().receiveResult(satisfiedInd);
