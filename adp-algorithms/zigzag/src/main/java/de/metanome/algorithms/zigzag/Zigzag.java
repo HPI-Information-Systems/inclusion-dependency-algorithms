@@ -1,7 +1,5 @@
 package de.metanome.algorithms.zigzag;
 
-import static java.lang.String.format;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
@@ -17,6 +15,7 @@ import de.metanome.util.InclusionDependencyUtil;
 import de.metanome.validation.ErrorMarginValidationResult;
 import de.metanome.validation.ValidationStrategy;
 import de.metanome.validation.ValidationStrategyFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,7 +27,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.tuple.Pair;
+
+import static java.lang.String.format;
 
 public class Zigzag {
 
@@ -63,9 +63,9 @@ public class Zigzag {
   public void execute() throws AlgorithmExecutionException {
     List<InclusionDependency> allInputINDs = inclusionDependencyInput.execute();
 
-    Map<Pair<String, String>, List<InclusionDependency>> tablesPairToINDList = allInputINDs.stream()
+    Map<ImmutableList<String>, List<InclusionDependency>> tablesPairToINDList = allInputINDs.stream()
         .collect(Collectors.groupingBy(
-            ind -> Pair.of(ind.getDependant().getColumnIdentifiers().get(0).getTableIdentifier(),
+            ind -> ImmutableList.of(ind.getDependant().getColumnIdentifiers().get(0).getTableIdentifier(),
                 ind.getReferenced().getColumnIdentifiers().get(0).getTableIdentifier())));
 
     for (List<InclusionDependency> split : tablesPairToINDList.values()) {

@@ -23,7 +23,6 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
-import javax.inject.Inject;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;

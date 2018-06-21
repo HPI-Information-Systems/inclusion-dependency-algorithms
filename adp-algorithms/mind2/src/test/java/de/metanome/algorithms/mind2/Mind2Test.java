@@ -1,14 +1,5 @@
 package de.metanome.algorithms.mind2;
 
-import static de.metanome.util.Collectors.toImmutableSet;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
@@ -24,17 +15,22 @@ import de.metanome.util.FileGeneratorFake;
 import de.metanome.util.InclusionDependencyResultReceiverStub;
 import de.metanome.util.RelationalInputGeneratorStub;
 import de.metanome.util.Row;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.Collection;
+import java.util.Set;
+
+import static de.metanome.util.InclusionDependencyUtil.sortIndAttributes;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class Mind2Test {
 
@@ -339,33 +335,6 @@ class Mind2Test {
 
     private InclusionDependency[] toArray(Set<InclusionDependency> inds) {
         return inds.toArray(new InclusionDependency[0]);
-    }
-
-    private ColumnIdentifier[] toArray(Collection<ColumnIdentifier> elems) {
-        return elems.toArray(new ColumnIdentifier[0]);
-    }
-
-    private ImmutableSet<InclusionDependency> sortIndAttributes(Collection<InclusionDependency> inds) {
-        return inds.stream()
-                .map(this::sortAttributes)
-                .collect(toImmutableSet());
-    }
-
-    private InclusionDependency sortAttributes(InclusionDependency ind) {
-        List<ColumnIdentifier> lhs = ind.getDependant().getColumnIdentifiers();
-        List<ColumnIdentifier> rhs = ind.getReferenced().getColumnIdentifiers();
-        List<List<ColumnIdentifier>> tuples = new ArrayList<>();
-        for (int i = 0; i < lhs.size(); i++) {
-            tuples.add(ImmutableList.of(lhs.get(i), rhs.get(i)));
-        }
-        tuples.sort(Comparator.comparing(elemsA -> elemsA.get(0)));
-        List<ColumnIdentifier> sortedAttrA = new ArrayList<>();
-        List<ColumnIdentifier> sortedAttrB = new ArrayList<>();
-        for (List<ColumnIdentifier> elems: tuples) {
-            sortedAttrA.add(elems.get(0));
-            sortedAttrB.add(elems.get(1));
-        }
-        return new InclusionDependency(new ColumnPermutation(toArray(sortedAttrA)), new ColumnPermutation(toArray(sortedAttrB)));
     }
 
     private void assertEqualMaxInds(Collection<InclusionDependency> indsA, Collection<InclusionDependency> indsB) {

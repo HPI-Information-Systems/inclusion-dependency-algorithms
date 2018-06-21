@@ -1,7 +1,10 @@
 package de.metanome.util;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import de.metanome.algorithm_integration.ColumnIdentifier;
+import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.results.InclusionDependency;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
@@ -11,7 +14,39 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+
 public class InclusionDependencyUtil {
+
+  /**
+   * Sorts the attributes in an ind. Keeps persistent ordering between the RHS and the LHS attributes.
+   */
+  public static ImmutableSet<InclusionDependency> sortIndAttributes(Collection<InclusionDependency> inds) {
+    return inds.stream()
+            .map(InclusionDependencyUtil::sortAttributes)
+            .collect(toImmutableSet());
+  }
+
+  private static InclusionDependency sortAttributes(InclusionDependency ind) {
+    List<ColumnIdentifier> lhs = ind.getDependant().getColumnIdentifiers();
+    List<ColumnIdentifier> rhs = ind.getReferenced().getColumnIdentifiers();
+    List<List<ColumnIdentifier>> tuples = new ArrayList<>();
+    for (int i = 0; i < lhs.size(); i++) {
+      tuples.add(ImmutableList.of(lhs.get(i), rhs.get(i)));
+    }
+    tuples.sort(Comparator.comparing(elemsA -> elemsA.get(0)));
+    List<ColumnIdentifier> sortedAttrA = new ArrayList<>();
+    List<ColumnIdentifier> sortedAttrB = new ArrayList<>();
+    for (List<ColumnIdentifier> elems: tuples) {
+      sortedAttrA.add(elems.get(0));
+      sortedAttrB.add(elems.get(1));
+    }
+    return new InclusionDependency(new ColumnPermutation(toArray(sortedAttrA)), new ColumnPermutation(toArray(sortedAttrB)));
+  }
+
+  private static ColumnIdentifier[] toArray(Collection<ColumnIdentifier> elems) {
+    return elems.toArray(new ColumnIdentifier[0]);
+  }
 
   /**
    * Retain only INDs which are not directly contained by other higher-arity INDs.

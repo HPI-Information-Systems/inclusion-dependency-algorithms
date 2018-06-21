@@ -1,8 +1,6 @@
 package de.metanome.algorithms.zigzag;
 
-import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
@@ -14,33 +12,48 @@ import de.metanome.util.InclusionDependencyResultReceiverStub;
 import de.metanome.util.TestDatabase;
 import de.metanome.validation.ValidationParameters;
 import de.metanome.validation.database.QueryType;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+
+import static de.metanome.util.InclusionDependencyUtil.sortIndAttributes;
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ZigzagTest {
 
   private TestDatabase testDatabase;
+  private String relationName = "TEST";
+  private List<String> columnNames = asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N");
+
+  @BeforeEach
+  public void setup() throws Exception {
+    testDatabase = TestDatabase.builder()
+            .resourceClass(ZigzagTest.class)
+            .relationName(relationName)
+            .columnNames(columnNames)
+            .csvPath("testPaperExample.csv")
+            .build();
+    testDatabase.setUp();
+  }
 
   @AfterEach
-  void tearDown() {
+  public void tearDown() {
     if (testDatabase != null) {
       testDatabase.tearDown();
     }
   }
 
-  @Disabled // FIXME
   @Test
-  void testPaperExample() throws Exception {
+  public void testPaperExample() throws Exception {
     // GIVEN
-    String relationName = "TEST";
-    List<String> columnNames =
-        asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N");
-
     List<ColumnIdentifier> ci = new ArrayList<>();
     for (String c : columnNames) {
       ci.add(new ColumnIdentifier(relationName, c));
@@ -65,18 +78,7 @@ class ZigzagTest {
             new ColumnPermutation(ci.get(11), ci.get(13))));
 
     // SETUP
-    testDatabase =
-        TestDatabase.builder()
-            .resourceClass(ZigzagTest.class)
-            .relationName(relationName)
-            .columnNames(columnNames)
-            .csvPath("testPaperExample.csv")
-            .build();
-
-    testDatabase.setUp();
-
-    InclusionDependencyResultReceiverStub resultReceiver =
-        new InclusionDependencyResultReceiverStub();
+    InclusionDependencyResultReceiverStub resultReceiver = new InclusionDependencyResultReceiverStub();
 
     ValidationParameters validationParameters = new ValidationParameters();
     validationParameters.setQueryType(QueryType.ERROR_MARGIN);
@@ -101,15 +103,7 @@ class ZigzagTest {
     zigzag.execute();
 
     // THEN
-    System.out.println("permuted INDs are equal but will not be detected. -> ToDo");
-    System.out.println(
-        "resultReceiver " + resultReceiver.getReceivedResults().size() + resultReceiver
-            .getReceivedResults());
-    System.out.println("actual maxINDs " + maximumINDs.size() + maximumINDs);
-
-    //ToDo: permuted INDs should be equal.
-    assertTrue(resultReceiver.getReceivedResults().containsAll(maximumINDs));
-    assertTrue(maximumINDs.containsAll(resultReceiver.getReceivedResults()));
+    assertEqualMaxInds(resultReceiver.getReceivedResults(), maximumINDs);
   }
 
   @Disabled // FIXME
@@ -146,10 +140,28 @@ class ZigzagTest {
 
     Set<ColumnIdentifier> BD = Sets.newHashSet(b1, d1);
     Set<ColumnIdentifier> ABCE = Sets.newHashSet(a1, b1, c1, e1);
-    Set<Set<ColumnIdentifier>> optimisticBorder = Sets.newHashSet(BD, ABCE);
+    Set<Set<ColumnIdentifier>> optimisticBorder = ImmutableSet.of(BD, ABCE);
 
-    Zigzag zigzag = new Zigzag(ZigzagConfiguration.builder().build());
+    InclusionDependencyResultReceiverStub resultReceiver = new InclusionDependencyResultReceiverStub();
+
+    ValidationParameters validationParameters = new ValidationParameters();
+    validationParameters.setQueryType(QueryType.ERROR_MARGIN);
+    validationParameters.setConnectionGenerator(testDatabase.asConnectionGenerator());
+
+    InclusionDependencyParameters inclusionDependencyParameters = new InclusionDependencyParameters();
+    inclusionDependencyParameters.setAlgorithmType(AlgorithmType.FILE);
+    inclusionDependencyParameters
+            .setConfigurationString("inputPath=" + getClass().getResource("ind_input.json").getFile());
+
+    Zigzag zigzag = new Zigzag(ZigzagConfiguration.builder()
+            .resultReceiver(resultReceiver)
+            .validationParameters(validationParameters)
+            .inclusionDependencyParameters(inclusionDependencyParameters)
+            .startK(2)
+            .epsilon(10000)
+            .build());
     System.out.println(zigzag.calculateOptimisticBorder(unsatisfiedINDs));
+    assertThat(zigzag.calculateOptimisticBorder(unsatisfiedINDs)).isEqualTo(optimisticBorder);
     // System.out.println(optimisticBorder.equals(zigzag.calculateOptimisticBorder(unsatisfiedINDs)));
   }
 
@@ -176,5 +188,15 @@ class ZigzagTest {
 
   private InclusionDependency toInd(ColumnIdentifier dep, ColumnIdentifier ref) {
     return new InclusionDependency(new ColumnPermutation(dep), new ColumnPermutation(ref));
+  }
+
+  private InclusionDependency[] toArray(Set<InclusionDependency> inds) {
+    return inds.toArray(new InclusionDependency[0]);
+  }
+
+  private void assertEqualMaxInds(Collection<InclusionDependency> indsA, Collection<InclusionDependency> indsB) {
+    ImmutableSet<InclusionDependency> sortedIndsA = sortIndAttributes(indsA);
+    ImmutableSet<InclusionDependency> sortedIndsB = sortIndAttributes(indsB);
+    assertThat(sortedIndsA).containsExactlyInAnyOrder(toArray(sortedIndsB));
   }
 }

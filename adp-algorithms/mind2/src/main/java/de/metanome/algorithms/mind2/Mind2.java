@@ -15,7 +15,6 @@ import it.unimi.dsi.fastutil.ints.IntSets;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 
-import javax.inject.Inject;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 import java.util.Queue;
