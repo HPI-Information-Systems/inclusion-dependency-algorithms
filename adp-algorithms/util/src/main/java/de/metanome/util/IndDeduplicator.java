@@ -1,5 +1,6 @@
 package de.metanome.util;
 
+import com.google.common.collect.ImmutableSet;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.results.InclusionDependency;
@@ -16,16 +17,30 @@ public class IndDeduplicator {
      * E.g. "ABC <= XXY" gets transformed to "AC <= XY" and "BC <= XY"
      */
     public static Set<InclusionDependency> deduplicateColumnIdentifier(InclusionDependency ind) {
-        Set<InclusionDependency> inds = new HashSet<>();
+        Set<InclusionDependency> dedupedInds = new HashSet<>();
         Set<Integer> dependantIndices = getDuplicateIndices(ind.getDependant().getColumnIdentifiers());
         Set<Integer> referencedIndices = getDuplicateIndices(ind.getReferenced().getColumnIdentifiers());
         if (dependantIndices.isEmpty() && referencedIndices.isEmpty()) {
-            inds.add(ind);
+            dedupedInds.add(ind);
         } else {
-            inds.addAll(deduplicateColumnIdentifier(ind, dependantIndices));
-            inds.addAll(deduplicateColumnIdentifier(ind, referencedIndices));
+            dedupedInds.addAll(deduplicateColumnIdentifier(ind, dependantIndices));
+            dedupedInds.addAll(deduplicateColumnIdentifier(ind, referencedIndices));
         }
-        return inds;
+
+        if (dedupedInds.size() == 1) {
+            return dedupedInds;
+        }
+
+        Set<InclusionDependency> nextDedupedInds = new HashSet<>(dedupedInds);
+        do {
+            dedupedInds = new HashSet<>(nextDedupedInds);
+            nextDedupedInds = new HashSet<>();
+            for (InclusionDependency dedupedInd : dedupedInds) {
+                nextDedupedInds.addAll(deduplicateColumnIdentifier(dedupedInd));
+            }
+        } while (!nextDedupedInds.equals(dedupedInds));
+
+        return dedupedInds;
     }
 
     private static Set<InclusionDependency> deduplicateColumnIdentifier(InclusionDependency ind, Set<Integer> duplicateIndices) {

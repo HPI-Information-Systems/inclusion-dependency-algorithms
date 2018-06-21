@@ -19,14 +19,13 @@ class IndDeduplicatorTest {
     ColumnIdentifier a2 = new ColumnIdentifier("R", "A2");
     ColumnIdentifier a3 = new ColumnIdentifier("R", "A3");
     ColumnIdentifier b1 = new ColumnIdentifier("S", "B1");
-    ColumnIdentifier b2 = new ColumnIdentifier("S", "B1");
     ColumnIdentifier b3 = new ColumnIdentifier("S", "B3");
     InclusionDependency ind = new InclusionDependency(
         new ColumnPermutation(a1, a2, a3),
-        new ColumnPermutation(b1, b2, b3));
+        new ColumnPermutation(b1, b1, b3));
     Set<InclusionDependency> expectedInds = ImmutableSet.of(
         new InclusionDependency(new ColumnPermutation(a1, a3), new ColumnPermutation(b1, b3)),
-        new InclusionDependency(new ColumnPermutation(a2, a3), new ColumnPermutation(b2, b3)));
+        new InclusionDependency(new ColumnPermutation(a2, a3), new ColumnPermutation(b1, b3)));
 
     // WHEN
     Set<InclusionDependency> dedupedInds = IndDeduplicator.deduplicateColumnIdentifier(ind);
@@ -93,6 +92,31 @@ class IndDeduplicatorTest {
         .map(IndDeduplicator::deduplicateColumnIdentifier)
         .flatMap(Set::stream)
         .collect(toImmutableSet());
+
+    // THEN
+    assertThat(dedupedInds).isEqualTo(expectedInds);
+  }
+
+  @Test
+  void testMultipleDuplications() {
+    // GIVEN
+    ColumnIdentifier a1 = new ColumnIdentifier("R", "A1");
+    ColumnIdentifier a2 = new ColumnIdentifier("R", "A2");
+    ColumnIdentifier b1 = new ColumnIdentifier("S", "B1");
+    ColumnIdentifier b2 = new ColumnIdentifier("S", "B2");
+    ColumnIdentifier b3 = new ColumnIdentifier("S", "B3");
+    ColumnIdentifier b4 = new ColumnIdentifier("S", "B4");
+    InclusionDependency ind = new InclusionDependency(
+            new ColumnPermutation(a1, a1, a2, a2),
+            new ColumnPermutation(b1, b2, b3, b4));
+    Set<InclusionDependency> expectedInds = ImmutableSet.of(
+            new InclusionDependency(new ColumnPermutation(a1, a2), new ColumnPermutation(b1, b3)),
+            new InclusionDependency(new ColumnPermutation(a1, a2), new ColumnPermutation(b1, b4)),
+            new InclusionDependency(new ColumnPermutation(a1, a2), new ColumnPermutation(b2, b3)),
+            new InclusionDependency(new ColumnPermutation(a1, a2), new ColumnPermutation(b2, b4)));
+
+    // WHEN
+    Set<InclusionDependency> dedupedInds = IndDeduplicator.deduplicateColumnIdentifier(ind);
 
     // THEN
     assertThat(dedupedInds).isEqualTo(expectedInds);
