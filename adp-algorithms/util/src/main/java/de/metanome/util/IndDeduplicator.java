@@ -1,6 +1,5 @@
 package de.metanome.util;
 
-import com.google.common.collect.ImmutableSet;
 import de.metanome.algorithm_integration.ColumnIdentifier;
 import de.metanome.algorithm_integration.ColumnPermutation;
 import de.metanome.algorithm_integration.results.InclusionDependency;

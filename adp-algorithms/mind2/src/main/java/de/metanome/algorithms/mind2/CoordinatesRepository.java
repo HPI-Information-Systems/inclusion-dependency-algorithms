@@ -28,11 +28,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
@@ -40,7 +42,6 @@ import static de.metanome.util.Collectors.toImmutableList;
 import static de.metanome.util.IndDeduplicator.deduplicateColumnIdentifier;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.stream.Collectors.toList;
 
 public class CoordinatesRepository {
 
@@ -50,6 +51,7 @@ public class CoordinatesRepository {
     private final ImmutableSet<InclusionDependency> uinds;
     private final Map<Integer, Path> uindToPath = new HashMap<>();
     private final Map<Integer, InclusionDependency> idToUind = new HashMap<>();
+    private final Set<ColumnIdentifier> emptyColumns = new HashSet<>();
 
     public CoordinatesRepository(Mind2Configuration config, ImmutableSet<InclusionDependency> uinds) {
         this.config = config;
@@ -71,13 +73,12 @@ public class CoordinatesRepository {
         ImmutableMap<ColumnIdentifier, TableInputGenerator> attributes =
                 getRelationalInputMap(config.getInputGenerators());
         ImmutableMap<String, ColumnIdentifier> indexColumns = getIndexColumns(attributes);
-        // TODO: Remove sorting. Only used to have consistent UIND IDs between runs.
-        ImmutableList<InclusionDependency> sortedUinds = uinds.stream()
-                .sorted(Comparator.comparing(InclusionDependency::toString))
-                .collect(toImmutableList());
         int uindId = 0;
-        for (InclusionDependency uind : sortedUinds) {
+        for (InclusionDependency uind : uinds) {
             List<ValuePositions> uindCoordinates = generateCoordinates(uind, attributes, indexColumns);
+            if (uindCoordinates.isEmpty()) {
+                continue;
+            }
             Path path = getPath();
             try {
                 writeToFile(uindCoordinates, path);
@@ -127,6 +128,10 @@ public class CoordinatesRepository {
         ColumnIdentifier lhs = getUnaryIdentifier(unaryInd.getDependant());
         ColumnIdentifier rhs = getUnaryIdentifier(unaryInd.getReferenced());
 
+        if (emptyColumns.contains(lhs) || emptyColumns.contains(rhs)) {
+            return valuePositions;
+        }
+
         RelationalInput inputA = config.getDataAccessObject()
                 .getSortedRelationalInput(attributes.get(lhs), lhs, getIndexColumn(indexColumns, lhs), config.getIndexColumn(), false);
         RelationalInput inputB = config.getDataAccessObject().
@@ -134,6 +139,19 @@ public class CoordinatesRepository {
         AttributeIterator cursorA =  new AttributeIterator(inputA, lhs, config.getIndexColumn());
         AttributeIterator cursorB = new AttributeIterator(inputB, rhs, config.getIndexColumn());
         String previousValue = null;
+
+        if (!cursorA.hasNext() || !cursorB.hasNext()) {
+            if (!cursorA.hasNext()) {
+                emptyColumns.add(lhs);
+            }
+            if (!cursorB.hasNext()){
+                emptyColumns.add(rhs);
+            }
+            cursorA.close();
+            cursorB.close();
+            log.info("No values in reader for UIND: " + unaryInd);
+            return valuePositions;
+        }
 
         cursorA.next();
         cursorB.next();
@@ -233,9 +251,8 @@ public class CoordinatesRepository {
         return getOnlyElement(columnPermutation.getColumnIdentifiers());
     }
 
-    private void writeToFile(List<ValuePositions> uindCoordinates, Path path)
-            throws IOException {
-        Map<Integer, List<Integer>> positions = new HashMap<>();
+    private void writeToFile(List<ValuePositions> uindCoordinates, Path path) throws IOException {
+        SortedMap<Integer, IntList> positions = new TreeMap<>();
         for (ValuePositions valPos : uindCoordinates) {
             for (int lhs : valPos.getPositionsA()) {
                 positions.put(lhs, valPos.getPositionsB());
@@ -243,7 +260,7 @@ public class CoordinatesRepository {
         }
         try (BufferedWriter writer = Files.newBufferedWriter(path, UTF_8)) {
             List<Integer> previousPositions = new ArrayList<>();
-            for (int lhs : positions.keySet().stream().sorted().collect(toList())) {
+            for (int lhs : positions.keySet()) {
                 List<Integer> valuePositions = positions.get(lhs);
                 if (valuePositions.equals(previousPositions)) {
                     writer.write(UindCoordinates.toLine(lhs));
