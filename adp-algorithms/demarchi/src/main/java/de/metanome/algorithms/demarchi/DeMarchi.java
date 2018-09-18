@@ -90,7 +90,16 @@ public class DeMarchi {
       try (RelationalInputGenerator generator = table.selectInputGenerator();
           RelationalInput input = generator.generateNewCopy()) {
 
+        int read = 0;
+        final int limit = configuration.getInputRowLimit();
+
         while (input.hasNext()) {
+
+          ++read;
+          if (limit > 0 && read > limit) {
+            break;
+          }
+
           final List<String> values = input.next();
           for (int index = 0; index < values.size(); ++index) {
             final String value = values.get(index);
