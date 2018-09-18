@@ -153,7 +153,10 @@ def csv_algo_runtime_all():
     global combined
     in_minutes = combined.T / 1000 / 60
     rounded = np.round(in_minutes, decimals=2)
-    rounded.to_csv('algorithm_runtime.csv')
+    path = 'export'
+    if not os.path.exists(path):
+        os.mkdir('export')
+    rounded.to_csv('export/algorithm_runtime.csv')
 
 csv_algo_runtime_all()
 
