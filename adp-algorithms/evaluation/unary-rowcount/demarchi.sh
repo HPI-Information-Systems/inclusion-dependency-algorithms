@@ -9,7 +9,7 @@ de.metanome.cli.App \
 --algorithm de.metanome.algorithms.demarchi.DeMarchiAlgorithm \
 $DB \
 --table-key TABLE \
---tables load:unary-rowcount/rowcount.txt \
---algorithm-config INPUT_ROW_LIMIT:$@ \
+--tables editor_sanitised_$@ \
+--algorithm-config INPUT_ROW_LIMIT:-1 \
 --output file:$EXECUTION_ID
 

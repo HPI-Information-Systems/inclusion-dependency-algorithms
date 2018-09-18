@@ -7,5 +7,5 @@ de.metanome.cli.App \
 --algorithm de.metanome.algorithms.bellbrockhausen.BellBrockhausenAlgorithm \
 $DB \
 --table-key TABLE \
---tables load:unary-columncount/cath.txt \
+--tables editor_sanitised_$@ \
 --output file:$EXECUTION_ID

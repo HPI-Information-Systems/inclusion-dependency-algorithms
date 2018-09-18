@@ -7,9 +7,9 @@ de.metanome.cli.App \
 --algorithm de.metanome.algorithms.sindd.SinddAlgorithm \
 $DB \
 --table-key TABLE \
---tables load:unary-rowcount/rowcount.txt \
+--tables editor_sanitised_$@ \
 --algorithm-config PROCESS_EMPTY_COLUMNS:true,OPEN_FILE_NR:100,PARTITION_NR:10 \
---algorithm-config INPUT_ROW_LIMIT:$@,MAX_MEMORY_USAGE_PERCENTAGE:70,MEMORY_CHECK_INTERVAL:1000 \
+--algorithm-config INPUT_ROW_LIMIT:-1,MAX_MEMORY_USAGE_PERCENTAGE:70,MEMORY_CHECK_INTERVAL:1000 \
 --output file:$EXECUTION_ID
 
-rm -rv tmp/
+rm -r tmp/

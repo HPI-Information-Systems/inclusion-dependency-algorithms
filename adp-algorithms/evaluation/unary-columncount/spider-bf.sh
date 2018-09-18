@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-export EXECUTION_ID="columncount_spider"$@
+export EXECUTION_ID="columncount_spider-bf"$@
 
 java $DEBUG $JVM_ARGS \
--cp $ADP_LIB:$ALGORITHMS/spider/build/libs/spider-0.1.0-SNAPSHOT-database.jar \
+-cp $ADP_LIB:$ALGORITHMS/spider-bruteforce/build/libs/spider-bruteforce-0.1.0-SNAPSHOT.jar \
 de.metanome.cli.App \
---algorithm de.metanome.algorithms.spider.SpiderDatabaseAlgorithm \
+--algorithm de.metanome.algorithms.spiderbruteforce.SpiderBruteForceAlgorithm \
 $DB \
 --table-key TABLE \
 --tables editor_sanitised_$@ \
