@@ -20,6 +20,8 @@ Given a single file, that file is loaded. Given a directory, all files inside
 the directory are loaded. Empty files are ignored in both cases.
 """
 
+SEP = ','
+
 
 def get_connection():
     with open('pgpass.conf') as f:
@@ -29,15 +31,17 @@ def get_connection():
 
 
 def get_columns(filename):
-     frame = pd.read_csv(filename,
+    global SEP
+    frame = pd.read_csv(filename,
          nrows=1,
-         sep=';',
+         sep=SEP,
          header=None,
          escapechar="\\", engine='python')
-     return ['column' + str(index + 1) for index in range(len(frame.columns))]
+    return ['column' + str(index + 1) for index in range(len(frame.columns))]
 
 
 def load(csv, cursor):
+    global SEP
     columns = get_columns(csv)
     fname = os.path.basename(csv)
     relation = fname.rsplit(".", 1)[0] if fname.endswith(".csv") else fname
@@ -48,7 +52,7 @@ def load(csv, cursor):
     print(create)
     cursor.execute(create)
 
-    copy = """COPY "{name}" FROM '{csv}' DELIMITER ';' CSV ESCAPE '\\' """.format(name=relation, csv=os.path.abspath(csv))
+    copy = """COPY "{name}" FROM '{csv}' DELIMITER '{sep}' CSV ESCAPE '\\'""".format(name=relation, csv=os.path.abspath(csv), sep=SEP)
 
     with open(csv, 'r') as f:
         cursor.copy_expert(copy, f)
@@ -56,7 +60,7 @@ def load(csv, cursor):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: loadcsv.py <file or directory>")
+        print("Usage: loadcsv.py <files or directory>")
         exit()
 
     connection = get_connection()
@@ -66,7 +70,7 @@ def main():
     if os.path.isdir(arg):
         files = [os.path.join(arg, f) for f in os.listdir(arg)]
     else:
-        files = [arg]
+        files = sys.argv[1:]
 
     for f in files:
         if not os.path.isdir(f) and os.path.getsize(f) > 0:
