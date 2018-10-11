@@ -537,7 +537,7 @@ def plot_columncount_musicbrainz(export_name, algorithms, algorithm_names):
     plt.legend(ref, algorithm_names + ['IND Count'])
     
     runtime_ax.text(270, 10_000 * 1000, "$\dagger$", fontsize=14)  # BB
-    runtime_ax.text(365, 3_200 * 1000, "$\dagger$", fontsize=14)  # SINDD
+    #runtime_ax.text(365, 3_200 * 1000, "$\dagger$", fontsize=14)  # SINDD
                    
     export(export_name)
 
