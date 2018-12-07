@@ -1,4 +1,4 @@
-Advanced Data Profiling Seminar
+IND Discovery Evaluation
 ===============================
 
 ## Building
