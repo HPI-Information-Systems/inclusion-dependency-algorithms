@@ -1,2 +1,2 @@
-# AdvancedDataProfilingSeminar
-This repository is used for advanced data profiling seminar in HPI for Winter Semester 17/18
+# IND Discovery Evaluation
+This repository provides the implementation of several well-know INDs discovery algorithms for the [Metanome](www.metanome.de) data profiling framework, as well as, the evaluation scripts.
