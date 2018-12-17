@@ -206,17 +206,21 @@ plot_combined_per_dataset()
 
 #%%
 
-def plot_combined_per_dataset_slowdown():
+def plot_combined_per_dataset_slowdown(mark_error_as_fullbar=False):
     global combined    
     data = combined.transpose()
     #m = data.max(axis=1)
     m = data.min(axis=1)
     data = data.divide(m, axis=0)
     
+    max_y = 12 if mark_error_as_fullbar else 10
+    if mark_error_as_fullbar:
+        data = data.fillna(max_y)
+    
     #data.fillna(1, inplace=True)
 
     setup_axes(width=16, height=4, dpi=1600)
-    plt.title('Algorithm Runtime per Dataset')
+    #plt.title('Algorithm Runtime per Dataset')
     #plt.xlabel('Dataset')
     plt.ylabel('Slowdown factor compared to shortest runtime')
     
@@ -240,10 +244,11 @@ def plot_combined_per_dataset_slowdown():
                algorithm_names,
                loc='lower center',
                ncol=len(algorithms),
-               bbox_to_anchor=(0.5, -0.2))
+               bbox_to_anchor=(0.5, -0.2),
+               frameon=False)
     
     plt.xticks(x, dataset_names)#, rotation=45)
-    plt.ylim(ymin=0, ymax=10)
+    plt.ylim(ymin=0, ymax=max_y)
     locs, labels = plt.yticks()
     nl = list(np.append(locs, 1))
     nl.sort()
@@ -403,7 +408,7 @@ def plot_rowcount_musicbrainz(export_name, algorithms, algorithm_names):
     
     setup_axes(unit='minutes')
     
-    plt.title('Rowcount Experiment')
+    #plt.title('Rowcount Experiment')
     plt.xlabel('Rowcount')
     plt.ylabel('Runtime (m)')
     
@@ -509,7 +514,7 @@ def plot_columncount_musicbrainz(export_name, algorithms, algorithm_names):
     global columncount3
     
     setup_axes(unit='minutes')    
-    plt.title('Columncount Experiment')
+    #plt.title('Columncount Experiment')
     plt.xlabel('Columncount')
     plt.ylabel('Runtime (m)')
     
