@@ -206,16 +206,13 @@ plot_combined_per_dataset()
 
 #%%
 
-def plot_combined_per_dataset_slowdown(mark_error_as_fullbar=False):
+def plot_combined_per_dataset_slowdown():
     global combined    
     data = combined.transpose()
     #m = data.max(axis=1)
     m = data.min(axis=1)
-    data = data.divide(m, axis=0)
-    
-    max_y = 12 if mark_error_as_fullbar else 10
-    if mark_error_as_fullbar:
-        data = data.fillna(max_y)
+    max_y = 12
+    data = data.divide(m, axis=0).fillna(max_y)
     
     #data.fillna(1, inplace=True)
 
@@ -246,6 +243,17 @@ def plot_combined_per_dataset_slowdown(mark_error_as_fullbar=False):
                ncol=len(algorithms),
                bbox_to_anchor=(0.5, -0.2),
                frameon=False)
+
+    # b&b on wikipedia
+    ax.text(1.26, 11.1, "$\dagger$", fontsize=14, color='white')
+    # b&b on tesma
+    ax.text(6.06, 11.1, "$\dagger$", fontsize=14, color='white')
+    # b&b on tpch10
+    ax.text(7.66, 11.1, "$\dagger$", fontsize=14, color='white')
+    # demarchi on tpch10
+    ax.text(7.76, 11.1, "$\dagger$", fontsize=14, color='white')
+    # b&b on musicbrainz
+    ax.text(8.46, 11.1, "$\dagger$", fontsize=14, color='white')
     
     plt.xticks(x, dataset_names)#, rotation=45)
     plt.ylim(ymin=0, ymax=max_y)
