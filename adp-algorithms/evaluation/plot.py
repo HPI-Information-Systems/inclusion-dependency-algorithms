@@ -251,7 +251,7 @@ def plot_combined_per_dataset_slowdown():
     # b&b on tpch10
     ax.text(7.66, 11.1, "$\dagger$", fontsize=14, color='white')
     # demarchi on tpch10
-    ax.text(7.76, 11.1, "$\dagger$", fontsize=14, color='white')
+    #ax.text(7.76, 11.1, "$\dagger$", fontsize=14, color='white')
     # b&b on musicbrainz
     ax.text(8.46, 11.1, "$\dagger$", fontsize=14, color='white')
     
