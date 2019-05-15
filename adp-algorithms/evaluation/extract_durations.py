@@ -109,8 +109,7 @@ def main(dataset, paths, key_func=algorithm_name_key):
 	write_output(dataset, all_runtimes)
 
 
-def dataset_runtime_main():
-	to_search = sys.argv[1]
+def dataset_runtime_main(to_search):
 	files = defaultdict(lambda: [])
 
 	for path in os.listdir(to_search):
@@ -135,5 +134,17 @@ def dataset_runtime_main():
 
 
 if __name__ == '__main__':
-	#dataset_runtime_main()
-	main("rowcount-musicbrainz", paths=sys.argv[1:], key_func=filename_key)
+
+	def subdirectories(f):
+		return [os.path.join(f, x) for x in os.listdir(f)]
+
+	method = sys.argv[1]
+	if method == 'datasets':
+		dataset_runtime_main('dataset-runtime-results')
+	elif method == 'rowcount':
+		main("rowcount", paths=subdirectories('unary-rowcount-results-cath-tesmaexp'), key_func=filename_key)
+		main("rowcount-musicbrainz", paths=subdirectories('unary-rowcount-results-musicbrainz-editor-sanitised'), key_func=filename_key)
+	elif method == 'columncount':
+		main("columncount-cath-tesmaexp", paths=subdirectories('unary-columncount-results-cath-tesmaexp'), key_func=filename_key)
+		main("columncount-pdb-refine", paths=subdirectories('unary-columncount-results-pdb-refine'), key_func=filename_key)
+		main("columncount-musicbrainz-editor-sanitised", paths=subdirectories('unary-columncount-results-musicbrainz-editor-sanitised'), key_func=filename_key)
